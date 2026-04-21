@@ -1,0 +1,535 @@
+@extends('layout.app')
+@section('content')
+    @php
+        $poBadge = match ($po->status) {
+            'locked' => ['color' => 'success', 'label' => 'Terkunci'],
+            default => ['color' => 'secondary', 'label' => 'Draft'],
+        };
+        $statusBadge = [
+            'pending' => ['color' => 'secondary', 'label' => 'Pending'],
+            'berangkat' => ['color' => 'warning', 'label' => 'Berangkat'],
+            'tiba' => ['color' => 'info', 'label' => 'Tiba'],
+            'selesai' => ['color' => 'success', 'label' => 'Selesai'],
+            'batal' => ['color' => 'danger', 'label' => 'Batal'],
+        ];
+
+        // Flatten semua penerima dari semua kendaraan
+        $allPenerimas = $po->kendaraans->flatMap(fn($k) => $k->penerimas);
+
+        // Grand totals
+        $grandTotalKg = $allPenerimas->sum('total_kg');
+        $grandTotalOa = $allPenerimas->sum('total_oa');
+        $grandTotalPtSum = $allPenerimas->sum('total_pt_sum');
+
+        // Grand total karung per kode pakan
+        $grandKarung = [];
+        foreach ($kodePakanList as $kp) {
+            $grandKarung[$kp->id] = 0;
+        }
+        foreach ($allPenerimas as $penerima) {
+            foreach ($penerima->pakans as $pakan) {
+                if (isset($grandKarung[$pakan->kode_pakan_id])) {
+                    $grandKarung[$pakan->kode_pakan_id] += $pakan->jumlah_karung;
+                }
+            }
+        }
+    @endphp
+
+    {{-- Header --}}
+    <div class="card mb-3">
+        <div class="card-body py-3">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                <div>
+                    <h5 class="mb-1 fw-bold">{{ $po->no_po }}</h5>
+                    <div class="text-muted small mb-1">
+                        {{ $po->tanggal_po->format('d M Y') }} &nbsp;·&nbsp;
+                        <strong>{{ $po->cv?->nama_cv ?? '-' }}</strong>
+                    </div>
+                    <span class="badge bg-{{ $poBadge['color'] }}">{{ $poBadge['label'] }}</span>
+                    @if ($po->catatan)
+                        <div class="text-muted small mt-1"><i class="fa fa-sticky-note"></i> {{ $po->catatan }}</div>
+                    @endif
+                </div>
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                    @if ($po->status === 'draft')
+                        <a href="{{ route('purchase-order.edit', encrypt($po->id)) }}" class="btn btn-sm btn-warning">
+                            <i class="fa fa-edit"></i> Edit
+                        </a>
+                    @endif
+                    <a href="{{ route('purchase-order.export-po', encrypt($po->id)) }}" class="btn btn-sm btn-success">
+                        <i class="fa fa-file-excel-o"></i> Export Excel
+                    </a>
+                    <a href="{{ route('rekap-po.show', encrypt($po->id)) }}" class="btn btn-sm btn-info text-white">
+                        <i class="fa fa-table"></i> Rekap PO
+                    </a>
+                    <a href="{{ route('purchase-order.index') }}" class="btn btn-sm btn-secondary">
+                        <i class="fa fa-arrow-left"></i> Kembali
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @forelse ($po->kendaraans as $ki => $kendaraan)
+        @php
+            $kBadge = $statusBadge[$kendaraan->status] ?? ['color' => 'secondary', 'label' => $kendaraan->status];
+        @endphp
+        <div class="card mb-3">
+            <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="fw-bold"><i class="fa fa-truck"></i> {{ $kendaraan->no_polisi }}</span>
+                    @if ($kendaraan->nama_sopir)
+                        <span class="text-muted small ms-2">· {{ $kendaraan->nama_sopir }}</span>
+                    @endif
+                    @if ($kendaraan->no_surat_jalan)
+                        <span class="text-muted small ms-2">· SJ: {{ $kendaraan->no_surat_jalan }}</span>
+                    @endif
+                    @if ($kendaraan->supplier)
+                        <span class="badge bg-light text-dark border ms-2">{{ $kendaraan->supplier->initial }}</span>
+                    @endif
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-primary">{{ number_format($kendaraan->total_kg, 0, ',', '.') }} kg</span>
+                    <span class="badge bg-{{ $kBadge['color'] }}">{{ $kBadge['label'] }}</span>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered mb-0 align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="text-center" rowspan="2">#</th>
+                                <th rowspan="2">Nama Penerima</th>
+                                <th rowspan="2">Tujuan</th>
+                                @foreach ($kodePakanList as $kp)
+                                    <th class="text-center">{{ $kp->kode }}</th>
+                                @endforeach
+                                <th class="text-end" rowspan="2">Total KG</th>
+                                <th class="text-end" rowspan="2">Total OA</th>
+                                <th class="text-end" rowspan="2">Total PT SUM</th>
+                                <th class="text-center" rowspan="2">Status</th>
+                                @if ($po->isLocked())
+                                    <th class="text-center" rowspan="2">Aksi</th>
+                                @endif
+                            </tr>
+                            <tr>
+                                @foreach ($kodePakanList as $kp)
+                                    <th class="text-center text-muted small">(karung)</th>
+                                @endforeach
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($kendaraan->penerimas as $pi => $penerima)
+                                @php
+                                    $pBadge = $statusBadge[$penerima->status] ?? [
+                                        'color' => 'secondary',
+                                        'label' => $penerima->status,
+                                    ];
+                                    $pakanMap = $penerima->pakans->keyBy('kode_pakan_id');
+                                @endphp
+                                <tr>
+                                    <td class="text-center">{{ $pi + 1 }}</td>
+                                    <td>
+                                        {{ $penerima->nama_penerima }}
+                                        @if ($penerima->tujuan && $penerima->tujuan->type === 'gudang')
+                                            <span class="badge bg-info text-white ms-1"
+                                                title="Pakan akan otomatis masuk ke stok gudang saat ditandai Tiba">
+                                                <i class="fa fa-warehouse"></i> Gudang
+                                            </span>
+                                        @endif
+                                    </td>
+                                    <td>{{ $penerima->tujuan?->nama ?? '-' }}</td>
+                                    @foreach ($kodePakanList as $kp)
+                                        @php $pk = $pakanMap[$kp->id] ?? null; @endphp
+                                        <td class="text-center">
+                                            @if ($pk)
+                                                <span
+                                                    title="OA: Rp {{ number_format($pk->ongkos_oa, 0, ',', '.') }}/kg · PT: Rp {{ number_format($pk->harga_pt_sum, 0, ',', '.') }}/kg">
+                                                    {{ number_format($pk->jumlah_karung, 0, ',', '.') }}
+                                                </span>
+                                            @else
+                                                <span class="text-muted">—</span>
+                                            @endif
+                                        </td>
+                                    @endforeach
+                                    <td class="text-end">{{ number_format($penerima->total_kg, 0, ',', '.') }}</td>
+                                    <td class="text-end">Rp {{ number_format($penerima->total_oa, 0, ',', '.') }}</td>
+                                    <td class="text-end">Rp {{ number_format($penerima->total_pt_sum, 0, ',', '.') }}</td>
+                                    <td class="text-center">
+                                        <span class="badge bg-{{ $pBadge['color'] }}">{{ $pBadge['label'] }}</span>
+                                        @if ($penerima->validasi_oleh)
+                                            <div class="text-muted small mt-1">{{ $penerima->validasi_oleh }}</div>
+                                            <div class="text-muted small">{{ $penerima->tiba_at?->format('d/m H:i') }}
+                                            </div>
+                                        @endif
+                                    </td>
+                                    @if ($po->isLocked())
+                                        <td class="text-center">
+                                            @if ($kendaraan->status === 'pending')
+                                                @if ($pi === 0)
+                                                    <button class="btn btn-xs btn-warning btn-aksi-kendaraan"
+                                                        data-id="{{ $kendaraan->id }}"
+                                                        data-polisi="{{ $kendaraan->no_polisi }}" data-target="berangkat">
+                                                        <i class="fa fa-truck"></i> Berangkat
+                                                    </button>
+                                                    <button class="btn btn-xs btn-outline-danger btn-aksi-kendaraan ms-1"
+                                                        data-id="{{ $kendaraan->id }}"
+                                                        data-polisi="{{ $kendaraan->no_polisi }}" data-target="batal">
+                                                        <i class="fa fa-times"></i> Batal
+                                                    </button>
+                                                @else
+                                                    <span class="text-muted small">—</span>
+                                                @endif
+                                            @elseif ($kendaraan->status === 'berangkat')
+                                                {{-- Kendaraan sedang jalan — aksi per penerima --}}
+                                                @if (in_array($penerima->status, ['pending', 'berangkat']))
+                                                    <button class="btn btn-xs btn-info text-white btn-selesai-penerima"
+                                                        data-id="{{ $penerima->id }}"
+                                                        data-nama="{{ $penerima->nama_penerima }}"
+                                                        data-tujuan-type="{{ $penerima->tujuan?->type ?? '' }}">
+                                                        <i class="fa fa-map-marker"></i> Tiba
+                                                    </button>
+                                                @elseif ($penerima->status === 'tiba')
+                                                    {{-- Sudah tiba — pilih: Selesai langsung atau Lansir --}}
+                                                    @if ($penerima->tujuan && $penerima->tujuan->type === 'gudang')
+                                                        {{-- Jika gudang, langsung selesai (stok sudah masuk otomatis) --}}
+                                                        <button class="btn btn-xs btn-success btn-aksi-penerima"
+                                                            data-id="{{ $penerima->id }}"
+                                                            data-nama="{{ $penerima->nama_penerima }}"
+                                                            data-target="selesai">
+                                                            <i class="fa fa-check"></i> Selesai
+                                                        </button>
+                                                        {{-- Tombol lansir gudang untuk pengeluaran stok --}}
+                                                        <a href="{{ route('gudang.stok.show', ['id' => $penerima->tujuan_id]) }}"
+                                                            class="btn btn-xs btn-warning ms-1">
+                                                            <i class="fa fa-truck"></i> Lihat Stok
+                                                        </a>
+                                                    @else
+                                                        {{-- Jika bukan gudang, proses lansir penerima normal --}}
+                                                        <button class="btn btn-xs btn-success btn-aksi-penerima"
+                                                            data-id="{{ $penerima->id }}"
+                                                            data-nama="{{ $penerima->nama_penerima }}"
+                                                            data-target="selesai">
+                                                            <i class="fa fa-check"></i> Selesai
+                                                        </button>
+                                                        <a href="{{ route('po-penerima.lansir-page', encrypt($penerima->id)) }}"
+                                                            class="btn btn-xs btn-warning ms-1">
+                                                            <i class="fa fa-truck"></i> Lansir
+                                                        </a>
+                                                    @endif
+                                                    @if ($penerima->bukti_tiba)
+                                                        <a href="{{ asset('storage/' . $penerima->bukti_tiba) }}"
+                                                            target="_blank" class="btn btn-xs btn-outline-secondary ms-1">
+                                                            <i class="fa fa-file"></i> Bukti
+                                                        </a>
+                                                    @endif
+                                                @elseif ($penerima->status === 'selesai')
+                                                    @if ($penerima->tujuan && $penerima->tujuan->type === 'gudang')
+                                                        {{-- Jika gudang, tampilkan link ke lansir gudang --}}
+                                                        <a href="{{ route('gudang.lansir.index') }}"
+                                                            class="btn btn-xs btn-warning">
+                                                            <i class="fa fa-truck"></i> Lansir Gudang
+                                                        </a>
+                                                    @else
+                                                        {{-- Jika bukan gudang, tampilkan riwayat lansir penerima --}}
+                                                        @if ($penerima->lansirs->count() > 0)
+                                                            <a href="{{ route('po-penerima.lansir-page', encrypt($penerima->id)) }}"
+                                                                class="btn btn-xs btn-info text-white">
+                                                                <i class="fa fa-history"></i> Riwayat Lansir
+                                                            </a>
+                                                        @endif
+                                                    @endif
+                                                    @if ($penerima->bukti_tiba)
+                                                        <a href="{{ asset('storage/' . $penerima->bukti_tiba) }}"
+                                                            target="_blank" class="btn btn-xs btn-outline-secondary ms-1">
+                                                            <i class="fa fa-file"></i> Bukti
+                                                        </a>
+                                                    @endif
+                                                @else
+                                                    <span class="text-muted small">—</span>
+                                                @endif
+                                            @elseif ($kendaraan->status === 'selesai')
+                                                @if ($penerima->tujuan && $penerima->tujuan->type === 'gudang')
+                                                    {{-- Jika gudang, tampilkan link ke lansir gudang --}}
+                                                    <a href="{{ route('gudang.lansir.index') }}"
+                                                        class="btn btn-xs btn-warning">
+                                                        <i class="fa fa-truck"></i> Lansir Gudang
+                                                    </a>
+                                                @else
+                                                    {{-- Jika bukan gudang, tampilkan riwayat lansir penerima --}}
+                                                    @if ($penerima->lansirs->count() > 0)
+                                                        <a href="{{ route('po-penerima.lansir-page', encrypt($penerima->id)) }}"
+                                                            class="btn btn-xs btn-info text-white">
+                                                            <i class="fa fa-history"></i> Riwayat Lansir
+                                                        </a>
+                                                    @endif
+                                                @endif
+                                                @if ($penerima->bukti_tiba)
+                                                    <a href="{{ asset('storage/' . $penerima->bukti_tiba) }}"
+                                                        target="_blank" class="btn btn-xs btn-outline-secondary ms-1">
+                                                        <i class="fa fa-file"></i> Bukti
+                                                    </a>
+                                                @endif
+                                            @else
+                                                <span class="text-muted small">—</span>
+                                            @endif
+                                        </td>
+                                    @endif
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="{{ 7 + $kodePakanList->count() }}" class="text-center text-muted py-2">
+                                        Belum ada penerima.
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                        @if ($kendaraan->penerimas->count() > 0)
+                            <tfoot class="table-light fw-semibold">
+                                <tr>
+                                    <td colspan="{{ 3 }}" class="text-end">Subtotal kendaraan</td>
+                                    @foreach ($kodePakanList as $kp)
+                                        <td class="text-center">
+                                            {{ number_format($kendaraan->penerimas->flatMap->pakans->where('kode_pakan_id', $kp->id)->sum('jumlah_karung'), 0, ',', '.') }}
+                                        </td>
+                                    @endforeach
+                                    <td class="text-end">{{ number_format($kendaraan->total_kg, 0, ',', '.') }}</td>
+                                    <td class="text-end">Rp {{ number_format($kendaraan->total_oa, 0, ',', '.') }}</td>
+                                    <td class="text-end">Rp {{ number_format($kendaraan->total_pt_sum, 0, ',', '.') }}
+                                    </td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        @endif
+                    </table>
+                </div>
+            </div>
+        </div>
+    @empty
+        <div class="alert alert-info">Belum ada kendaraan dalam PO ini.</div>
+    @endforelse
+
+    {{-- Grand Total --}}
+    @if ($po->kendaraans->count() > 0)
+        <div class="card mb-3 border-dark">
+            <div class="card-body py-2">
+                <div class="row g-3 text-center">
+                    <div class="col-md-4">
+                        <div class="text-muted small">Grand Total KG</div>
+                        <div class="fw-bold fs-5">{{ number_format($grandTotalKg, 0, ',', '.') }} kg</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-muted small">Grand Total OA</div>
+                        <div class="fw-bold fs-5 text-primary">Rp {{ number_format($grandTotalOa, 0, ',', '.') }}</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-muted small">Grand Total PT SUM</div>
+                        <div class="fw-bold fs-5 text-success">Rp {{ number_format($grandTotalPtSum, 0, ',', '.') }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- Modal: Tiba (upload bukti + validator) --}}
+    <div class="modal fade" id="modalSelesai" tabindex="-1">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header py-2">
+                    <h6 class="modal-title">Tandai Tiba — <span id="selesaiNama"></span></h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">Pakan sudah tiba di lokasi penerima. Setelah ini pilih
+                        <strong>Selesai</strong> (langsung) atau <strong>Lansir</strong> (proses lansir dulu).
+                    </p>
+                    <div class="alert alert-info py-2 mb-3" id="notifGudang" style="display:none;">
+                        <i class="fa fa-info-circle"></i> <strong>Tujuan Gudang:</strong> Pakan akan otomatis masuk ke stok
+                        gudang setelah ditandai tiba.
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label form-label-sm">Nama Validator <span class="text-danger">*</span></label>
+                        <input type="text" id="selesaiValidator" class="form-control form-control-sm"
+                            placeholder="Nama admin / petugas">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label form-label-sm">Bukti Tiba <span class="text-danger">*</span></label>
+                        <input type="file" id="selesaiBukti" class="form-control form-control-sm"
+                            accept=".jpg,.jpeg,.png,.pdf">
+                        <small class="text-muted">JPG, PNG, PDF · Maks 5MB</small>
+                    </div>
+                    <div id="errSelesai" class="text-danger small mt-1" style="display:none"></div>
+                </div>
+                <div class="modal-footer py-2">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-info text-white btn-sm" id="btnKonfirmasiSelesai">
+                        <i class="fa fa-map-marker"></i> Konfirmasi Tiba
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if ($po->isLocked())
+        <script>
+            var activePenerimaId = null;
+
+            // Tombol Berangkat / Batal — aksi di level KENDARAAN
+            $(document).on('click', '.btn-aksi-kendaraan', function() {
+                var id = $(this).data('id');
+                var polisi = $(this).data('polisi');
+                var target = $(this).data('target');
+                var label = target === 'berangkat' ? 'Berangkat' : 'Batal';
+
+                alertify.confirm(
+                    label + ' — ' + polisi,
+                    'Tandai kendaraan <strong>' + polisi + '</strong> sebagai <strong>' + label + '</strong>?' +
+                    (target === 'berangkat' ?
+                        '<br><small class="text-muted">Semua penerima di kendaraan ini otomatis sedang diantar.</small>' :
+                        ''),
+                    function() {
+                        $.ajax({
+                            url: '/purchase-order/kendaraan/' + id + '/status',
+                            method: 'POST',
+                            data: {
+                                _token: '{{ csrf_token() }}',
+                                status: target
+                            },
+                            success: function(res) {
+                                if (res.success) {
+                                    alertify.success(res.message);
+                                    setTimeout(function() {
+                                        location.reload();
+                                    }, 700);
+                                } else {
+                                    alertify.error(res.message);
+                                }
+                            },
+                            error: function() {
+                                alertify.error('Gagal memperbarui status.');
+                            }
+                        });
+                    },
+                    function() {}
+                ).set('labels', {
+                    ok: label,
+                    cancel: 'Batal'
+                });
+            });
+
+            // Tombol Tiba — buka modal upload bukti
+            $(document).on('click', '.btn-selesai-penerima', function() {
+                activePenerimaId = $(this).data('id');
+                var namaPenerima = $(this).data('nama');
+                var tujuanType = $(this).data('tujuan-type');
+
+                $('#selesaiNama').text(namaPenerima);
+                $('#selesaiValidator').val('');
+                $('#selesaiBukti').val('');
+                $('#errSelesai').hide().text('');
+
+                // Tampilkan notifikasi jika tujuan adalah gudang
+                if (tujuanType === 'gudang') {
+                    $('#notifGudang').show();
+                } else {
+                    $('#notifGudang').hide();
+                }
+
+                new bootstrap.Modal(document.getElementById('modalSelesai')).show();
+            });
+
+            // Konfirmasi Tiba
+            $('#btnKonfirmasiSelesai').on('click', function() {
+                var validator = $('#selesaiValidator').val().trim();
+                var file = $('#selesaiBukti')[0].files[0];
+                $('#errSelesai').hide().text('');
+
+                if (!validator) {
+                    $('#errSelesai').text('Nama validator wajib diisi.').show();
+                    return;
+                }
+                if (!file) {
+                    $('#errSelesai').text('Bukti tiba wajib diunggah.').show();
+                    return;
+                }
+
+                var fd = new FormData();
+                fd.append('_token', '{{ csrf_token() }}');
+                fd.append('status', 'tiba');
+                fd.append('validasi_oleh', validator);
+                fd.append('bukti_tiba', file);
+
+                $(this).prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i>');
+
+                $.ajax({
+                    url: '/purchase-order/penerima/' + activePenerimaId + '/status',
+                    method: 'POST',
+                    data: fd,
+                    processData: false,
+                    contentType: false,
+                    success: function(res) {
+                        if (res.success) {
+                            alertify.success(res.message);
+                            bootstrap.Modal.getInstance(document.getElementById('modalSelesai')).hide();
+                            setTimeout(function() {
+                                location.reload();
+                            }, 700);
+                        } else {
+                            $('#errSelesai').text(res.message).show();
+                        }
+                    },
+                    error: function(xhr) {
+                        var msg = xhr.responseJSON?.errors ?
+                            Object.values(xhr.responseJSON.errors).flat().join(' ') :
+                            (xhr.responseJSON?.message || 'Gagal menyimpan.');
+                        $('#errSelesai').text(msg).show();
+                    },
+                    complete: function() {
+                        $('#btnKonfirmasiSelesai').prop('disabled', false).html(
+                            '<i class="fa fa-map-marker"></i> Konfirmasi Tiba');
+                    }
+                });
+            });
+
+            // Tombol Selesai langsung (dari status tiba, tanpa modal)
+            $(document).on('click', '.btn-aksi-penerima', function() {
+                var id = $(this).data('id');
+                var nama = $(this).data('nama');
+                var target = $(this).data('target');
+                if (target !== 'selesai') return;
+
+                alertify.confirm(
+                    'Selesai — ' + nama,
+                    'Tandai penerima <strong>' + nama + '</strong> sebagai <strong>Selesai</strong>?',
+                    function() {
+                        $.ajax({
+                            url: '/purchase-order/penerima/' + id + '/status',
+                            method: 'POST',
+                            data: {
+                                _token: '{{ csrf_token() }}',
+                                status: 'selesai'
+                            },
+                            success: function(res) {
+                                if (res.success) {
+                                    alertify.success(res.message);
+                                    setTimeout(function() {
+                                        location.reload();
+                                    }, 700);
+                                } else {
+                                    alertify.error(res.message);
+                                }
+                            },
+                            error: function() {
+                                alertify.error('Gagal memperbarui status.');
+                            }
+                        });
+                    },
+                    function() {}
+                ).set('labels', {
+                    ok: 'Selesai',
+                    cancel: 'Batal'
+                });
+            });
+        </script>
+    @endif
+@endsection

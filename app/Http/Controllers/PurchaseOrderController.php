@@ -1,0 +1,848 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Exports\ExportToPT;
+use App\Exports\PurchaseOrderExport;
+use App\Models\Cv;
+use App\Models\KodePakan;
+use App\Models\PoItemLansir;
+use App\Models\PoKendaraan;
+use App\Models\PoLansirMobil;
+use App\Models\PoLansirTim;
+use App\Models\PoPenerima;
+use App\Models\PoPenerimaLansir;
+use App\Models\PoPenerimaPakan;
+use App\Models\PurchaseOrder;
+use App\Models\PurchaseOrderItem;
+use App\Models\Supplier;
+use App\Models\Tujuan;
+use App\Services\Datatables\PurchaseOrderService;
+use App\Services\GudangStokService;
+use Exception;
+use Illuminate\Database\QueryException;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Maatwebsite\Excel\Facades\Excel;
+
+class PurchaseOrderController extends Controller
+{
+    protected $poService;
+
+    protected $gudangStokService;
+
+    public function __construct(PurchaseOrderService $poService, GudangStokService $gudangStokService)
+    {
+        $this->poService = $poService;
+        $this->gudangStokService = $gudangStokService;
+    }
+
+    public function export(Request $request)
+    {
+        $cvId = $request->cv_id ?? session('active_cv');
+        $from = $request->from;
+        $to = $request->to;
+
+        $filename = 'po-selesai-'.now()->format('Ymd-His').'.xlsx';
+
+        return Excel::download(new PurchaseOrderExport($cvId, $from, $to), $filename);
+    }
+
+    public function exportToPT(string $id)
+    {
+        try {
+            $po = PurchaseOrder::with(['cv', 'items.tujuan', 'items.supplier', 'items.penerimaList'])
+                ->findOrFail(decrypt($id));
+
+            $filename = 'PO-'.$po->no_po.'-'.now()->format('Ymd').'.xlsx';
+
+            return Excel::download(new ExportToPT($po), $filename);
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', 'Gagal export: '.$e->getMessage());
+        }
+    }
+
+    public function exportPo(string $id)
+    {
+        try {
+            $po = PurchaseOrder::with([
+                'cv',
+                'kendaraans.supplier',
+                'kendaraans.penerimas.pakans.kodePakan',
+                'kendaraans.penerimas.tujuan',
+            ])->findOrFail(decrypt($id));
+
+            $filename = 'PO-'.$po->no_po.'-'.now()->format('Ymd').'.xlsx';
+
+            return Excel::download(new PurchaseOrderExport($po), $filename);
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', 'Gagal export: '.$e->getMessage());
+        }
+    }
+
+    public function index(Request $request)
+    {
+        if ($request->ajax()) {
+            $activeCvId = session('active_cv');
+
+            $query = PurchaseOrder::with(['cv', 'kendaraans'])
+                ->withCount('kendaraans');
+
+            if ($activeCvId) {
+                $query->where('cv_id', $activeCvId);
+            }
+
+            return $this->poService->getData($query);
+        }
+
+        return view('pages.purchase-order.index');
+    }
+
+    public function create()
+    {
+        $activeCvId = session('active_cv');
+        $cvList = Cv::withOmzet();
+        $suppliers = Supplier::orderBy('nama')->get();
+        $kodePakans = KodePakan::orderBy('kode')->get();
+        $tujuans = Tujuan::where('is_aktif', true)->orderBy('nama')->get();
+
+        return view('pages.purchase-order.create', compact('cvList', 'activeCvId', 'suppliers', 'kodePakans', 'tujuans'));
+    }
+
+    public function store(Request $request)
+    {
+        $request->validate([
+            'no_po' => 'required|string|max:100|unique:purchase_orders,no_po',
+            'tanggal_po' => 'required|date',
+            'cv_id' => 'nullable|exists:cv,id',
+            'catatan' => 'nullable|string',
+            'kendaraan' => 'required|array|min:1',
+            'kendaraan.*.no_polisi' => 'required|string|max:20',
+            'kendaraan.*.nama_sopir' => 'nullable|string|max:255',
+            'kendaraan.*.no_surat_jalan' => 'nullable|string|max:100',
+            'kendaraan.*.supplier_id' => 'nullable|exists:suppliers,id',
+            'kendaraan.*.jumlah_kg' => 'nullable|string|max:100',
+            'kendaraan.*.jumlah_karung' => 'nullable|string|max:100',
+
+            'kendaraan.*.penerima' => 'nullable|array|min:1',
+            'kendaraan.*.penerima.*.nama_penerima' => 'nullable|string|max:255',
+            'kendaraan.*.penerima.*.tujuan_id' => 'nullable|exists:tujuan,id',
+            'kendaraan.*.penerima.*.pakans' => 'nullable|array|min:1',
+            'kendaraan.*.penerima.*.pakans.*.kode_pakan_id' => 'nullable|exists:kode_pakan,id',
+            'kendaraan.*.penerima.*.pakans.*.jumlah_kg' => 'nullable|numeric|min:0.01',
+            'kendaraan.*.penerima.*.pakans.*.ongkos_oa' => 'nullable|numeric|min:0',
+            'kendaraan.*.penerima.*.pakans.*.harga_pt_sum' => 'nullable|numeric|min:0',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $po = PurchaseOrder::create([
+                'no_po' => strtoupper($request->no_po),
+                'tanggal_po' => $request->tanggal_po,
+                'cv_id' => $request->cv_id,
+                'catatan' => $request->catatan,
+                'status' => PurchaseOrder::STATUS_DRAFT,
+            ]);
+
+            foreach ($request->kendaraan as $kendaraanData) {
+                $kendaraan = PoKendaraan::create([
+                    'po_id' => $po->id,
+                    'no_polisi' => strtoupper(trim($kendaraanData['no_polisi'])),
+                    'nama_sopir' => $kendaraanData['nama_sopir'] ?? null,
+                    'no_surat_jalan' => $kendaraanData['no_surat_jalan'] ?? null,
+                    'supplier_id' => $kendaraanData['supplier_id'] ?? null,
+                    'jumlah_kg' => $kendaraanData['jumlah_kg'] ?? null,
+                    'jumlah_karung' => isset($kendaraanData['jumlah_kg']) && $kendaraanData['jumlah_kg'] > 0
+                        ? (int) ceil($kendaraanData['jumlah_kg'] / 50)
+                        : null,
+                    'status' => 'pending',
+                ]);
+
+                foreach ($kendaraanData['penerima'] ?? [] as $penerimaData) {
+                    // Skip penerima yang nama_penerima-nya kosong
+                    if (empty(trim($penerimaData['nama_penerima'] ?? ''))) {
+                        continue;
+                    }
+
+                    $penerima = PoPenerima::create([
+                        'po_kendaraan_id' => $kendaraan->id,
+                        'nama_penerima' => $penerimaData['nama_penerima'],
+                        'tujuan_id' => $penerimaData['tujuan_id'] ?? null,
+                        'status' => 'pending',
+                    ]);
+
+                    foreach ($penerimaData['pakans'] ?? [] as $pakanData) {
+                        // Skip pakan yang kode_pakan_id atau jumlah_kg-nya kosong
+                        if (empty($pakanData['kode_pakan_id']) || empty($pakanData['jumlah_kg'])) {
+                            continue;
+                        }
+
+                        PoPenerimaPakan::create([
+                            'po_penerima_id' => $penerima->id,
+                            'kode_pakan_id' => $pakanData['kode_pakan_id'],
+                            'jumlah_kg' => $pakanData['jumlah_kg'],
+                            'ongkos_oa' => $pakanData['ongkos_oa'] ?? 0,
+                            'harga_pt_sum' => $pakanData['harga_pt_sum'] ?? 0,
+                        ]);
+                    }
+                }
+            }
+
+            DB::commit();
+
+            return redirect()->route('purchase-order.edit', encrypt($po->id))
+                ->with('success', 'PO berhasil dibuat.');
+        } catch (QueryException $e) {
+            DB::rollBack();
+            if ($e->getCode() === '23000') {
+                return redirect()->back()
+                    ->with('error', 'Kode pakan duplikat pada penerima yang sama.')
+                    ->withInput();
+            }
+
+            return redirect()->back()->with('error', 'Gagal menyimpan: '.$e->getMessage())->withInput();
+        } catch (Exception $e) {
+            DB::rollBack();
+            Log::error('store PO gagal: '.$e->getMessage());
+
+            return redirect()->back()->with('error', 'Gagal menyimpan: '.$e->getMessage())->withInput();
+        }
+    }
+
+    public function show(string $id)
+    {
+        try {
+            $po = PurchaseOrder::with([
+                'cv',
+                'kendaraans.supplier',
+                'kendaraans.penerimas.pakans.kodePakan',
+                'kendaraans.penerimas.tujuan',
+                'kendaraans.penerimas.oaPayment',
+            ])->findOrFail(decrypt($id));
+
+            // Kode pakan unik dalam PO untuk kolom pivot
+            $kodePakanList = $po->kendaraans
+                ->flatMap(fn ($k) => $k->penerimas)
+                ->flatMap(fn ($p) => $p->pakans)
+                ->map(fn ($pk) => $pk->kodePakan)
+                ->filter()
+                ->unique('id')
+                ->sortBy('kode')
+                ->values();
+
+            return view('pages.purchase-order.show', compact('po', 'kodePakanList'));
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', 'PO tidak ditemukan.');
+        }
+    }
+
+    public function edit(string $id)
+    {
+        try {
+            $po = PurchaseOrder::with([
+                'cv',
+                'kendaraans.supplier',
+                'kendaraans.penerimas.pakans.kodePakan',
+                'kendaraans.penerimas.tujuan',
+            ])->findOrFail(decrypt($id));
+
+            $cvList = Cv::withOmzet();
+            $tujuans = Tujuan::where('is_aktif', true)->orderBy('nama')->get();
+            $suppliers = Supplier::orderBy('nama')->get();
+            $kodePakans = KodePakan::orderBy('kode')->get();
+
+            return view('pages.purchase-order.sunting', compact('po', 'cvList', 'tujuans', 'suppliers', 'kodePakans'));
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', 'Gagal memuat halaman!');
+        }
+    }
+
+    public function update(Request $request, string $id)
+    {
+        $request->validate([
+            'catatan' => 'nullable|string',
+            'cv_id' => 'nullable|exists:cv,id',
+            'kendaraan' => 'required|array|min:1',
+            'kendaraan.*.id' => 'nullable|exists:po_kendaraan,id',
+            'kendaraan.*.no_polisi' => 'required|string|max:20',
+            'kendaraan.*.nama_sopir' => 'nullable|string|max:255',
+            'kendaraan.*.no_surat_jalan' => 'nullable|string|max:100',
+            'kendaraan.*.supplier_id' => 'nullable|exists:suppliers,id',
+            'kendaraan.*.jumlah_kg' => 'nullable|numeric|min:0',
+            'kendaraan.*.status' => 'nullable|in:pending,berangkat,selesai,batal',
+            'kendaraan.*.penerima' => 'required|array',
+            'kendaraan.*.penerima.*.id' => 'nullable|exists:po_penerima,id',
+            'kendaraan.*.penerima.*.nama_penerima' => 'required|string|max:255',
+            'kendaraan.*.penerima.*.tujuan_id' => 'required|exists:tujuan,id',
+            'kendaraan.*.penerima.*.status' => 'required|in:pending,berangkat,tiba,selesai,batal',
+            'kendaraan.*.penerima.*.pakans' => 'required|array',
+            'kendaraan.*.penerima.*.pakans.*.kode_pakan_id' => 'required|exists:kode_pakan,id',
+            'kendaraan.*.penerima.*.pakans.*.jumlah_kg' => 'required|numeric|min:0.01',
+            'kendaraan.*.penerima.*.pakans.*.ongkos_oa' => 'required|numeric|min:0',
+            'kendaraan.*.penerima.*.pakans.*.harga_pt_sum' => 'nullable|numeric|min:0',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $po = PurchaseOrder::findOrFail($id);
+
+            if ($po->isLocked()) {
+                return redirect()->back()->with('error', 'PO sudah terkunci.');
+            }
+
+            $po->update(['catatan' => $request->catatan, 'cv_id' => $request->cv_id]);
+
+            $submittedKendaraanIds = collect($request->kendaraan)->pluck('id')->filter()->values();
+            $po->kendaraans()->whereNotIn('id', $submittedKendaraanIds)->delete();
+
+            foreach ($request->kendaraan as $kendaraanData) {
+                $kendaraanId = $kendaraanData['id'] ?? null;
+
+                $kendaraan = $kendaraanId
+                    ? PoKendaraan::where('id', $kendaraanId)->where('po_id', $po->id)->firstOrFail()
+                    : new PoKendaraan(['po_id' => $po->id]);
+
+                $kendaraan->fill([
+                    'no_polisi' => strtoupper(trim($kendaraanData['no_polisi'])),
+                    'nama_sopir' => $kendaraanData['nama_sopir'] ?? null,
+                    'no_surat_jalan' => $kendaraanData['no_surat_jalan'] ?? null,
+                    'supplier_id' => $kendaraanData['supplier_id'] ?? null,
+                    'jumlah_kg' => $kendaraanData['jumlah_kg'] ?? null,
+                    'jumlah_karung' => isset($kendaraanData['jumlah_kg']) && $kendaraanData['jumlah_kg'] > 0
+                        ? (int) ceil($kendaraanData['jumlah_kg'] / 50)
+                        : null,
+                    'status' => $kendaraanData['status'] ?? 'pending',
+                ]);
+                $kendaraan->save();
+                $statusKendaraan = $kendaraanData['status'] ?? 'pending';
+
+                $submittedPenerimaIds = collect($kendaraanData['penerima'] ?? [])->pluck('id')->filter()->values();
+                $kendaraan->penerimas()->whereNotIn('id', $submittedPenerimaIds)->delete();
+
+                foreach ($kendaraanData['penerima'] ?? [] as $penerimaData) {
+                    if (empty(trim($penerimaData['nama_penerima'] ?? ''))) {
+                        continue;
+                    }
+
+                    $penerimaId = $penerimaData['id'] ?? null;
+
+                    $penerima = $penerimaId
+                        ? PoPenerima::where('id', $penerimaId)->where('po_kendaraan_id', $kendaraan->id)->firstOrFail()
+                        : new PoPenerima(['po_kendaraan_id' => $kendaraan->id]);
+
+                    $penerima->fill([
+                        'nama_penerima' => $penerimaData['nama_penerima'],
+                        'tujuan_id' => $penerimaData['tujuan_id'] ?? null,
+                        'status' => $penerimaData['status'] === 'pending' && $statusKendaraan === 'berangkat' ? 'berangkat' : $penerimaData['status'],
+                    ]);
+                    $penerima->save();
+
+                    // Sync pakans — skip pakan kosong
+                    $penerima->pakans()->delete();
+                    foreach ($penerimaData['pakans'] ?? [] as $pakanData) {
+                        if (empty($pakanData['kode_pakan_id']) || empty($pakanData['jumlah_kg'])) {
+                            continue;
+                        }
+                        PoPenerimaPakan::create([
+                            'po_penerima_id' => $penerima->id,
+                            'kode_pakan_id' => $pakanData['kode_pakan_id'],
+                            'jumlah_kg' => $pakanData['jumlah_kg'],
+                            'ongkos_oa' => $pakanData['ongkos_oa'] ?? 0,
+                            'harga_pt_sum' => $pakanData['harga_pt_sum'] ?? 0,
+                        ]);
+                    }
+                }
+            }
+
+            DB::commit();
+
+            return redirect()->back()->with('success', 'Data PO berhasil diperbarui.');
+        } catch (QueryException $e) {
+            DB::rollBack();
+            if ($e->getCode() === '23000') {
+                return redirect()->back()
+                    ->with('error', 'Kode pakan duplikat pada penerima yang sama.')
+                    ->withInput();
+            }
+
+            return redirect()->back()->with('error', 'Gagal memperbarui: '.$e->getMessage());
+        } catch (Exception $e) {
+            DB::rollBack();
+
+            return redirect()->back()->with('error', 'Gagal memperbarui: '.$e->getMessage());
+        }
+    }
+
+    public function tujuanByCv(string $cvId)
+    {
+        $tujuans = Tujuan::where('cv_id', $cvId)->where('is_aktif', true)->orderBy('nama')->get(['id', 'nama', 'type']);
+
+        return response()->json($tujuans);
+    }
+
+    // ── Lansir per penerima ───────────────────────────────────────
+
+    public function penerimaLansirPage(string $penerimaId)
+    {
+        try {
+            $penerima = PoPenerima::with([
+                'kendaraan.po.cv',
+                'kendaraan.supplier',
+                'tujuan',
+                'pakans.kodePakan',
+                'lansirs.mobils',
+                'lansirs.tims',
+            ])->findOrFail(decrypt($penerimaId));
+
+            // Allow access if status is 'tiba' (for adding lansir) or 'selesai' (for viewing riwayat)
+            if (! in_array($penerima->status, ['tiba', 'selesai'])) {
+                return redirect()->back()->with('error', 'Halaman lansir hanya dapat diakses setelah penerima berstatus Tiba atau Selesai.');
+            }
+
+            return view('pages.purchase-order.penerima-lansir', compact('penerima'));
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', 'Gagal memuat halaman lansir.');
+        }
+    }
+
+    public function penerimaStoreLansir(Request $request, string $penerimaId)
+    {
+        $request->validate([
+            'validasi_oleh' => 'required|string|max:255',
+            'tanggal_lansir' => 'required|date',
+            'mobils' => 'required|array|min:1',
+            'mobils.*.no_polisi' => 'required|string|max:20',
+            'mobils.*.nama_sopir' => 'nullable|string|max:255',
+            'mobils.*.berat' => 'nullable|numeric|min:0',
+            'mobils.*.jumlah_karung' => 'nullable|integer|min:0',
+            'mobils.*.ongkos' => 'nullable|numeric|min:0',
+            'mobils.*.keterangan' => 'nullable|string',
+            'tims' => 'nullable|array',
+            'tims.*.nama_tim' => 'required|string|max:255',
+            'tims.*.berat' => 'nullable|numeric|min:0',
+            'tims.*.jumlah_karung' => 'nullable|integer|min:0',
+            'tims.*.upah' => 'nullable|numeric|min:0',
+            'tims.*.keterangan' => 'nullable|string',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $penerima = PoPenerima::with('kendaraan.po')->findOrFail($penerimaId);
+
+            if ($penerima->status !== 'tiba') {
+                return redirect()->back()->with('error', 'Lansir hanya bisa dilakukan setelah penerima berstatus Tiba.');
+            }
+
+            if (! $penerima->kendaraan->po->isLocked()) {
+                return redirect()->back()->with('error', 'PO harus dikunci terlebih dahulu.');
+            }
+
+            $lansir = PoPenerimaLansir::create([
+                'po_penerima_id' => $penerima->id,
+                'validasi_oleh' => $request->validasi_oleh,
+                'tanggal_lansir' => $request->tanggal_lansir,
+                'selesai_at' => now(),
+            ]);
+
+            foreach ($request->mobils as $mobil) {
+                if (empty(trim($mobil['no_polisi'] ?? ''))) {
+                    continue;
+                }
+                PoLansirMobil::create([
+                    'lansir_id' => $lansir->id,
+                    'no_polisi' => strtoupper(trim($mobil['no_polisi'])),
+                    'nama_sopir' => $mobil['nama_sopir'] ?? null,
+                    'berat' => $mobil['berat'] ?? null,
+                    'jumlah_karung' => (int) ($mobil['jumlah_karung'] ?? 0),
+                    'ongkos' => $mobil['ongkos'] ?? null,
+                    'keterangan' => $mobil['keterangan'] ?? null,
+                ]);
+            }
+
+            foreach ($request->tims ?? [] as $tim) {
+                if (empty(trim($tim['nama_tim'] ?? ''))) {
+                    continue;
+                }
+                PoLansirTim::create([
+                    'lansir_id' => $lansir->id,
+                    'nama_tim' => trim($tim['nama_tim']),
+                    'berat' => $tim['berat'] ?? null,
+                    'jumlah_karung' => (int) ($tim['jumlah_karung'] ?? 0),
+                    'upah' => $tim['upah'] ?? null,
+                    'keterangan' => $tim['keterangan'] ?? null,
+                ]);
+            }
+
+            DB::commit();
+
+            return redirect()->route('po-penerima.lansir-page', encrypt($penerima->id))
+                ->with('success', 'Data lansir berhasil disimpan.');
+        } catch (Exception $e) {
+            DB::rollBack();
+
+            return redirect()->back()->with('error', 'Gagal: '.$e->getMessage())->withInput();
+        }
+    }
+
+    // ── Kendaraan status action ───────────────────────────────────
+
+    public function kendaraanUpdateStatus(Request $request, string $kendaraanId)
+    {
+        $request->validate([
+            'status' => 'required|in:berangkat,selesai,batal',
+        ]);
+
+        try {
+            $kendaraan = PoKendaraan::with('po', 'penerimas')->findOrFail($kendaraanId);
+            $po = $kendaraan->po;
+
+            if (! $po->isLocked()) {
+                return response()->json(['success' => false, 'message' => 'PO harus dikunci terlebih dahulu.']);
+            }
+
+            $allowed = PoKendaraan::VALID_TRANSITIONS[$kendaraan->status] ?? [];
+            if (! in_array($request->status, $allowed)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Transisi dari '{$kendaraan->status}' ke '{$request->status}' tidak diizinkan.",
+                ]);
+            }
+
+            $kendaraan->update(['status' => $request->status]);
+
+            // Jika kendaraan berangkat, update semua penerima yang masih pending → berangkat
+            if ($request->status === 'berangkat') {
+                $kendaraan->penerimas()->where('status', 'pending')->update(['status' => 'berangkat']);
+            }
+
+            // Jika kendaraan batal, update semua penerima yang pending/berangkat → batal
+            if ($request->status === 'batal') {
+                $kendaraan->penerimas()->whereIn('status', ['pending', 'berangkat'])->update(['status' => 'batal']);
+            }
+
+            return response()->json(['success' => true, 'message' => 'Status kendaraan diperbarui.']);
+        } catch (Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Gagal: '.$e->getMessage()], 500);
+        }
+    }
+
+    // ── Penerima status actions ───────────────────────────────────
+
+    public function penerimaUpdateStatus(Request $request, string $penerimaId)
+    {
+        $request->validate([
+            'status' => 'required|in:berangkat,tiba,selesai,batal',
+            'validasi_oleh' => 'required_if:status,tiba|nullable|string|max:255',
+            'bukti_tiba' => 'required_if:status,tiba|nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
+        ], [
+            'validasi_oleh.required_if' => 'Nama validator wajib diisi saat menandai tiba.',
+            'bukti_tiba.required_if' => 'Bukti tiba wajib diunggah saat menandai tiba.',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $penerima = PoPenerima::with(['kendaraan.po', 'kendaraan.penerimas', 'tujuan', 'pakans.kodePakan'])->findOrFail($penerimaId);
+            $po = $penerima->kendaraan->po;
+
+            if (! $po->isLocked()) {
+                return response()->json(['success' => false, 'message' => 'PO harus dikunci terlebih dahulu.']);
+            }
+
+            $allowed = PoPenerima::VALID_TRANSITIONS[$penerima->status] ?? [];
+            if (! in_array($request->status, $allowed)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Transisi dari '{$penerima->status}' ke '{$request->status}' tidak diizinkan.",
+                ]);
+            }
+
+            $updateData = ['status' => $request->status];
+
+            // Saat tiba: simpan validator, waktu, dan bukti
+            if ($request->status === 'tiba') {
+                $updateData['validasi_oleh'] = $request->validasi_oleh;
+                $updateData['tiba_at'] = now();
+                if ($request->hasFile('bukti_tiba')) {
+                    $updateData['bukti_tiba'] = $request->file('bukti_tiba')->store('bukti-tiba', 'public');
+                }
+
+                // Jika tujuan adalah gudang, proses stok masuk
+                if ($penerima->tujuan && $penerima->tujuan->type === 'gudang') {
+                    foreach ($penerima->pakans as $pakan) {
+                        if (! $pakan->kode_pakan_id) {
+                            DB::rollBack();
+
+                            return response()->json([
+                                'success' => false,
+                                'message' => 'Kode pakan belum diisi untuk salah satu item.',
+                            ]);
+                        }
+
+                        $this->gudangStokService->prosesStokMasukPoPenerima($penerima, $pakan);
+                    }
+                }
+            }
+
+            $penerima->update($updateData);
+
+            // Jika selesai → cek apakah semua penerima kendaraan sudah selesai/batal
+            // → otomatis update kendaraan ke selesai
+            if ($request->status === 'selesai') {
+                $kendaraan = $penerima->kendaraan;
+                $kendaraan->load('penerimas');
+                $belumSelesai = $kendaraan->penerimas
+                    ->whereNotIn('status', ['selesai', 'batal'])
+                    ->count();
+
+                if ($belumSelesai === 0 && $kendaraan->penerimas->count() > 0) {
+                    $kendaraan->update(['status' => 'selesai']);
+                }
+            }
+
+            DB::commit();
+
+            return response()->json(['success' => true, 'message' => 'Status penerima diperbarui.']);
+        } catch (Exception $e) {
+            DB::rollBack();
+
+            return response()->json(['success' => false, 'message' => 'Gagal: '.$e->getMessage()], 500);
+        }
+    }
+
+    public function lock(string $id)
+    {
+        try {
+            $po = PurchaseOrder::with('kendaraans')->findOrFail($id);
+
+            if ($po->isLocked()) {
+                return response()->json(['success' => false, 'message' => 'PO sudah terkunci.']);
+            }
+
+            if (! $po->canLock()) {
+                $belumSelesai = $po->kendaraans->whereNotIn('status', ['selesai', 'batal', 'berangkat'])->count();
+
+                return response()->json([
+                    'success' => false,
+                    'message' => "Masih ada {$belumSelesai} kendaraan yang belum selesai atau batal.",
+                ]);
+            }
+
+            $po->update(['status' => PurchaseOrder::STATUS_LOCKED]);
+
+            return response()->json(['success' => true, 'message' => 'PO berhasil dikunci.']);
+        } catch (Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Gagal mengunci PO.'], 500);
+        }
+    }
+
+    public function unlock(string $id)
+    {
+        try {
+            $po = PurchaseOrder::findOrFail($id);
+
+            if (! $po->isLocked()) {
+                return response()->json(['success' => false, 'message' => 'PO belum terkunci.']);
+            }
+
+            $po->update(['status' => PurchaseOrder::STATUS_DRAFT]);
+
+            return response()->json(['success' => true, 'message' => 'PO berhasil dibuka kembali.']);
+        } catch (Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Gagal membuka kunci PO.'], 500);
+        }
+    }
+
+    public function destroy(string $id)
+    {
+        try {
+            $po = PurchaseOrder::findOrFail($id);
+
+            if ($po->isLocked()) {
+                return response()->json(['success' => false, 'message' => 'PO terkunci tidak dapat dihapus.']);
+            }
+
+            $po->delete();
+
+            return response()->json(['success' => true, 'message' => 'PO berhasil dihapus.']);
+        } catch (Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Gagal menghapus.'], 500);
+        }
+    }
+
+    // ── Legacy methods (purchase_order_items) ─────────────────────────────────
+
+    public function itemSelesai(Request $request, string $itemId)
+    {
+        $request->validate([
+            'validasi_oleh' => 'required|string|max:255',
+            'bukti_tiba' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120',
+        ]);
+
+        try {
+            $item = PurchaseOrderItem::with('tujuan')->findOrFail($itemId);
+
+            if ($item->status !== 'berangkat') {
+                return response()->json(['success' => false, 'message' => 'Status item tidak valid untuk diselesaikan.']);
+            }
+
+            $po = $item->po ?? PurchaseOrder::find($item->po_id);
+            if (! $po || ! $po->isLocked()) {
+                return response()->json(['success' => false, 'message' => 'PO harus dikunci terlebih dahulu.']);
+            }
+
+            $path = $request->file('bukti_tiba')->store('bukti-tiba', 'public');
+
+            DB::beginTransaction();
+            $item->update([
+                'status' => 'selesai',
+                'tiba_at' => now(),
+                'validasi_oleh' => $request->validasi_oleh,
+                'bukti_tiba' => $path,
+            ]);
+
+            if ($item->tujuan && $item->tujuan->type === 'gudang') {
+                if (! $item->kode_pakan_id) {
+                    return response()->json(['success' => false, 'message' => 'Kode pakan belum diisi.']);
+                }
+                $this->gudangStokService->prosesStokMasuk($item, $item->kode_pakan_id);
+            }
+
+            DB::commit();
+
+            return response()->json(['success' => true, 'message' => 'Item ditandai selesai.']);
+        } catch (Exception $e) {
+            DB::rollBack();
+            Log::error('itemSelesai gagal: '.$e->getMessage(), ['item_id' => $itemId]);
+
+            return response()->json(['success' => false, 'message' => 'Gagal: '.$e->getMessage()], 500);
+        }
+    }
+
+    public function lansirPage(string $itemId)
+    {
+        try {
+            $item = PurchaseOrderItem::with([
+                'po.cv', 'tujuan', 'supplier',
+                'lansirRecords.mobils',
+                'lansirRecords.tims',
+            ])->findOrFail(decrypt($itemId));
+
+            return view('pages.purchase-order.lansir', compact('item'));
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', 'Gagal memuat halaman!');
+        }
+    }
+
+    public function itemLansir(Request $request, string $itemId)
+    {
+        $request->validate([
+            'validasi_oleh' => 'required|string|max:255',
+            'mobils' => 'required|array|min:1',
+            'mobils.*.no_polisi' => 'required|string|max:20',
+            'mobils.*.nama_sopir' => 'nullable|string|max:255',
+            'mobils.*.berat' => 'nullable|numeric|min:0',
+            'mobils.*.jumlah_karung' => 'nullable|integer|min:0',
+            'mobils.*.ongkos' => 'nullable|numeric|min:0',
+            'tims' => 'nullable|array',
+            'tims.*.nama_tim' => 'required|string|max:255',
+            'tims.*.berat' => 'nullable|numeric|min:0',
+            'tims.*.jumlah_karung' => 'nullable|integer|min:0',
+            'tims.*.upah' => 'nullable|numeric|min:0',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $item = PurchaseOrderItem::findOrFail($itemId);
+            $po = PurchaseOrder::find($item->po_id);
+
+            if (! $po || ! $po->isLocked()) {
+                return redirect()->back()->with('error', 'PO harus dikunci terlebih dahulu.');
+            }
+
+            if (! in_array($item->status, ['berangkat', 'lansir'])) {
+                return redirect()->back()->with('error', 'Status item tidak valid untuk lansir.');
+            }
+
+            $item->update([
+                'status' => 'lansir',
+                'tiba_at' => $item->tiba_at ?? now(),
+                'validasi_oleh' => $request->validasi_oleh,
+            ]);
+
+            $lansir = PoItemLansir::create([
+                'po_item_id' => $item->id,
+                'validasi_oleh' => $request->validasi_oleh,
+                'selesai_at' => now(),
+            ]);
+
+            foreach ($request->mobils as $mobil) {
+                if (empty(trim($mobil['no_polisi'] ?? ''))) {
+                    continue;
+                }
+                PoLansirMobil::create([
+                    'lansir_id' => $lansir->id,
+                    'no_polisi' => strtoupper(trim($mobil['no_polisi'])),
+                    'nama_sopir' => $mobil['nama_sopir'] ?? null,
+                    'berat' => $mobil['berat'] ?? null,
+                    'jumlah_karung' => (int) ($mobil['jumlah_karung'] ?? 0),
+                    'ongkos' => $mobil['ongkos'] ?? null,
+                ]);
+            }
+
+            foreach ($request->tims ?? [] as $tim) {
+                if (empty(trim($tim['nama_tim'] ?? ''))) {
+                    continue;
+                }
+                PoLansirTim::create([
+                    'lansir_id' => $lansir->id,
+                    'nama_tim' => trim($tim['nama_tim']),
+                    'berat' => $tim['berat'] ?? null,
+                    'jumlah_karung' => (int) ($tim['jumlah_karung'] ?? 0),
+                    'upah' => $tim['upah'] ?? null,
+                ]);
+            }
+
+            DB::commit();
+
+            return redirect()->route('po-item.lansir-page', encrypt($item->id))
+                ->with('success', 'Data lansir berhasil disimpan.');
+        } catch (Exception $e) {
+            DB::rollBack();
+
+            return redirect()->back()->with('error', 'Gagal: '.$e->getMessage())->withInput();
+        }
+    }
+
+    public function lansirSelesai(Request $request, string $itemId)
+    {
+        $request->validate(['bukti_tiba' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120']);
+
+        try {
+            $item = PurchaseOrderItem::findOrFail($itemId);
+
+            if ($item->status !== 'lansir') {
+                return redirect()->back()->with('error', 'Item bukan dalam status lansir.');
+            }
+
+            if ($item->selesai_lansir_at) {
+                return redirect()->back()->with('error', 'Lansir sudah ditandai selesai sebelumnya.');
+            }
+
+            $path = $request->file('bukti_tiba')->store('bukti-tiba', 'public');
+            $item->update(['status' => 'selesai', 'bukti_tiba' => $path, 'selesai_lansir_at' => now()]);
+
+            return redirect()->route('po-item.lansir-page', encrypt($item->id))
+                ->with('success', 'Lansir ditandai selesai.');
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', 'Gagal: '.$e->getMessage());
+        }
+    }
+
+    public function lansirDetail(string $itemId)
+    {
+        $item = PurchaseOrderItem::with('lansirRecords')->findOrFail($itemId);
+
+        return response()->json(['item' => $item, 'lansirs' => $item->lansirRecords]);
+    }
+}

@@ -1,0 +1,122 @@
+@extends('layout.app')
+@section('content')
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="pull-right">
+                        <a href="{{ route('user.create') }}" class="btn btn-sm btn-primary"><i class="fa fa-plus"></i> Tambah
+                            User</a>
+                        <a href="#" class="btn btn-sm btn-warning" data-toggle="modal" data-target="#modalLoginAs"><i
+                                class="fa fa-plus"></i> Impersonate / Login As</a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <table class="table table-striped table-bordered" id="table">
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>Nama </th>
+                                <th>Email </th>
+                                <th>Roles</th>
+                                <th>Level Akun</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal fade" id="modalLoginAs" tabindex="-1" role="dialog" aria-labelledby="modelTitleId"
+        aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-gradient-primary">
+                    <h5 class="modal-title"><i class="fa fa-user" aria-hidden="true"></i> Login AS</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Nama User</th>
+                                <th>Usertype</th>
+                                <th><i class="fa fa-cogs" aria-hidden="true"></i></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        $(document).ready(function() {
+            table = $('#table').DataTable({
+
+                bAutoWidth: false,
+                bLengthChange: true,
+                iDisplayLength: 10,
+                searching: true,
+                processing: true,
+                serverSide: true,
+                bDestroy: true,
+                bStateSave: true,
+                ajax: {
+                    url: '/pengaturan/user'
+                },
+                columns: [{
+                        data: 'DT_RowIndex',
+                        orderable: false,
+                        searchable: false
+                    },
+
+                    {
+                        data: 'name',
+                        name: 'name'
+                    },
+                    {
+                        data: 'email',
+                        name: 'email'
+                    },
+                    {
+                        data: 'roles',
+                        name: 'roles',
+
+                    },
+                    {
+                        data: 'level_akun',
+                        name: 'level_akun'
+                    },
+                  
+                    {
+                        data: 'action',
+                        name: 'action'
+                    },
+
+                ],
+                aLengthMenu: [
+                    [10, 15, 25, 35, 50, 100, -1],
+                    [10, 15, 25, 35, 50, 100, "All"]
+                ],
+                responsive: !0
+            });
+
+            function confirmation(id) {
+                alertify.confirm("Konfirmasi!", "Apakah anda yakin menghapus data ini?", function() {
+                    $('#' + id).submit();
+                }, function() {
+
+                })
+            }
+        });
+    </script>
+@endsection
