@@ -56,8 +56,17 @@
                             <i class="fa fa-edit"></i> Edit
                         </a>
                     @endif
+
                     <a href="{{ route('purchase-order.export-po', encrypt($po->id)) }}" class="btn btn-sm btn-success">
                         <i class="fa fa-file-excel-o"></i> Export Excel
+                    </a>
+                    <a href="{{ route('purchase-order.export-po-pdf-supplier', encrypt($po->id)) }}"
+                        class="btn btn-sm btn-danger">
+                        <i class="fa fa-file-pdf-o"></i> PDF Supplier
+                    </a>
+                    <a href="{{ route('purchase-order.export-po-pdf-ptsum', encrypt($po->id)) }}"
+                        class="btn btn-sm btn-warning">
+                        <i class="fa fa-file-pdf-o"></i> PDF PT Sum
                     </a>
                     <a href="{{ route('rekap-po.show', encrypt($po->id)) }}" class="btn btn-sm btn-info text-white">
                         <i class="fa fa-table"></i> Rekap PO
@@ -91,9 +100,80 @@
                 <div class="d-flex align-items-center gap-2">
                     <span class="badge bg-primary">{{ number_format($kendaraan->total_kg, 0, ',', '.') }} kg</span>
                     <span class="badge bg-{{ $kBadge['color'] }}">{{ $kBadge['label'] }}</span>
+                    <button type="button" class="btn btn-xs btn-outline-info btn-lihat-gps"
+                        data-nopol="{{ $kendaraan->no_polisi }}" title="Lihat Lokasi GPS">
+                        <i class="fa fa-map-marker"></i> Lokasi
+                    </button>
                 </div>
             </div>
             <div class="card-body p-0">
+                {{-- Informasi Down Payment (DP) --}}
+                @if ($kendaraan->dp_nominal > 0)
+                    <div class="border-bottom bg-light p-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="mb-0 text-success"><i class="fa fa-money"></i> Informasi Down Payment (DP)</h6>
+                            @if ($kendaraan->dpPayment)
+                                <a href="{{ route('keuangan.oa.index') }}?search={{ $po->no_po }}"
+                                    class="btn btn-sm btn-outline-success" title="Lihat di Keuangan Pembayaran Supplier">
+                                    <i class="fa fa-external-link"></i> Lihat Pembayaran
+                                </a>
+                            @endif
+                        </div>
+                        <div class="row g-2">
+                            <div class="col-md-3">
+                                <div class="small text-muted">Total Tagihan Supplier</div>
+                                <div class="fw-bold">Rp
+                                    {{ number_format($kendaraan->total_tagihan_supplier, 0, ',', '.') }}</div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="small text-muted">Down Payment (DP)</div>
+                                <div class="fw-bold text-success">
+                                    Rp {{ number_format($kendaraan->dp_nominal, 0, ',', '.') }}
+                                    @if ($kendaraan->dp_persen)
+                                        <span
+                                            class="badge bg-success ms-1">{{ number_format($kendaraan->dp_persen, 1) }}%</span>
+                                    @endif
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="small text-muted">Sisa Tagihan</div>
+                                <div class="fw-bold text-danger">Rp
+                                    {{ number_format($kendaraan->sisa_tagihan, 0, ',', '.') }}</div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="small text-muted">Status Pembayaran</div>
+                                <div>
+                                    <span class="badge {{ $kendaraan->status_pembayaran_badge }}">
+                                        {{ $kendaraan->status_pembayaran }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        @if ($kendaraan->dp_tanggal || $kendaraan->dp_metode || $kendaraan->dp_keterangan)
+                            <div class="row g-2 mt-2 pt-2 border-top">
+                                @if ($kendaraan->dp_tanggal)
+                                    <div class="col-md-4">
+                                        <div class="small text-muted">Tanggal Bayar</div>
+                                        <div>{{ $kendaraan->dp_tanggal->format('d M Y') }}</div>
+                                    </div>
+                                @endif
+                                @if ($kendaraan->dp_metode)
+                                    <div class="col-md-4">
+                                        <div class="small text-muted">Metode Pembayaran</div>
+                                        <div class="text-capitalize">{{ $kendaraan->dp_metode }}</div>
+                                    </div>
+                                @endif
+                                @if ($kendaraan->dp_keterangan)
+                                    <div class="col-md-12">
+                                        <div class="small text-muted">Keterangan</div>
+                                        <div class="small">{{ $kendaraan->dp_keterangan }}</div>
+                                    </div>
+                                @endif
+                            </div>
+                        @endif
+                    </div>
+                @endif
+
                 <div class="table-responsive">
                     <table class="table table-sm table-bordered mb-0 align-middle">
                         <thead class="table-light">
@@ -169,7 +249,8 @@
                                                 @if ($pi === 0)
                                                     <button class="btn btn-xs btn-warning btn-aksi-kendaraan"
                                                         data-id="{{ $kendaraan->id }}"
-                                                        data-polisi="{{ $kendaraan->no_polisi }}" data-target="berangkat">
+                                                        data-polisi="{{ $kendaraan->no_polisi }}"
+                                                        data-target="berangkat">
                                                         <i class="fa fa-truck"></i> Berangkat
                                                     </button>
                                                     <button class="btn btn-xs btn-outline-danger btn-aksi-kendaraan ms-1"
@@ -532,4 +613,151 @@
             });
         </script>
     @endif
+
+    {{-- Modal GPS Lokasi Kendaraan --}}
+    <div class="modal fade" id="modalGps" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header py-2">
+                    <h6 class="modal-title"><i class="fa fa-map-marker text-danger"></i> Lokasi GPS — <span
+                            id="gpsNopol"></span></h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-0">
+                    {{-- Info strip --}}
+                    <div id="gpsInfo" class="px-3 py-2 bg-light border-bottom d-none">
+                        <div class="row g-2 small">
+                            <div class="col-auto"><i class="fa fa-tachometer text-primary"></i> Kecepatan: <strong
+                                    id="gpsSpeed">—</strong></div>
+                            <div class="col-auto"><i class="fa fa-clock-o text-muted"></i> Update: <strong
+                                    id="gpsTime">—</strong></div>
+                            <div class="col"><i class="fa fa-map-pin text-muted"></i> <span id="gpsAddress">—</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="gpsLoading" class="text-center py-5">
+                        <i class="fa fa-spinner fa-spin fa-2x text-muted"></i>
+                        <div class="text-muted mt-2 small">Mengambil posisi GPS...</div>
+                    </div>
+                    <div id="gpsError" class="text-center py-5 d-none">
+                        <i class="fa fa-exclamation-triangle fa-2x text-warning"></i>
+                        <div class="text-muted mt-2 small" id="gpsErrorMsg">Kendaraan tidak ditemukan di GPS tracker.
+                        </div>
+                    </div>
+                    <div id="gpsMapWrap" style="height:380px; display:none;">
+                        <div id="gpsMap" style="height:100%;"></div>
+                    </div>
+                </div>
+                <div class="modal-footer py-2">
+                    <a id="gpsOpenFull" href="{{ route('gps.map') }}" target="_blank"
+                        class="btn btn-sm btn-outline-primary">
+                        <i class="fa fa-external-link"></i> Buka Peta Penuh
+                    </a>
+                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @push('css')
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    @endpush
+
+    @push('js')
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+        <script>
+            var gpsMap = null;
+            var gpsMarker = null;
+
+            $(document).on('click', '.btn-lihat-gps', function() {
+                var nopol = $(this).data('nopol');
+                $('#gpsNopol').text(nopol);
+                $('#gpsLoading').show();
+                $('#gpsError').addClass('d-none');
+                $('#gpsMapWrap').hide();
+                $('#gpsInfo').addClass('d-none');
+
+                var modal = new bootstrap.Modal(document.getElementById('modalGps'));
+                modal.show();
+
+                $.getJSON('{{ route('gps.position-by-nopol') }}', {
+                        nopol: nopol
+                    })
+                    .done(function(res) {
+                        $('#gpsLoading').hide();
+                        if (!res.success || !res.lat || !res.lng) {
+                            $('#gpsErrorMsg').text(res.message || 'Posisi tidak tersedia.');
+                            $('#gpsError').removeClass('d-none');
+                            return;
+                        }
+
+                        $('#gpsSpeed').text(res.speed != null ? res.speed + ' km/h' : '—');
+                        $('#gpsTime').text(res.gps_time || '—');
+                        $('#gpsAddress').text(res.address || '—');
+                        $('#gpsInfo').removeClass('d-none');
+
+                        $('#gpsMapWrap').show();
+
+                        if (!gpsMap) {
+                            gpsMap = L.map('gpsMap').setView([res.lat, res.lng], 15);
+                            L.tileLayer(
+                                'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                                    attribution: 'Tiles &copy; Esri',
+                                    maxZoom: 19,
+                                }).addTo(gpsMap);
+                        } else {
+                            gpsMap.setView([res.lat, res.lng], 15);
+                        }
+
+                        var icon = L.divIcon({
+                            html: `<div style="background:#ef4444;color:#fff;border-radius:50%;width:36px;height:36px;
+                                        display:flex;align-items:center;justify-content:center;
+                                        border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.4);font-size:16px;">
+                                        <i class="fa fa-truck"></i></div>`,
+                            className: '',
+                            iconSize: [36, 36],
+                            iconAnchor: [18, 18],
+                            popupAnchor: [0, -20],
+                        });
+
+                        var popupContent =
+                            `<strong>${nopol}</strong><br>
+                            ${res.speed != null ? 'Kecepatan: <b>' + res.speed + ' km/h</b><br>' : ''}
+                            ${res.address ? '<span class="text-muted small">' + res.address + '</span><br>' : ''}
+                            ${res.gps_time ? '<span class="text-muted small">Update: ' + res.gps_time + '</span>' : ''}`;
+
+                        if (gpsMarker) {
+                            gpsMarker.setLatLng([res.lat, res.lng]).setPopupContent(popupContent);
+                        } else {
+                            gpsMarker = L.marker([res.lat, res.lng], {
+                                    icon
+                                })
+                                .addTo(gpsMap)
+                                .bindPopup(popupContent)
+                                .openPopup();
+                        }
+
+                        // Invalidate size karena modal baru dibuka
+                        setTimeout(function() {
+                            gpsMap.invalidateSize();
+                        }, 200);
+                    })
+                    .fail(function(xhr) {
+                        $('#gpsLoading').hide();
+                        var msg = xhr.responseJSON?.message || 'Gagal mengambil data GPS.';
+                        $('#gpsErrorMsg').text(msg);
+                        $('#gpsError').removeClass('d-none');
+                    });
+            });
+
+            // Reset peta saat modal ditutup
+            document.getElementById('modalGps').addEventListener('hidden.bs.modal', function() {
+                if (gpsMap) {
+                    gpsMap.remove();
+                    gpsMap = null;
+                    gpsMarker = null;
+                }
+            });
+        </script>
+    @endpush
 @endsection

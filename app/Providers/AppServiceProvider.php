@@ -38,10 +38,20 @@ class AppServiceProvider extends ServiceProvider
                         ->where('is_aktif', true)->get();
                 }
 
+                // Jika user hanya punya 1 CV dan belum ada session, otomatis set ke CV itu
+                if ($userCvs->count() === 1 && ! $activeCvId) {
+                    $activeCvId = $userCvs->first()->id;
+                    session(['active_cv' => $activeCvId]);
+                }
+
                 $activeCv = $activeCvId ? $userCvs->firstWhere('id', $activeCvId) : null;
+
+                // Hanya admin (level 1) yang boleh melihat opsi "Semua Perusahaan"
+                $canSeeAllCv = $user->level == 1;
 
                 $view->with('userCvs', $userCvs);
                 $view->with('activeCv', $activeCv);
+                $view->with('canSeeAllCv', $canSeeAllCv);
             }
         });
     }

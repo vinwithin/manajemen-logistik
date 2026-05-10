@@ -39,8 +39,7 @@ return new class extends Migration
             $table->timestamp('selesai_lansir_at')->nullable();
             $table->timestamps();
 
-            $table->foreign('po_id')->references('id')->on('purchase_orders')->onDelete('cascade');
-            $table->foreign('kode_pakan_id')->references('id')->on('kode_pakan')->nullOnDelete();
+      
         });
 
         // Tabel penerima (bisa lebih dari satu per item)
@@ -50,7 +49,6 @@ return new class extends Migration
             $table->string('nama');
             $table->timestamps();
 
-            $table->foreign('po_item_id')->references('id')->on('purchase_order_items')->onDelete('cascade');
         });
     }
 

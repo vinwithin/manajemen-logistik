@@ -15,6 +15,12 @@ return new class extends Migration
             $table->id();
             $table->string('nama_cv');
             $table->string('code')->nullable();
+            $table->string('alamat')->nullable();
+            $table->string('nama_bank')->nullable();
+            $table->string('no_rekening')->nullable();
+            $table->string('atas_nama_rekening')->nullable();
+            $table->string('nama_pimpinan')->nullable();
+            $table->string('no_dokumen_prefix')->nullable()->comment('Prefix nomor dokumen, contoh: 4-TR-JBI/GI');
             $table->boolean('is_aktif');
             $table->timestamps();
         });

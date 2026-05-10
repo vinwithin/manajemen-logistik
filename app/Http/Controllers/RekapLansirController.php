@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Exports\RekapLansirExport;
 use App\Models\LansirPayment;
 use App\Models\PurchaseOrder;
+use App\Services\Datatables\RekapLansirDatatableService;
 use App\Services\RekapLansirService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -16,10 +17,29 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class RekapLansirController extends Controller
 {
-    public function __construct(private RekapLansirService $service)
+    public function __construct(
+        private RekapLansirService $service,
+        private RekapLansirDatatableService $datatableService,
+    ) {}
+
+    public function index(Request $request): mixed
     {
-        // $this->middleware('permission:rekap-lansir.view')->only(['show', 'export']);
-        // $this->middleware('permission:rekap-lansir.bayar')->only('bayar');
+        $activeCvId = session('active_cv');
+
+        if ($request->ajax()) {
+            $query = PurchaseOrder::with(['cv'])
+                ->withCount('kendaraans')
+                ->where('status', PurchaseOrder::STATUS_LOCKED)
+                ->orderBy('tanggal_po', 'desc');
+
+            if ($activeCvId) {
+                $query->where('cv_id', $activeCvId);
+            }
+
+            return $this->datatableService->getData($query);
+        }
+
+        return view('pages.keuangan.rekap-lansir.index');
     }
 
     public function show(string $id): View|RedirectResponse

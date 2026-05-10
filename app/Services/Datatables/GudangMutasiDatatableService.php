@@ -32,27 +32,29 @@ class GudangMutasiDatatableService
         }
 
         return DataTables::of($query)
-            ->addColumn('tanggal', fn($q) => $q->created_at?->format('d/m/Y H:i') ?? '-')
-            ->addColumn('nama_gudang', fn($q) => $q->tujuan?->nama ?? '-')
-            ->addColumn('kode_pakan', fn($q) => $q->kodePakan?->kode ?? '-')
+            ->addColumn('tanggal', fn ($q) => $q->created_at?->format('d/m/Y H:i') ?? '-')
+            ->addColumn('nama_gudang', fn ($q) => $q->tujuan?->nama ?? '-')
+            ->addColumn('kode_pakan', fn ($q) => $q->kodePakan?->kode ?? '-')
             ->addColumn('tipe_badge', function ($q) {
                 return $q->tipe === 'masuk'
                     ? "<span class='badge bg-success'>Masuk</span>"
                     : "<span class='badge bg-danger'>Keluar</span>";
             })
-            ->addColumn('jumlah_kg_fmt', fn($q) => number_format($q->jumlah_kg, 0, ',', '.') . ' kg')
-            ->addColumn('jumlah_karung_fmt', fn($q) => $q->jumlah_karung . ' karung')
-            ->addColumn('saldo_kg_after_fmt', fn($q) => number_format($q->saldo_kg_after, 0, ',', '.') . ' kg')
+            ->addColumn('jumlah_kg_fmt', fn ($q) => number_format($q->jumlah_kg, 0, ',', '.').' kg')
+            ->addColumn('jumlah_karung_fmt', fn ($q) => $q->jumlah_karung.' karung')
+            ->addColumn('saldo_kg_after_fmt', fn ($q) => number_format($q->saldo_kg_after, 0, ',', '.').' kg')
             ->addColumn('referensi', function ($q) {
                 if ($q->poPenerima) {
                     $po = $q->poPenerima->kendaraan->po ?? null;
                     $noPo = $po ? $po->no_po : '-';
+
                     return "<div class='small'>
                         <strong>{$q->poPenerima->nama_penerima}</strong><br>
                         <span class='text-muted'>PO: {$noPo}</span>
                     </div>";
                 }
-                return $q->referensi_tipe . ' #' . $q->referensi_id;
+
+                return $q->referensi_tipe.' #'.$q->referensi_id;
             })
             ->addIndexColumn()
             ->rawColumns(['tipe_badge', 'referensi'])

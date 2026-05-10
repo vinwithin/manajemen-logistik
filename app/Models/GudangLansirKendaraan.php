@@ -11,26 +11,36 @@ class GudangLansirKendaraan extends Model
     protected $table = 'gudang_lansir_kendaraan';
 
     protected $fillable = [
-        'gudang_id',
+        'lansir_header_id',
         'no_polisi',
         'nama_sopir',
         'no_surat_jalan',
-        'tanggal_lansir',
         'total_kg',
         'total_karung',
-        'catatan',
         'created_by',
     ];
 
     protected $casts = [
-        'tanggal_lansir' => 'date',
         'total_kg' => 'decimal:2',
         'total_karung' => 'integer',
     ];
 
+    public function lansirHeader(): BelongsTo
+    {
+        return $this->belongsTo(GudangLansirHeader::class, 'lansir_header_id');
+    }
+
     public function gudang(): BelongsTo
     {
-        return $this->belongsTo(Tujuan::class, 'gudang_id');
+        // Akses gudang melalui header
+        return $this->hasOneThrough(
+            Tujuan::class,
+            GudangLansirHeader::class,
+            'id', // Foreign key on gudang_lansir_header
+            'id', // Foreign key on tujuan
+            'lansir_header_id', // Local key on gudang_lansir_kendaraan
+            'gudang_id' // Local key on gudang_lansir_header
+        );
     }
 
     public function penerimas(): HasMany
@@ -41,17 +51,5 @@ class GudangLansirKendaraan extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
-    }
-
-    // Hitung total KG dari semua penerima
-    public function getTotalKgAttribute(): float
-    {
-        return (float) $this->penerimas->flatMap->pakans->sum('jumlah_kg');
-    }
-
-    // Hitung total karung dari semua penerima
-    public function getTotalKarungAttribute(): int
-    {
-        return (int) $this->penerimas->flatMap->pakans->sum('jumlah_karung');
     }
 }

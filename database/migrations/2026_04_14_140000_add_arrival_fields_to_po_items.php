@@ -8,13 +8,6 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // Tambah kolom arrival ke purchase_order_items
-        Schema::table('purchase_order_items', function (Blueprint $table) {
-            // status diperluas: pending, berangkat, batal, selesai, lansir
-            $table->string('status')->default('pending')->change();
-            $table->timestamp('tiba_at')->nullable()->after('status')->comment('Waktu tiba di lokasi');
-            $table->string('validasi_oleh')->nullable()->after('tiba_at')->comment('Nama admin cabang yang validasi');
-        });
 
         Schema::create('po_item_lansir', function (Blueprint $table) {
             $table->id();

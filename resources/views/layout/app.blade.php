@@ -30,7 +30,39 @@
     <link rel="stylesheet" href="/css/app-dark.css">
     <link rel="stylesheet" href="/css/iconly.css">
     <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/alertifyjs@1.13.1/build/css/alertify.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" />
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
     @stack('css')
+    <style>
+        /* ── Navbar ─────────────────────────────────────────────── */
+        .page-heading {
+            background: #fff;
+            border-bottom: 1px solid #e9ecef;
+            padding: 10px 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, .06);
+        }
+
+        body.dark .page-heading {
+            background: #1a1a2e;
+            border-bottom-color: #2d2d44;
+        }
+
+        /* ── Footer ─────────────────────────────────────────────── */
+        footer {
+            background: #fff;
+            border-top: 1px solid #e9ecef;
+            padding: 10px 20px;
+            margin-top: 24px;
+            box-shadow: 0 -1px 4px rgba(0, 0, 0, .04);
+        }
+
+        body.dark footer {
+            background: #1a1a2e;
+            border-top-color: #2d2d44;
+        }
+    </style>
 </head>
 
 <body>
@@ -57,6 +89,7 @@
     <script src="assets/extensions/apexcharts/apexcharts.min.js"></script>
     <script src="/js/pages/dashboard.js"></script>
     <script src="//cdn.jsdelivr.net/npm/alertifyjs@1.13.1/build/alertify.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     @stack('js')
 </body>
 

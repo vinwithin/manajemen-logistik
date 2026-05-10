@@ -10,23 +10,29 @@ class OaPayment extends Model
     protected $table = 'oa_payments';
 
     protected $fillable = [
-        'po_item_id', 'po_penerima_id', 'supplier_id', 'jumlah_tagihan',
-        'jumlah_bayar', 'tanggal_bayar', 'metode_bayar',
-        'bukti_bayar', 'keterangan', 'status',
+        'po_item_id', 'po_penerima_id', 'po_kendaraan_id', 'supplier_id',
+        'tipe_pembayaran', 'jumlah_tagihan', 'jumlah_bayar', 'tanggal_bayar',
+        'metode_bayar', 'bukti_bayar', 'keterangan', 'status',
     ];
 
     protected $casts = ['tanggal_bayar' => 'date'];
 
+    const TIPE = [
+        'oa' => 'Pembayaran OA',
+        'dp_supplier' => 'Down Payment Supplier',
+    ];
+
     const METODE = [
         'transfer' => 'Transfer Bank',
-        'tunai'    => 'Tunai',
-        'cek'      => 'Cek / Giro',
+        'tunai' => 'Tunai',
+        'cek' => 'Cek / Giro',
+        'giro' => 'Giro',
     ];
 
     const STATUS = [
         'pending' => 'Belum Bayar',
         'partial' => 'Bayar Sebagian',
-        'lunas'   => 'Lunas',
+        'lunas' => 'Lunas',
     ];
 
     public function item(): BelongsTo
@@ -37,6 +43,11 @@ class OaPayment extends Model
     public function penerima(): BelongsTo
     {
         return $this->belongsTo(PoPenerima::class, 'po_penerima_id');
+    }
+
+    public function kendaraan(): BelongsTo
+    {
+        return $this->belongsTo(PoKendaraan::class, 'po_kendaraan_id');
     }
 
     public function supplier()

@@ -31,11 +31,11 @@
                                 <th>Tanggal</th>
                                 <th>CV</th>
                                 <th>No. Polisi</th>
-                                <th>Tujuan</th>
+                                <th>Penerima</th>
                                 <th>Supplier</th>
-                                <th>Berat (kg)</th>
-                                <th>Ongkos/kg</th>
+                                <th>Total KG</th>
                                 <th>Total OA</th>
+                                <th>DP</th>
                                 <th>Sudah Bayar</th>
                                 <th>Sisa</th>
                                 <th>Status</th>
@@ -71,6 +71,7 @@
                         d.to = $('#filterTo').val();
                     }
                 },
+
                 columns: [{
                         data: 'DT_RowIndex',
                         orderable: false,
@@ -96,8 +97,8 @@
                         name: 'no_polisi'
                     },
                     {
-                        data: 'tujuan_nama',
-                        name: 'tujuan_nama',
+                        data: 'penerima_list',
+                        name: 'penerima_list',
                         searchable: false
                     },
                     {
@@ -106,22 +107,22 @@
                         searchable: false
                     },
                     {
-                        data: 'berat',
-                        name: 'berat',
+                        data: 'total_kg',
+                        name: 'total_kg',
                         searchable: false,
                         render: d => d ? Number(d).toLocaleString('id-ID') + ' kg' : '-'
-                    },
-                    {
-                        data: 'ongkos',
-                        name: 'ongkos',
-                        searchable: false,
-                        render: d => d ? fmt(d) : '-'
                     },
                     {
                         data: 'total_oa',
                         name: 'total_oa',
                         searchable: false,
                         render: d => fmt(d)
+                    },
+                    {
+                        data: 'dp_nominal',
+                        name: 'dp_nominal',
+                        searchable: false,
+                        render: d => d && d !== '0' ? 'Rp ' + d : '-'
                     },
                     {
                         data: 'oaPayment.jumlah_bayar',
@@ -151,7 +152,11 @@
                     [10, 15, 25, 50],
                     [10, 15, 25, 50]
                 ],
-                responsive: !0
+                order: [
+                    [1, 'desc']
+                ],
+                responsive: !0,
+
             });
 
             $('#filterSupplier, #filterStatus, #filterFrom, #filterTo').on('change', function() {

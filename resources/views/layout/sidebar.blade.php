@@ -3,7 +3,8 @@
           <div class="sidebar-header position-relative">
               <div class="d-flex justify-content-between align-items-center">
                   <div class="logo">
-                      <a href="index.html"><img src="./assets/compiled/svg/logo.svg" alt="Logo" srcset=""></a>
+                      <a href="index.html"><img src="/assets/logo.webp" alt="Logo" srcset=""
+                              style="width: 70px; height:auto;"></a>
                   </div>
                   <div class="theme-toggle d-flex gap-2  align-items-center mt-2">
                       <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
@@ -65,21 +66,24 @@
                               <i data-feather="chevron-down" style="width:14px;height:14px"></i>
                           </button>
                           <ul class="dropdown-menu w-100 shadow-sm">
-                              <li>
-                                  <form action="{{ route('switch.cv') }}" method="POST">
-                                      @csrf
-                                      <input type="hidden" name="cv_id" value="all">
-                                      <button type="submit"
-                                          class="dropdown-item d-flex align-items-center gap-2
+                              {{-- "Semua Perusahaan" hanya tampil untuk admin yang punya akses semua CV --}}
+                              @if ($canSeeAllCv)
+                                  <li>
+                                      <form action="{{ route('switch.cv') }}" method="POST">
+                                          @csrf
+                                          <input type="hidden" name="cv_id" value="all">
+                                          <button type="submit"
+                                              class="dropdown-item d-flex align-items-center gap-2
                                       {{ !$activeCv ? 'active' : '' }}">
-                                          <i data-feather="layers" style="width:14px;height:14px"></i>
-                                          Semua Perusahaan
-                                      </button>
-                                  </form>
-                              </li>
-                              <li>
-                                  <hr class="dropdown-divider my-1">
-                              </li>
+                                              <i data-feather="layers" style="width:14px;height:14px"></i>
+                                              Semua Perusahaan
+                                          </button>
+                                      </form>
+                                  </li>
+                                  <li>
+                                      <hr class="dropdown-divider my-1">
+                                  </li>
+                              @endif
                               @foreach ($userCvs as $cv)
                                   <li>
                                       <form action="{{ route('switch.cv') }}" method="POST">
@@ -108,7 +112,9 @@
 
                   @foreach ($sidebarMenus as $menu)
                       @if ($menu->children->isEmpty())
-                          <li class="sidebar-item {{ request()->is(ltrim($menu->url, '/')) ? 'active' : '' }}">
+                          @php $menuUrl = ltrim($menu->url, '/'); @endphp
+                          <li
+                              class="sidebar-item {{ request()->is($menuUrl) || request()->is($menuUrl . '/*') ? 'active' : '' }}">
                               <a href="{{ $menu->url }}" class="sidebar-link">
                                   <i data-feather="{{ $menu->icon }}" class="me-2"></i>
                                   {{ $menu->nama_menu }}
@@ -117,7 +123,8 @@
                       @else
                           @php
                               $isChildActive = $menu->children->contains(function ($child) {
-                                  return request()->is(ltrim($child->url, '/'));
+                                  $url = ltrim($child->url, '/');
+                                  return request()->is($url) || request()->is($url . '/*');
                               });
                           @endphp
 
@@ -128,10 +135,11 @@
                               </a>
                               <ul class="submenu {{ $isChildActive ? 'submenu-open' : '' }}">
                                   @foreach ($menu->children as $child)
+                                      @php $childUrl = ltrim($child->url, '/'); @endphp
                                       <li
-                                          class="submenu-item {{ request()->is(ltrim($child->url, '/')) ? 'active' : '' }}">
+                                          class="submenu-item {{ request()->is($childUrl) || request()->is($childUrl . '/*') ? 'active' : '' }}">
                                           <a href="{{ $child->url }}"
-                                              class="submenu-link {{ request()->is(ltrim($child->url, '/')) ? 'active' : '' }}">
+                                              class="submenu-link {{ request()->is($childUrl) || request()->is($childUrl . '/*') ? 'active' : '' }}">
                                               <i data-feather="{{ $child->icon }}"></i>
                                               {{ $child->nama_menu }}
                                           </a>

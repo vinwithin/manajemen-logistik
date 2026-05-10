@@ -2,25 +2,25 @@
 @section('content')
     {{-- Summary cards --}}
     <div class="row g-3 mb-3">
-        <div class="col-6 col-md-3">
+        <div class="col-6 col-md-2">
             <div class="card text-center py-3">
                 <div class="fw-bold fs-5 text-primary">Rp {{ number_format($summary['total_tagihan'], 0, ',', '.') }}</div>
                 <div class="text-muted small">Total Tagihan</div>
             </div>
         </div>
-        <div class="col-6 col-md-3">
+        <div class="col-6 col-md-2">
             <div class="card text-center py-3">
                 <div class="fw-bold fs-5 text-success">Rp {{ number_format($summary['total_bayar'], 0, ',', '.') }}</div>
                 <div class="text-muted small">Total Dibayar</div>
             </div>
         </div>
-        <div class="col-6 col-md-3">
+        <div class="col-6 col-md-2">
             <div class="card text-center py-3">
                 <div class="fw-bold fs-5 text-danger">Rp {{ number_format($summary['total_sisa'], 0, ',', '.') }}</div>
                 <div class="text-muted small">Sisa Tagihan</div>
             </div>
         </div>
-        <div class="col-6 col-md-3">
+        <div class="col-6 col-md-2">
             <div class="card text-center py-3">
                 <div class="fw-bold fs-5">
                     <span class="text-secondary">{{ $summary['count_pending'] }}</span> /
@@ -30,12 +30,32 @@
                 <div class="text-muted small">Pending / Sebagian / Lunas</div>
             </div>
         </div>
+        <div class="col-6 col-md-2">
+            <div class="card text-center py-3">
+                <div class="fw-bold fs-5 text-warning">Rp {{ number_format($summary['total_dp'], 0, ',', '.') }}</div>
+                <div class="text-muted small">Total DP Supplier</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-2">
+            <div class="card text-center py-3">
+                <div class="fw-bold fs-5">
+                    <span class="text-info">{{ $summary['count_oa'] }}</span> /
+                    <span class="text-warning">{{ $summary['count_dp'] }}</span>
+                </div>
+                <div class="text-muted small">OA / DP</div>
+            </div>
+        </div>
     </div>
 
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
             <h5 class="mb-0">Pembayaran Supplier</h5>
             <div class="d-flex gap-2 flex-wrap">
+                <select id="filterTipe" class="form-select form-select-sm" style="width:150px">
+                    <option value="">Semua Tipe</option>
+                    <option value="oa">Pembayaran OA</option>
+                    <option value="dp_supplier">DP Supplier</option>
+                </select>
                 <select id="filterSupplier" class="form-select form-select-sm" style="width:180px">
                     <option value="">Semua Supplier</option>
                     @foreach ($suppliers as $s)
@@ -48,8 +68,10 @@
                     <option value="partial">Bayar Sebagian</option>
                     <option value="lunas">Lunas</option>
                 </select>
-                <input type="date" id="filterFrom" class="form-control form-control-sm" style="width:140px">
-                <input type="date" id="filterTo" class="form-control form-control-sm" style="width:140px">
+                <input type="date" id="filterFrom" class="form-control form-control-sm" style="width:140px"
+                    placeholder="Dari">
+                <input type="date" id="filterTo" class="form-control form-control-sm" style="width:140px"
+                    placeholder="Sampai">
             </div>
         </div>
         <div class="card-body">
@@ -57,6 +79,7 @@
                 <thead>
                     <tr>
                         <th>No</th>
+                        <th>Tipe</th>
                         <th>No. PO</th>
                         <th>CV</th>
                         <th>No. Polisi</th>
@@ -92,6 +115,7 @@
                 ajax: {
                     url: '/keuangan/pembayaran',
                     data: function(d) {
+                        d.tipe_pembayaran = $('#filterTipe').val();
                         d.supplier_id = $('#filterSupplier').val();
                         d.status = $('#filterStatus').val();
                         d.from = $('#filterFrom').val();
@@ -103,6 +127,11 @@
                         orderable: false,
                         searchable: false,
                         width: '50px'
+                    },
+                    {
+                        data: 'tipe',
+                        name: 'tipe_pembayaran',
+                        searchable: false
                     },
                     {
                         data: 'no_po',
@@ -151,7 +180,8 @@
                     {
                         data: 'metode_bayar',
                         name: 'metode_bayar',
-                        searchable: false
+                        searchable: false,
+                        render: d => d ? d.charAt(0).toUpperCase() + d.slice(1) : '-'
                     },
                     {
                         data: 'status_badge',
@@ -169,10 +199,13 @@
                     [10, 15, 25, 50],
                     [10, 15, 25, 50]
                 ],
+                order: [
+                    [10, 'desc']
+                ], // Order by tanggal_bayar desc
                 responsive: !0
             });
 
-            $('#filterSupplier, #filterStatus, #filterFrom, #filterTo').on('change', function() {
+            $('#filterTipe, #filterSupplier, #filterStatus, #filterFrom, #filterTo').on('change', function() {
                 dt.ajax.reload();
             });
         });

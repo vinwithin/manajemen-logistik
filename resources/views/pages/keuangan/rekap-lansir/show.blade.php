@@ -15,8 +15,8 @@
                         <i class="fa fa-file-excel-o"></i> Export Excel
                     </a>
                 @endcan
-                <a href="{{ route('purchase-order.show', encrypt($po->id)) }}" class="btn btn-sm btn-secondary">
-                    <i class="fa fa-arrow-left"></i> Kembali ke PO
+                <a href="{{ route('rekap-lansir.index') }}" class="btn btn-sm btn-secondary">
+                    <i class="fa fa-arrow-left"></i> Kembali
                 </a>
             </div>
         </div>
@@ -57,15 +57,15 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach ($rekapMobil as $event)
-                                        @if ($event->mobils->isEmpty())
+                                    @foreach ($rekapMobil as $lansir)
+                                        @if ($lansir->mobils->isEmpty())
                                             <tr>
                                                 <td colspan="4" class="text-muted text-center small">
-                                                    Event #{{ $event->id }} — belum ada mobil
+                                                    {{ $lansir->penerima->nama_penerima }} — belum ada mobil
                                                 </td>
                                             </tr>
                                         @else
-                                            @foreach ($event->mobils as $mobil)
+                                            @foreach ($lansir->mobils as $mobil)
                                                 <tr>
                                                     <td>{{ $mobil->no_polisi }}</td>
                                                     <td class="text-end">
@@ -73,15 +73,19 @@
                                                     <td class="text-end">
                                                         {{ number_format($mobil->ongkos ?? 0, 0, ',', '.') }}</td>
                                                     <td class="text-end">
-                                                        {{ number_format($mobil->total_ongkos, 0, ',', '.') }}</td>
+                                                        {{ number_format(($mobil->berat ?? 0) * ($mobil->ongkos ?? 0), 0, ',', '.') }}
+                                                    </td>
                                                 </tr>
                                             @endforeach
                                         @endif
                                         <tr class="table-secondary">
-                                            <td colspan="3" class="fw-semibold small">Subtotal Event
-                                                #{{ $event->id }}</td>
+                                            <td colspan="3" class="fw-semibold small">
+                                                {{ $lansir->penerima->nama_penerima }}
+                                                <span
+                                                    class="text-muted">({{ $lansir->tanggal_lansir?->format('d/m/Y') ?? '-' }})</span>
+                                            </td>
                                             <td class="text-end fw-semibold">Rp
-                                                {{ number_format($event->total_ongkos, 0, ',', '.') }}</td>
+                                                {{ number_format($lansir->total_ongkos, 0, ',', '.') }}</td>
                                         </tr>
                                     @endforeach
                                 </tbody>
@@ -141,16 +145,16 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach ($rekapTim as $event)
-                                        @php $totalBerat = $event->total_berat; @endphp
-                                        @if ($event->tims->isEmpty())
+                                    @foreach ($rekapTim as $lansir)
+                                        @php $totalBerat = $lansir->total_berat; @endphp
+                                        @if ($lansir->tims->isEmpty())
                                             <tr>
                                                 <td colspan="4" class="text-muted text-center small">
-                                                    Event #{{ $event->id }} — belum ada tim
+                                                    {{ $lansir->penerima->nama_penerima }} — belum ada tim
                                                 </td>
                                             </tr>
                                         @else
-                                            @foreach ($event->tims as $tim)
+                                            @foreach ($lansir->tims as $tim)
                                                 <tr>
                                                     <td>{{ $tim->nama_tim }}</td>
                                                     <td class="text-end">{{ number_format($totalBerat, 0, ',', '.') }}</td>
@@ -163,10 +167,13 @@
                                             @endforeach
                                         @endif
                                         <tr class="table-secondary">
-                                            <td colspan="3" class="fw-semibold small">Subtotal Event
-                                                #{{ $event->id }}</td>
+                                            <td colspan="3" class="fw-semibold small">
+                                                {{ $lansir->penerima->nama_penerima }}
+                                                <span
+                                                    class="text-muted">({{ $lansir->tanggal_lansir?->format('d/m/Y') ?? '-' }})</span>
+                                            </td>
                                             <td class="text-end fw-semibold">Rp
-                                                {{ number_format($event->total_upah, 0, ',', '.') }}</td>
+                                                {{ number_format($lansir->total_upah, 0, ',', '.') }}</td>
                                         </tr>
                                     @endforeach
                                 </tbody>

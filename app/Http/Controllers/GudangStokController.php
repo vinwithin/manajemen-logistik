@@ -60,11 +60,23 @@ class GudangStokController extends Controller
                 ->addColumn('nama_pakan', fn ($q) => $q->kodePakan?->nama ?? '-')
                 ->addColumn('stok_kg_fmt', fn ($q) => number_format($q->stok_kg, 0, ',', '.').' kg')
                 ->addColumn('stok_karung_fmt', fn ($q) => number_format($q->stok_karung, 0, ',', '.').' karung')
+                ->addColumn('action', function ($q) use ($id) {
+                    $url = route('gudang.mutasi.index', [
+                        'tujuan_id'     => $id,
+                        'kode_pakan_id' => $q->kode_pakan_id,
+                    ]);
+                    return '<a href="'.$url.'" class="btn btn-xs btn-outline-info py-0 px-2 small">
+                                <i class="fa fa-history"></i> Mutasi
+                            </a>';
+                })
                 ->addIndexColumn()
+                ->rawColumns(['action'])
                 ->make(true);
         }
 
-        return view('pages.gudang.stok.show', compact('gudang'));
+        $kodePakans = KodePakan::orderBy('kode')->get();
+
+        return view('pages.gudang.stok.show', compact('gudang', 'kodePakans'));
     }
 
     public function mutasi(Request $request)
@@ -77,6 +89,52 @@ class GudangStokController extends Controller
         $kodePakans = KodePakan::orderBy('kode')->get();
 
         return view('pages.gudang.mutasi.index', compact('gudangs', 'kodePakans'));
+    }
+
+    public function mutasiExport(Request $request)
+    {
+        $filename = 'kartu-stock';
+        if ($request->tujuan_id) {
+            $gudang = Tujuan::find($request->tujuan_id);
+            $filename .= '-' . str_replace(' ', '-', strtolower($gudang?->nama ?? 'gudang'));
+        }
+        if ($request->kode_pakan_id) {
+            $pakan = KodePakan::find($request->kode_pakan_id);
+            $filename .= '-' . strtolower($pakan?->kode ?? 'pakan');
+        }
+        if ($request->dari_tanggal) {
+            $filename .= '-' . $request->dari_tanggal;
+        }
+        $filename .= '.xlsx';
+
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Exports\KartuStockMutasiExport(
+                $request->tujuan_id  ? (int) $request->tujuan_id  : null,
+                $request->dari_tanggal   ?: null,
+                $request->sampai_tanggal ?: null,
+                $request->kode_pakan_id  ? (int) $request->kode_pakan_id : null,
+                $request->tipe           ?: null,
+            ),
+            $filename
+        );
+    }
+
+    public function stokKeluarExport(Request $request)
+    {
+        $tujuanId = $request->tujuan_id ? (int) $request->tujuan_id : null;
+        $dari     = $request->dari_tanggal ?: null;
+        $sampai   = $request->sampai_tanggal ?: null;
+
+        $gudang   = $tujuanId ? Tujuan::find($tujuanId) : null;
+        $filename = 'stok-keluar';
+        if ($gudang) $filename .= '-' . str_replace(' ', '-', strtolower($gudang->nama));
+        if ($dari)   $filename .= '-' . $dari;
+        $filename .= '.xlsx';
+
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Exports\StokKeluarExport($tujuanId, $dari, $sampai),
+            $filename
+        );
     }
 
     public function saldo(Request $request)

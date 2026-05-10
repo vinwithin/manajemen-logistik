@@ -12,7 +12,7 @@ class PoPenerima extends Model
     protected $table = 'po_penerima';
 
     protected $fillable = [
-        'po_kendaraan_id', 'nama_penerima', 'tujuan_id', 'status',
+        'po_kendaraan_id', 'penerima_id', 'nama_penerima', 'tujuan_id', 'status',
         'bukti_tiba', 'validasi_oleh', 'tiba_at',
     ];
 
@@ -35,6 +35,11 @@ class PoPenerima extends Model
         return $this->belongsTo(PoKendaraan::class, 'po_kendaraan_id');
     }
 
+    public function penerima(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Penerima::class, 'penerima_id');
+    }
+
     public function tujuan(): BelongsTo
     {
         return $this->belongsTo(Tujuan::class, 'tujuan_id');
@@ -53,6 +58,11 @@ class PoPenerima extends Model
     public function lansirs(): HasMany
     {
         return $this->hasMany(PoPenerimaLansir::class, 'po_penerima_id');
+    }
+
+    public function gudangLansirs(): HasMany
+    {
+        return $this->hasMany(GudangLansirPenerima::class, 'po_penerima_id');
     }
 
     // Total KG semua pakan penerima ini

@@ -53,6 +53,7 @@ class permissionSeeder extends Seeder
             ['name' => 'payment.confirm',       'menu_id' => 21],
             ['name' => 'rekap-lansir.view',     'menu_id' => 22],
             ['name' => 'rekap-lansir.bayar',    'menu_id' => 22],
+            ['name' => 'rugi-laba.view',     'menu_id' => 23],
 
             // Master Data
             ['name' => 'supplier.view',         'menu_id' => 30],
@@ -63,6 +64,8 @@ class permissionSeeder extends Seeder
             ['name' => 'feed_code.manage',      'menu_id' => 31],
             ['name' => 'destination.view',      'menu_id' => 32],
             ['name' => 'destination.manage',    'menu_id' => 32],
+            ['name' => 'penerima.view',      'menu_id' => 33],
+            ['name' => 'penerima.manage',    'menu_id' => 33],
 
             // Laporan
             ['name' => 'report.po.view',        'menu_id' => 40],
@@ -85,6 +88,9 @@ class permissionSeeder extends Seeder
             // Gudang Stok
             ['name' => 'gudang-stok.view',      'menu_id' => 60],
             ['name' => 'gudang-stok.lansir',    'menu_id' => 61],
+
+            ['name' => 'gps.view',      'menu_id' => 70],
+            ['name' => 'gps.manage',    'menu_id' => 70],
         ];
 
         // Insert/update permissions dengan menu_id
@@ -130,6 +136,8 @@ class permissionSeeder extends Seeder
             'report.payment.export',
             'gudang-stok.view',
             'gudang-stok.lansir',
+            'gps.view',
+            'gps.manage',
         ]);
 
         // Viewer → semua view, tanpa create/edit/delete/export

@@ -8,11 +8,18 @@
                     <div class="d-flex gap-2 align-items-center flex-wrap">
                         {{-- Filter tanggal untuk export --}}
                         <input type="date" id="exportFrom" class="form-control form-control-sm" style="width:140px"
-                            placeholder="Dari">
+                            placeholder="Dari" title="Tanggal Mulai">
                         <input type="date" id="exportTo" class="form-control form-control-sm" style="width:140px"
-                            placeholder="Sampai">
+                            placeholder="Sampai" title="Tanggal Akhir">
                         <a href="#" id="btnExport" class="btn btn-sm btn-success">
-                            <i class="fa fa-file-excel-o"></i> Export Semua Data
+                            <i class="fa fa-file-excel-o"></i> Export Excel
+                        </a>
+                        <a href="#" id="btnExportPdfSupplier" class="btn btn-sm btn-danger">
+                            <i class="fa fa-file-pdf-o"></i> PDF Supplier
+                        </a>
+                        <a href="{{ route('purchase-order.export-ptsum-confirm') }}" id="btnExportPdfPtSum"
+                            class="btn btn-sm btn-warning">
+                            <i class="fa fa-file-pdf-o"></i> PDF PT Sum
                         </a>
                         <a href="{{ route('purchase-order.create') }}" class="btn btn-sm btn-primary">
                             <i class="fa fa-plus"></i> Input PO
@@ -48,7 +55,7 @@
                 serverSide: true,
                 bDestroy: true,
                 order: [
-                    [2, 'desc']
+                    [1, 'desc']
                 ],
                 ajax: {
                     url: '/purchase-order'
@@ -101,12 +108,25 @@
         function updateExportUrl() {
             var from = $('#exportFrom').val();
             var to = $('#exportTo').val();
-            var url = '{{ route('purchase-order.export') }}';
+
             var params = [];
             if (from) params.push('from=' + from);
             if (to) params.push('to=' + to);
-            if (params.length) url += '?' + params.join('&');
-            $('#btnExport').attr('href', url);
+
+            // Excel export
+            var urlExcel = '{{ route('purchase-order.export') }}';
+            if (params.length) urlExcel += '?' + params.join('&');
+            $('#btnExport').attr('href', urlExcel);
+
+            // PDF Supplier export
+            var urlPdfSupplier = '{{ route('purchase-order.export-supplier-confirm') }}';
+            if (params.length) urlPdfSupplier += '?' + params.join('&');
+            $('#btnExportPdfSupplier').attr('href', urlPdfSupplier);
+
+            // PDF PT Sum → selalu ke halaman konfirmasi, bawa filter tanggal sebagai query param
+            var urlPdfPtSum = '{{ route('purchase-order.export-ptsum-confirm') }}';
+            if (params.length) urlPdfPtSum += '?' + params.join('&');
+            $('#btnExportPdfPtSum').attr('href', urlPdfPtSum);
         }
 
         $('#exportFrom, #exportTo').on('change', updateExportUrl);

@@ -15,8 +15,10 @@ return new class extends Migration
             $table->enum('tipe', ['masuk', 'keluar']);
             $table->decimal('jumlah_kg', 12, 2);
             $table->integer('jumlah_karung')->default(0);
-            $table->enum('referensi_tipe', ['po_item', 'lansir_gudang']);
+            $table->string('referensi_tipe');
             $table->unsignedBigInteger('referensi_id');
+            $table->integer('po_penerima_id');
+            $table->unsignedBigInteger('gudang_lansir_pakan_id')->nullable();
             $table->decimal('saldo_kg_after', 12, 2);
             $table->integer('saldo_karung_after')->default(0);
             $table->timestamps();

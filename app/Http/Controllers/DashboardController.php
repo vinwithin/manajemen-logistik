@@ -31,12 +31,25 @@ class DashboardController extends Controller
 
     public function switchCv(Request $request)
     {
-        $cvId = $request->cv_id;
+        $cvId  = $request->cv_id;
+        $user  = Auth::user();
+
+        if ($user->level == 1) {
+            $allowedCvs = Cv::where('is_aktif', true)->pluck('id');
+        } else {
+            $allowedCvs = $user->userCV->pluck('cv_id');
+        }
 
         if ($cvId === 'all' || ! $cvId) {
-            session()->forget('active_cv');
+            // "Semua Perusahaan" hanya boleh untuk admin (level 1)
+            if ($user->level == 1) {
+                session()->forget('active_cv');
+            }
+            // Non-admin tidak bisa switch ke "semua" — abaikan
         } else {
-            session(['active_cv' => (int) $cvId]);
+            if ($allowedCvs->contains((int) $cvId)) {
+                session(['active_cv' => (int) $cvId]);
+            }
         }
 
         return redirect()->back();

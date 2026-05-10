@@ -15,12 +15,15 @@ class GudangLansirPakan extends Model
         'jumlah_kg',
         'jumlah_karung',
         'ongkos_oa',
+        'harga_pt_sum',
+        'keterangan',
     ];
 
     protected $casts = [
-        'jumlah_kg' => 'decimal:2',
+        'jumlah_kg'    => 'decimal:2',
         'jumlah_karung' => 'integer',
-        'ongkos_oa' => 'decimal:2',
+        'ongkos_oa'    => 'decimal:2',
+        'harga_pt_sum' => 'decimal:2',
     ];
 
     public function penerima(): BelongsTo

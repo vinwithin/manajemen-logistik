@@ -14,8 +14,11 @@ class LansirPayment extends Model
     protected $casts = ['tanggal_bayar' => 'date'];
 
     const TIPE_MOBIL = 'mobil';
-    const TIPE_TIM   = 'tim';
+
+    const TIPE_TIM = 'tim';
+
     const STATUS_BELUM = 'belum_bayar';
+
     const STATUS_SUDAH = 'sudah_bayar';
 
     public function po(): BelongsTo

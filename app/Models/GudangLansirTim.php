@@ -14,6 +14,7 @@ class GudangLansirTim extends Model
         'nama_tim',
         'jumlah_kg',
         'upah_per_kg',
+        'keterangan',
     ];
 
     protected $casts = [

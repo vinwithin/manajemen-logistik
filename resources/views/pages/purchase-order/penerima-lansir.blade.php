@@ -232,10 +232,32 @@
                     </div>
 
 
+                    @php
+                        $ongkosAngkut = $penerima->penerima?->ongkos_angkut ?? 0;
+                        $ongkosBongkar = $penerima->penerima?->ongkos_bongkar ?? 0;
+                        $gabungOngkos = $ongkosAngkut > 0 && $ongkosBongkar > 0;
+                        $defaultOngkosMobil = $gabungOngkos ? $ongkosAngkut + $ongkosBongkar : $ongkosAngkut;
+                    @endphp
+
                     {{-- Kendaraan Lansir --}}
                     <div class="mb-4">
                         <div class="d-flex justify-content-between align-items-center mb-2">
-                            <h6 class="fw-semibold mb-0">Kendaraan Lansir</h6>
+                            <div class="d-flex align-items-center gap-2">
+                                <h6 class="fw-semibold mb-0">Kendaraan Lansir</h6>
+                                @if ($gabungOngkos)
+                                    <span class="badge bg-success text-white">
+                                        OA+Angkut: Rp {{ number_format($defaultOngkosMobil, 0, ',', '.') }}/kg
+                                    </span>
+                                    <span class="badge bg-secondary text-white small">
+                                        (OA {{ number_format($ongkosAngkut, 0, ',', '.') }} + Angkut
+                                        {{ number_format($ongkosBongkar, 0, ',', '.') }})
+                                    </span>
+                                @elseif ($ongkosAngkut > 0)
+                                    <span class="badge bg-info text-white">
+                                        OA Lansir: Rp {{ number_format($ongkosAngkut, 0, ',', '.') }}/kg
+                                    </span>
+                                @endif
+                            </div>
                             <button type="button" class="btn btn-sm btn-outline-primary" id="btnTambahMobil">
                                 <i class="fa fa-plus"></i> Tambah Kendaraan
                             </button>
@@ -266,8 +288,9 @@
                                 </div>
                                 <div class="col-md-1">
                                     <label class="form-label small">Ongkos (Rp/kg)</label>
-                                    <input type="number" name="mobils[0][ongkos]" class="form-control form-control-sm"
-                                        placeholder="0" step="0.01" min="0">
+                                    <input type="number" name="mobils[0][ongkos]"
+                                        class="form-control form-control-sm input-ongkos-mobil" placeholder="0"
+                                        step="0.01" min="0" value="{{ $defaultOngkosMobil }}">
                                 </div>
                                 <div class="col-md-3">
                                     <label class="form-label small">Keterangan</label>
@@ -282,16 +305,36 @@
                         </div>
                     </div>
 
-                    {{-- Tim Bongkar --}}
-                    <div class="mb-4">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <h6 class="fw-semibold mb-0">Tim Bongkar <span class="text-muted small">(Opsional)</span></h6>
-                            <button type="button" class="btn btn-sm btn-outline-secondary" id="btnTambahTim">
-                                <i class="fa fa-plus"></i> Tambah Tim
-                            </button>
+                    {{-- Tim Bongkar — disembunyikan jika ongkos sudah digabung ke mobil --}}
+                    @if (!$gabungOngkos)
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <h6 class="fw-semibold mb-0">Tim Bongkar <span
+                                            class="text-muted small">(Opsional)</span>
+                                    </h6>
+                                    @if ($penerima->penerima?->ongkos_bongkar > 0)
+                                        <span class="badge bg-secondary">
+                                            Upah: Rp
+                                            {{ number_format($penerima->penerima->ongkos_bongkar, 0, ',', '.') }}/kg
+                                        </span>
+                                    @endif
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" id="btnTambahTim">
+                                    <i class="fa fa-plus"></i> Tambah Tim
+                                </button>
+                            </div>
+                            <div id="listTim"></div>
                         </div>
-                        <div id="listTim"></div>
-                    </div>
+                    @else
+                        <div class="alert alert-info py-2 mb-4 small">
+                            <i class="fa fa-info-circle"></i>
+                            Tim bongkar tidak diperlukan — ongkos OA (Rp
+                            {{ number_format($ongkosAngkut, 0, ',', '.') }}/kg)
+                            dan ongkos angkut (Rp {{ number_format($ongkosBongkar, 0, ',', '.') }}/kg) sudah digabung
+                            ke kolom ongkos kendaraan di atas.
+                        </div>
+                    @endif
 
                     <button type="submit" class="btn btn-primary">
                         <i class="fa fa-save"></i> Simpan Lansir
@@ -309,6 +352,10 @@
         <script>
             var mobilCount = 1;
             var timCount = 0;
+
+            // Ongkos dari master penerima
+            var defaultOngkosMobil = {{ $defaultOngkosMobil }};
+            var defaultUpahTim = {{ $gabungOngkos ? 0 : $penerima->penerima?->ongkos_bongkar ?? 0 }};
 
             // Auto-calc karung dari berat
             $(document).on('input', '.input-berat', function() {
@@ -333,7 +380,7 @@
                     <input type="number" name="mobils[${i}][jumlah_karung]" class="form-control form-control-sm input-karung" placeholder="0" min="0" readonly>
                 </div>
                 <div class="col-md-1">
-                    <input type="number" name="mobils[${i}][ongkos]" class="form-control form-control-sm" placeholder="0" step="0.01" min="0">
+                    <input type="number" name="mobils[${i}][ongkos]" class="form-control form-control-sm input-ongkos-mobil" placeholder="0" step="0.01" min="0" value="${defaultOngkosMobil}">
                 </div>
                 <div class="col-md-3">
                     <input type="text" name="mobils[${i}][keterangan]" class="form-control form-control-sm" placeholder="Keluhan/catatan (opsional)">
@@ -376,7 +423,7 @@
                 </div>
                 <div class="col-md-2">
                     <label class="form-label small">Upah (Rp/kg)</label>
-                    <input type="number" name="tims[${i}][upah]" class="form-control form-control-sm" placeholder="0" step="0.01" min="0">
+                    <input type="number" name="tims[${i}][upah]" class="form-control form-control-sm" placeholder="0" step="0.01" min="0" value="${defaultUpahTim}">
                 </div>
                 <div class="col-md-3">
                     <label class="form-label small">Keterangan</label>

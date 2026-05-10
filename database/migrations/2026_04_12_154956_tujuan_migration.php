@@ -16,6 +16,10 @@ return new class extends Migration
             $table->integer('cv_id');
             $table->string('type')->nullable();
             $table->string('nama');
+            $table->decimal('lat', 10, 7)->nullable()->comment('Latitude lokasi tujuan');
+            $table->decimal('lng', 10, 7)->nullable()->comment('Longitude lokasi tujuan');
+            $table->unsignedInteger('geofence_radius')->default(500)->comment('Radius geofence dalam meter');
+            $table->unsignedInteger('idtrack_marker_id')->nullable()->comment('IDMarker dari Idtrack API');
             $table->boolean('is_aktif');
             $table->timestamps();
         });

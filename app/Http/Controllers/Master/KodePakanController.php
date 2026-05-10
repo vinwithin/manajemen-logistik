@@ -34,7 +34,7 @@ class KodePakanController extends Controller
     {
         $request->validate([
             'nama' => 'required|string|max:255',
-            'kode' => 'required|string|max:50|unique:kode_pakan,kode',
+            'kode' => 'required|string|max:50',
         ]);
 
         try {

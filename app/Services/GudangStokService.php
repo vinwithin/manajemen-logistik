@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Exceptions\InsufficientStockException;
 use App\Models\GudangLansir;
+use App\Models\GudangLansirHeader;
 use App\Models\GudangLansirKendaraan;
 use App\Models\GudangLansirMobil;
 use App\Models\GudangLansirPakan;
@@ -233,117 +234,136 @@ class GudangStokService
     }
 
     /**
-     * Proses lansir gudang dengan struktur nested (kendaraan > penerima > pakan).
+     * Proses lansir gudang dengan struktur nested (header > kendaraan > penerima > pakan).
      * Mengurangi stok untuk setiap pakan yang dilansir.
      *
      * @throws InsufficientStockException
      * @throws \Exception
      */
-    public function prosesLansirGudangNested(array $data): GudangLansirKendaraan
+    public function prosesLansirGudangNested(array $data): GudangLansirHeader
     {
         return DB::transaction(function () use ($data) {
             $gudangId = $data['gudang_id'];
 
-            // Buat kendaraan
-            $kendaraan = GudangLansirKendaraan::create([
-                'gudang_id' => $gudangId,
-                'no_polisi' => strtoupper(trim($data['no_polisi'])),
-                'nama_sopir' => $data['nama_sopir'] ?? null,
-                'no_surat_jalan' => $data['no_surat_jalan'] ?? null,
+            // Buat header lansir
+            $header = GudangLansirHeader::create([
+                'no_lansir'      => GudangLansirHeader::generateNoLansir(),
+                'gudang_id'      => $gudangId,
+                'cv_id'          => $data['cv_id'] ?? null,
                 'tanggal_lansir' => $data['tanggal_lansir'],
-                'catatan' => $data['catatan'] ?? null,
-                'created_by' => Auth::id(),
+                'catatan'        => $data['catatan'] ?? null,
+                'created_by'     => Auth::id(),
             ]);
 
-            $totalKg = 0;
-            $totalKarung = 0;
-
-            // Loop penerima
-            foreach ($data['penerimas'] ?? [] as $penerimaData) {
-                if (empty(trim($penerimaData['nama_penerima'] ?? ''))) {
+            // Loop kendaraan
+            foreach ($data['kendaraans'] ?? [] as $kendaraanData) {
+                if (empty(trim($kendaraanData['no_polisi'] ?? ''))) {
                     continue;
                 }
 
-                $penerima = GudangLansirPenerima::create([
-                    'kendaraan_id' => $kendaraan->id,
-                    'nama_penerima' => $penerimaData['nama_penerima'],
-                    'tujuan_id' => $penerimaData['tujuan_id'] ?? null,
+                // Buat kendaraan
+                $kendaraan = GudangLansirKendaraan::create([
+                    'lansir_header_id' => $header->id,
+                    'no_polisi' => strtoupper(trim($kendaraanData['no_polisi'])),
+                    'nama_sopir' => $kendaraanData['nama_sopir'] ?? null,
+                    'no_surat_jalan' => $kendaraanData['no_surat_jalan'] ?? null,
+                    'created_by' => Auth::id(),
                 ]);
 
-                // Loop pakan per penerima
-                foreach ($penerimaData['pakans'] ?? [] as $pakanData) {
-                    if (empty($pakanData['kode_pakan_id']) || empty($pakanData['jumlah_kg'])) {
+                $totalKgKendaraan = 0;
+                $totalKarungKendaraan = 0;
+
+                // Loop penerima per kendaraan
+                foreach ($kendaraanData['penerimas'] ?? [] as $penerimaData) {
+                    if (empty(trim($penerimaData['nama_penerima'] ?? ''))) {
                         continue;
                     }
 
-                    $kodePakanId = $pakanData['kode_pakan_id'];
-                    $jumlahKg = (float) $pakanData['jumlah_kg'];
-                    $jumlahKarung = (int) ($pakanData['jumlah_karung'] ?? 0);
+                    $penerima = GudangLansirPenerima::create([
+                        'kendaraan_id' => $kendaraan->id,
+                        'nama_penerima' => $penerimaData['nama_penerima'],
+                        'tujuan_id' => $penerimaData['tujuan_id'] ?? null,
+                    ]);
 
-                    // Cek dan kurangi stok
-                    $stok = GudangStok::where('tujuan_id', $gudangId)
-                        ->where('kode_pakan_id', $kodePakanId)
-                        ->lockForUpdate()
-                        ->first();
+                    // Loop pakan per penerima
+                    foreach ($penerimaData['pakans'] ?? [] as $pakanData) {
+                        if (empty($pakanData['kode_pakan_id']) || empty($pakanData['jumlah_kg'])) {
+                            continue;
+                        }
 
-                    $stokKgTersedia = $stok ? (float) $stok->stok_kg : 0.0;
+                        $kodePakanId = $pakanData['kode_pakan_id'];
+                        $jumlahKg = (float) $pakanData['jumlah_kg'];
+                        $jumlahKarung = (int) ($pakanData['jumlah_karung'] ?? 0);
 
-                    if ($jumlahKg > $stokKgTersedia) {
-                        throw new InsufficientStockException($stokKgTersedia);
+                        // Cek dan kurangi stok
+                        $stok = GudangStok::where('tujuan_id', $gudangId)
+                            ->where('kode_pakan_id', $kodePakanId)
+                            ->lockForUpdate()
+                            ->first();
+
+                        $stokKgTersedia = $stok ? (float) $stok->stok_kg : 0.0;
+
+                        if ($jumlahKg > $stokKgTersedia) {
+                            throw new InsufficientStockException($stokKgTersedia);
+                        }
+
+                        // Simpan pakan
+                        $lansirPakan = GudangLansirPakan::create([
+                            'penerima_id'   => $penerima->id,
+                            'kode_pakan_id' => $kodePakanId,
+                            'jumlah_kg'     => $jumlahKg,
+                            'jumlah_karung' => $jumlahKarung,
+                            'ongkos_oa'     => $pakanData['ongkos_oa'] ?? 0,
+                            'harga_pt_sum'  => $pakanData['harga_pt_sum'] ?? 0,
+                            'keterangan'    => $pakanData['keterangan'] ?? null,
+                        ]);
+
+                        // Kurangi stok
+                        $stok->stok_kg     = $stok->stok_kg - $jumlahKg;
+                        $stok->stok_karung = max(0, $stok->stok_karung - $jumlahKarung);
+                        $stok->save();
+
+                        // Catat mutasi keluar — referensi ke gudang_lansir_pakan
+                        GudangMutasiStok::create([
+                            'tujuan_id'              => $gudangId,
+                            'kode_pakan_id'          => $kodePakanId,
+                            'tipe'                   => 'keluar',
+                            'jumlah_kg'              => $jumlahKg,
+                            'jumlah_karung'          => $jumlahKarung,
+                            'referensi_tipe'         => 'lansir_gudang_header',
+                            'referensi_id'           => $header->id,
+                            'gudang_lansir_pakan_id' => $lansirPakan->id,
+                            'saldo_kg_after'         => $stok->stok_kg,
+                            'saldo_karung_after'     => $stok->stok_karung,
+                        ]);
+
+                        $totalKgKendaraan += $jumlahKg;
+                        $totalKarungKendaraan += $jumlahKarung;
                     }
 
-                    // Simpan pakan
-                    GudangLansirPakan::create([
-                        'penerima_id' => $penerima->id,
-                        'kode_pakan_id' => $kodePakanId,
-                        'jumlah_kg' => $jumlahKg,
-                        'jumlah_karung' => $jumlahKarung,
-                        'ongkos_oa' => $pakanData['ongkos_oa'] ?? 0,
-                    ]);
-
-                    // Kurangi stok
-                    $stok->stok_kg = $stok->stok_kg - $jumlahKg;
-                    $stok->stok_karung = max(0, $stok->stok_karung - $jumlahKarung);
-                    $stok->save();
-
-                    // Catat mutasi keluar
-                    GudangMutasiStok::create([
-                        'tujuan_id' => $gudangId,
-                        'kode_pakan_id' => $kodePakanId,
-                        'tipe' => 'keluar',
-                        'jumlah_kg' => $jumlahKg,
-                        'jumlah_karung' => $jumlahKarung,
-                        'referensi_tipe' => 'lansir_gudang',
-                        'referensi_id' => $kendaraan->id,
-                        'saldo_kg_after' => $stok->stok_kg,
-                        'saldo_karung_after' => $stok->stok_karung,
-                    ]);
-
-                    $totalKg += $jumlahKg;
-                    $totalKarung += $jumlahKarung;
-                }
-
-                // Loop tim bongkar per penerima
-                foreach ($penerimaData['tims'] ?? [] as $timData) {
-                    if (empty(trim($timData['nama_tim'] ?? ''))) {
-                        continue;
+                    // Loop tim bongkar per penerima
+                    foreach ($penerimaData['tims'] ?? [] as $timData) {
+                        if (empty(trim($timData['nama_tim'] ?? ''))) {
+                            continue;
+                        }
+                        GudangLansirTim::create([
+                            'penerima_id' => $penerima->id,
+                            'nama_tim'    => trim($timData['nama_tim']),
+                            'jumlah_kg'   => $timData['jumlah_kg'] ?? 0,
+                            'upah_per_kg' => $timData['upah_per_kg'] ?? null,
+                            'keterangan'  => $timData['keterangan'] ?? null,
+                        ]);
                     }
-                    GudangLansirTim::create([
-                        'penerima_id' => $penerima->id,
-                        'nama_tim' => trim($timData['nama_tim']),
-                        'jumlah_kg' => $timData['jumlah_kg'] ?? 0,
-                        'upah_per_kg' => $timData['upah_per_kg'] ?? null,
-                    ]);
                 }
+
+                // Update total kendaraan
+                $kendaraan->update([
+                    'total_kg' => $totalKgKendaraan,
+                    'total_karung' => $totalKarungKendaraan,
+                ]);
             }
 
-            // Update total kendaraan
-            $kendaraan->update([
-                'total_kg' => $totalKg,
-                'total_karung' => $totalKarung,
-            ]);
-
-            return $kendaraan;
+            return $header;
         });
     }
 }

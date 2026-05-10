@@ -12,6 +12,7 @@ class GudangLansirPenerima extends Model
 
     protected $fillable = [
         'kendaraan_id',
+        'po_penerima_id',
         'nama_penerima',
         'tujuan_id',
         'status',
@@ -27,6 +28,11 @@ class GudangLansirPenerima extends Model
     public function kendaraan(): BelongsTo
     {
         return $this->belongsTo(GudangLansirKendaraan::class, 'kendaraan_id');
+    }
+
+    public function poPenerima(): BelongsTo
+    {
+        return $this->belongsTo(PoPenerima::class, 'po_penerima_id');
     }
 
     public function tujuan(): BelongsTo

@@ -10,7 +10,6 @@ class MenuHelper
 {
     public static function accessibleMenus(): Collection
     {
-        // Eager load roles & permissions sekaligus — cegah N+1 dari Spatie
         $user = Auth::user()->load(['roles', 'permissions']);
 
         $allowedMenuIds = $user->getAllPermissions()

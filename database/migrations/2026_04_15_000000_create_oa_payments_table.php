@@ -10,7 +10,8 @@ return new class extends Migration
     {
         Schema::create('oa_payments', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('po_item_id');
+            // $table->unsignedBigInteger('po_item_id');
+            $table->unsignedBigInteger('po_penerima_id')->nullable();
             $table->unsignedBigInteger('supplier_id')->nullable();
             $table->decimal('jumlah_tagihan', 15, 2)->default(0)->comment('berat × ongkos');
             $table->decimal('jumlah_bayar', 15, 2)->default(0);
@@ -21,7 +22,8 @@ return new class extends Migration
             $table->enum('status', ['pending', 'partial', 'lunas'])->default('pending');
             $table->timestamps();
 
-            $table->foreign('po_item_id')->references('id')->on('purchase_order_items')->onDelete('cascade');
+            // $table->foreign('po_item_id')->references('id')->on('purchase_order_items')->onDelete('cascade');
+            // $table->foreign('po_penerima_id')->references('id')->on('po_penerima')->nullOnDelete();
         });
     }
 

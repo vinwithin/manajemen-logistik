@@ -4,6 +4,7 @@ namespace App\Exports;
 
 use App\Models\LansirPayment;
 use App\Models\PoItemLansir;
+use App\Models\KodePakan;
 use App\Models\PurchaseOrder;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithEvents;

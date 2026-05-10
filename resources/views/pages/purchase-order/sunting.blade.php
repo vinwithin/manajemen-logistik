@@ -1,4 +1,19 @@
 @extends('layout.app')
+
+@push('css')
+    <style>
+        /* Select2 di dalam template penerima */
+        .select2-container--bootstrap-5 .select2-selection {
+            font-size: 0.875rem;
+            min-height: calc(1.5em + 0.5rem + 2px);
+        }
+
+        .select2-container {
+            width: 100% !important;
+        }
+    </style>
+@endpush
+
 @section('content')
     <div class="row justify-content-center">
         <div class="col-12">
@@ -186,11 +201,19 @@
                     </div>
                     <div class="col-md-3">
                         <label class="form-label">Supplier</label>
-                        <select name="kendaraan[__KI__][supplier_id]" class="form-select">
+                        <select name="kendaraan[__KI__][supplier_id]" class="form-select input-supplier">
                             <option value="">-- Pilih Supplier --</option>
                             @foreach ($suppliers as $s)
                                 <option value="{{ $s->id }}">{{ $s->initial }} — {{ $s->nama }}</option>
                             @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Jenis Kendaraan <span class="text-muted small">(untuk menentukan
+                                ongkos)</span></label>
+                        <select name="kendaraan[__KI__][jenis_kendaraan]" class="form-select input-jenis-kendaraan"
+                            disabled>
+                            <option value="">-- Pilih Supplier Dulu --</option>
                         </select>
                     </div>
                     <div class="col-md-3">
@@ -234,9 +257,14 @@
 
     {{-- Template: Penerima --}}
     <template id="tmplPenerima">
-        <div class="card mb-2 item-penerima border-secondary">
+        <div class="card mb-2 item-penerima border-secondary" data-ongkos-oa="0">
             <div class="card-header bg-secondary bg-opacity-10 py-1 d-flex justify-content-between align-items-center">
-                <span class="small fw-semibold label-penerima-no">Penerima #1</span>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="small fw-semibold label-penerima-no">Penerima #1</span>
+                    <span class="badge bg-light text-secondary border oa-info-badge" style="display:none!important">
+                        OA: <span class="oa-info-value">0</span> Rp/kg
+                    </span>
+                </div>
                 <button type="button" class="btn btn-sm btn-outline-danger btn-hapus-penerima" disabled>
                     <i class="fa fa-times"></i> Hapus
                 </button>
@@ -244,21 +272,30 @@
             <div class="card-body py-2">
                 <input type="hidden" name="kendaraan[__KI__][penerima][__PI__][id]" value="">
                 <div class="row g-2 mb-2">
-                    <div class="col-md-4">
+                    <div class="col-md-5">
                         <label class="form-label small">Nama Penerima <span class="text-danger">*</span></label>
-                        <input type="text" name="kendaraan[__KI__][penerima][__PI__][nama_penerima]"
-                            class="form-control form-control-sm input-nama-penerima" placeholder="Nama peternak">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label small">Tujuan <span class="text-danger">*</span></label>
-                        <select name="kendaraan[__KI__][penerima][__PI__][tujuan_id]" class="form-select form-select-sm">
-                            <option value="">-- Pilih Tujuan --</option>
-                            @foreach ($tujuans as $t)
-                                <option value="{{ $t->id }}">{{ $t->nama }}</option>
+                        <input type="hidden" name="kendaraan[__KI__][penerima][__PI__][penerima_id]"
+                            class="input-penerima-id" value="">
+                        <select name="kendaraan[__KI__][penerima][__PI__][nama_penerima]"
+                            class="form-select form-select-sm input-nama-penerima">
+                            <option value="">-- Pilih Penerima --</option>
+                            @foreach ($penerimas as $p)
+                                <option value="{{ $p->nama }}" data-penerima-id="{{ $p->id }}"
+                                    data-tujuan-id="{{ $p->tujuan_id }}"
+                                    data-tujuan-nama="{{ $p->tujuan->nama ?? '' }}">
+                                    {{ $p->nama }}
+                                </option>
                             @endforeach
                         </select>
                     </div>
                     <div class="col-md-4">
+                        <label class="form-label small">Tujuan</label>
+                        <input type="hidden" name="kendaraan[__KI__][penerima][__PI__][tujuan_id]"
+                            class="input-tujuan-id" value="">
+                        <input type="text" class="form-control form-control-sm input-tujuan-display bg-light"
+                            placeholder="Otomatis dari penerima" readonly>
+                    </div>
+                    <div class="col-md-3">
                         <label class="form-label small">Status Penerima </label>
                         <select name="kendaraan[__KI__][penerima][__PI__][status]"
                             class="form-select form-select-sm select-status-penerima">
@@ -399,11 +436,47 @@
                 $card.find('[name="kendaraan[' + ki + '][no_polisi]"]').val(data.no_polisi || '');
                 $card.find('[name="kendaraan[' + ki + '][nama_sopir]"]').val(data.nama_sopir || '');
                 $card.find('[name="kendaraan[' + ki + '][no_surat_jalan]"]').val(data.no_surat_jalan || '');
-                $card.find('[name="kendaraan[' + ki + '][supplier_id]"]').val(data.supplier_id || '');
                 $card.find('[name="kendaraan[' + ki + '][status]"]').val(data.status || 'pending');
                 if (data.jumlah_kg) {
                     $card.find('.input-muatan-kg').val(data.jumlah_kg);
                     updateMuatanKarung($card);
+                }
+
+                // Set supplier dan populate jenis kendaraan dropdown
+                if (data.supplier_id) {
+                    $card.find('[name="kendaraan[' + ki + '][supplier_id]"]').val(data.supplier_id);
+
+                    var $jenisSelect = $card.find('.input-jenis-kendaraan');
+                    $jenisSelect.html('<option value="">-- Loading... --</option>').prop('disabled', true);
+
+                    var savedJenis = data.jenis_kendaraan || '';
+                    $.ajax({
+                        url: '{{ route('supplier.get-jenis-kendaraan') }}',
+                        method: 'GET',
+                        data: {
+                            supplier_id: data.supplier_id
+                        },
+                        success: function(response) {
+                            if (response.success && response.jenis_kendaraan.length > 0) {
+                                var options = '<option value="">-- Pilih Jenis Kendaraan --</option>';
+                                response.jenis_kendaraan.forEach(function(jenis) {
+                                    options += '<option value="' + jenis + '">' + jenis + '</option>';
+                                });
+                                $jenisSelect.html(options).prop('disabled', false);
+                                // Restore nilai yang sudah tersimpan
+                                if (savedJenis) {
+                                    $jenisSelect.val(savedJenis);
+                                }
+                            } else {
+                                $jenisSelect.html('<option value="">-- Tidak Ada Jenis Kendaraan --</option>')
+                                    .prop('disabled', true);
+                            }
+                        },
+                        error: function() {
+                            $jenisSelect.html('<option value="">-- Error Loading --</option>').prop('disabled',
+                                true);
+                        }
+                    });
                 }
 
                 var penerimas = data.penerima || [];
@@ -419,12 +492,41 @@
             $kendaraanCard.find('.list-penerima').append($card);
             updatePenerimaLabels($kendaraanCard);
 
+            // Init select2 pada dropdown penerima yang baru ditambahkan
+            initSelect2Penerima($card.find('.select2-penerima'));
+
             if (data) {
                 $card.find('[name="kendaraan[' + ki + '][penerima][' + pi + '][id]"]').val(data.id || '');
-                $card.find('[name="kendaraan[' + ki + '][penerima][' + pi + '][nama_penerima]"]').val(data.nama_penerima ||
-                    '');
-                $card.find('[name="kendaraan[' + ki + '][penerima][' + pi + '][tujuan_id]"]').val(data.tujuan_id || '');
+                $card.find('.input-penerima-id').val(data.penerima_id || '');
+
+                // Set dropdown nama penerima
+                var $select = $card.find('.input-nama-penerima');
+                if (data.nama_penerima) {
+                    // Set nilai native select langsung
+                    $select.val(data.nama_penerima);
+
+                    // Set tujuan dan penerima_id langsung dari data server
+                    $card.find('.input-penerima-id').val(data.penerima_id || '');
+                    $card.find('.input-tujuan-id').val(data.tujuan_id || '');
+                    var tujuanDisplay = data.tujuan_nama || '';
+                    if (!tujuanDisplay && data.tujuan_id) {
+                        tujuanDisplay = $select.find('option[data-tujuan-id="' + data.tujuan_id + '"]').first().data(
+                            'tujuan-nama') || '';
+                    }
+                    $card.find('.input-tujuan-display').val(tujuanDisplay);
+                }
+
                 $card.find('[name="kendaraan[' + ki + '][penerima][' + pi + '][status]"]').val(data.status || 'pending');
+
+                // Set data-ongkos-oa dari pakan pertama (jika ada) untuk auto-fill baris pakan baru
+                if (data.pakans && data.pakans.length > 0 && data.pakans[0].ongkos_oa > 0) {
+                    var existingOa = parseFloat(data.pakans[0].ongkos_oa) || 0;
+                    $card.attr('data-ongkos-oa', existingOa);
+                    if (existingOa > 0) {
+                        $card.find('.oa-info-value').text(existingOa.toLocaleString('id-ID'));
+                        $card.find('.oa-info-badge').show();
+                    }
+                }
 
                 var pakans = data.pakans || [];
                 for (var pki = 0; pki < pakans.length; pki++) {
@@ -445,6 +547,12 @@
                 $row.find('[name*="[ongkos_oa]"]').val(data.ongkos_oa || 0);
                 $row.find('[name*="[harga_pt_sum]"]').val(data.harga_pt_sum || 0);
                 updateKarung($row.find('.input-jumlah-kg'));
+            } else {
+                // Baris pakan baru: auto-fill ongkos OA dari data attribute penerima
+                var savedOa = parseFloat($penerimaCard.attr('data-ongkos-oa')) || 0;
+                if (savedOa > 0) {
+                    $row.find('[name*="[ongkos_oa]"]').val(savedOa);
+                }
             }
         }
 
@@ -575,6 +683,161 @@
             updateMuatanKarung($(this).closest('.item-kendaraan'));
         });
 
+        // ── Populate Jenis Kendaraan dropdown saat Supplier dipilih ─────
+        $(document).on('change', '.input-supplier', function() {
+            var $kCard = $(this).closest('.item-kendaraan');
+            var $jenisSelect = $kCard.find('.input-jenis-kendaraan');
+            var supplierId = $(this).val();
+
+            // Reset jenis kendaraan dropdown
+            $jenisSelect.html('<option value="">-- Loading... --</option>').prop('disabled', true);
+
+            if (!supplierId) {
+                $jenisSelect.html('<option value="">-- Pilih Supplier Dulu --</option>').prop('disabled', true);
+                return;
+            }
+
+            // Get jenis kendaraan dari API
+            $.ajax({
+                url: '{{ route('supplier.get-jenis-kendaraan') }}',
+                method: 'GET',
+                data: {
+                    supplier_id: supplierId
+                },
+                success: function(response) {
+                    if (response.success) {
+                        var options = '<option value="">-- Pilih Jenis Kendaraan --</option>';
+
+                        if (response.jenis_kendaraan.length > 0) {
+                            response.jenis_kendaraan.forEach(function(jenis) {
+                                options += '<option value="' + jenis + '">' + jenis +
+                                    '</option>';
+                            });
+                            $jenisSelect.html(options).prop('disabled', false);
+                        } else {
+                            $jenisSelect.html(
+                                '<option value="">-- Tidak Ada Jenis Kendaraan --</option>').prop(
+                                'disabled', true);
+                            alertify.warning(
+                                'Supplier ini belum memiliki jenis kendaraan yang terdaftar.');
+                        }
+                    }
+                },
+                error: function() {
+                    $jenisSelect.html('<option value="">-- Error Loading --</option>').prop('disabled',
+                        true);
+                    alertify.error('Gagal mengambil jenis kendaraan');
+                }
+            });
+        });
+
+        // ── Dropdown penerima: gunakan native select + change event ──
+        function initSelect2Penerima($select) {
+            // Tidak menggunakan select2 agar set nilai programatik lebih reliable
+            // Native select sudah cukup
+        }
+
+        // ── Saat penerima dipilih: auto-fill tujuan ───────────────
+        $(document).on('change', '.input-nama-penerima', function() {
+            var $pCard = $(this).closest('.item-penerima');
+            var $opt = $(this).find('option:selected');
+            var tujuanId = $opt.data('tujuan-id') || '';
+            var tujuanNama = $opt.data('tujuan-nama') || '';
+            var penerimaId = $opt.data('penerima-id') || '';
+
+            $pCard.find('.input-penerima-id').val(penerimaId);
+            $pCard.find('.input-tujuan-id').val(tujuanId);
+            $pCard.find('.input-tujuan-display').val(tujuanNama);
+
+            if (tujuanId) {
+                triggerOngkosAutoFill($pCard);
+            }
+        });
+
+        // Saat penerima di-clear (pilih opsi kosong)
+        $(document).on('change', '.input-nama-penerima', function() {
+            if (!$(this).val()) {
+                var $pCard = $(this).closest('.item-penerima');
+                $pCard.find('.input-penerima-id').val('');
+                $pCard.find('.input-tujuan-id').val('');
+                $pCard.find('.input-tujuan-display').val('');
+                $pCard.find('.tujuan-warning').remove();
+                $pCard.find('.input-tujuan-display').removeClass(
+                    'border-warning border-danger border-success border-2');
+                $pCard.find('.oa-info-text').hide();
+                $pCard.find('.oa-info-badge').hide();
+                $pCard.attr('data-ongkos-oa', 0);
+            }
+        });
+        // ── Auto-fill Ongkos OA Pengiriman (dari Supplier + Tujuan + Jenis Kendaraan) ─────
+        function triggerOngkosAutoFill($pCard) {
+            var $kCard = $pCard.closest('.item-kendaraan');
+            var supplierId = $kCard.find('.input-supplier').val();
+            var tujuanId = $pCard.find('.input-tujuan-id').val();
+            var jenisKendaraan = $kCard.find('.input-jenis-kendaraan').val();
+
+            $pCard.find('.tujuan-warning').remove();
+            $pCard.find('.input-tujuan-display').removeClass('border-warning border-danger border-success border-2');
+
+            if (!supplierId || !tujuanId) return;
+
+            $.ajax({
+                url: '{{ route('supplier.get-ongkos') }}',
+                method: 'GET',
+                data: {
+                    supplier_id: supplierId,
+                    tujuan_id: tujuanId,
+                    jenis_kendaraan: jenisKendaraan || null
+                },
+                success: function(response) {
+                    if (response.success) {
+                        var oa = response.ongkos_angkut;
+
+                        // Simpan di data attribute agar baris pakan baru bisa auto-fill
+                        $pCard.attr('data-ongkos-oa', oa);
+
+                        // Update semua baris pakan yang sudah ada
+                        $pCard.find('[name*="[ongkos_oa]"]').val(oa);
+
+                        // Update badge info OA
+                        if (oa > 0) {
+                            $pCard.find('.oa-info-value').text(oa.toLocaleString('id-ID'));
+                            $pCard.find('.oa-info-badge').show();
+                        }
+
+                        if (!response.has_relation) {
+                            $pCard.find('.input-tujuan-display').addClass('border-danger border-2');
+                            var tujuanNama = $pCard.find('.input-tujuan-display').val();
+                            var warningHtml = `<div class="alert alert-danger alert-dismissible fade show py-2 small mt-1 tujuan-warning" role="alert">
+                                <i class="fa fa-exclamation-triangle"></i> <strong>Peringatan!</strong>
+                                Supplier tidak melayani tujuan "${tujuanNama}"${jenisKendaraan ? ' dengan kendaraan "' + jenisKendaraan + '"' : ''}.
+                                Isi ongkos OA secara manual.
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>`;
+                            $pCard.find('.input-tujuan-display').closest('.col-md-4').append(warningHtml);
+                            alertify.warning('Supplier tidak melayani tujuan tersebut. Isi ongkos OA manual.');
+                        } else {
+                            $pCard.find('.input-tujuan-display').addClass('border-success border-2');
+                        }
+                    }
+                },
+                error: function() {
+                    alertify.error('Gagal mengambil ongkos angkut');
+                }
+            });
+        }
+
+        // Trigger saat jenis kendaraan berubah
+        $(document).on('change', '.input-jenis-kendaraan', function() {
+            var $kCard = $(this).closest('.item-kendaraan');
+            $kCard.find('.item-penerima').each(function() {
+                var $pCard = $(this);
+                if ($pCard.find('.input-tujuan-id').val()) {
+                    triggerOngkosAutoFill($pCard);
+                }
+            });
+        });
+
         // ── Validasi ──────────────────────────────────────────────
         $('#formPO').on('submit', function(e) {
             var valid = true;
@@ -622,14 +885,17 @@
                         'nama_sopir' => $k->nama_sopir,
                         'no_surat_jalan' => $k->no_surat_jalan,
                         'supplier_id' => $k->supplier_id,
+                        'jenis_kendaraan' => $k->jenis_kendaraan,
                         'jumlah_kg' => $k->jumlah_kg,
                         'status' => $k->status,
                         'penerima' => $k->penerimas
                             ->map(function ($p) {
                                 return [
                                     'id' => $p->id,
+                                    'penerima_id' => $p->penerima_id,
                                     'nama_penerima' => $p->nama_penerima,
                                     'tujuan_id' => $p->tujuan_id,
+                                    'tujuan_nama' => $p->tujuan->nama ?? '',
                                     'status' => $p->status,
                                     'pakans' => $p->pakans
                                         ->map(function ($pk) {

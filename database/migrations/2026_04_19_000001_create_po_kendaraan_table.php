@@ -15,6 +15,7 @@ return new class extends Migration
             $table->string('nama_sopir')->nullable();
             $table->string('no_surat_jalan', 100)->nullable();
             $table->foreignId('supplier_id')->nullable()->constrained('suppliers')->nullOnDelete();
+            $table->string('jenis_kendaraan')->nullable();
             $table->decimal('jumlah_kg', 10, 2)->nullable();
             $table->integer('jumlah_karung')->nullable()->comment('ceil(jumlah_kg / 50)');
             $table->enum('status', ['pending', 'berangkat', 'selesai', 'batal'])->default('pending');

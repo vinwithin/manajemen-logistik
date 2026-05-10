@@ -5,33 +5,17 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <h5 class="mb-0"><i class="fa fa-history text-info"></i> Riwayat Mutasi Stok</h5>
-                    <a href="{{ route('gudang.stok.index') }}" class="btn btn-sm btn-secondary">
-                        <i class="fa fa-arrow-left"></i> Kembali ke Stok
-                    </a>
+                    <div class="d-flex gap-2">
+                        <a href="{{ route('gudang.stok.index') }}" class="btn btn-sm btn-secondary">
+                            <i class="fa fa-arrow-left"></i> Kembali ke Stok
+                        </a>
+                    </div>
                 </div>
 
                 {{-- Filter bar --}}
                 <div class="card-body border-bottom pb-3">
                     <div class="row g-2">
-                        <div class="col-12 col-md-3">
-                            <select id="filterGudang" class="form-select form-select-sm">
-                                <option value="">Semua Gudang</option>
-                                @foreach ($gudangs as $gudang)
-                                    <option value="{{ $gudang->id }}"
-                                        {{ request('tujuan_id') == $gudang->id ? 'selected' : '' }}>
-                                        {{ $gudang->nama }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-12 col-md-3">
-                            <select id="filterPakan" class="form-select form-select-sm">
-                                <option value="">Semua Kode Pakan</option>
-                                @foreach ($kodePakans as $pakan)
-                                    <option value="{{ $pakan->id }}">{{ $pakan->kode }} — {{ $pakan->nama }}</option>
-                                @endforeach
-                            </select>
-                        </div>
+
                         <div class="col-12 col-md-2">
                             <select id="filterTipe" class="form-select form-select-sm">
                                 <option value="">Semua Tipe</option>
@@ -168,11 +152,17 @@
                     dt.ajax.reload();
                 });
 
-            // Pre-select filter from query string
             var params = new URLSearchParams(window.location.search);
             if (params.get('tujuan_id')) {
-                $('#filterGudang').val(params.get('tujuan_id')).trigger('change');
+                $('#filterGudang').val(params.get('tujuan_id'));
             }
+            if (params.get('kode_pakan_id')) {
+                $('#filterPakan').val(params.get('kode_pakan_id'));
+            }
+            if (params.get('tujuan_id') || params.get('kode_pakan_id')) {
+                dt.ajax.reload();
+            }
+
         });
     </script>
 @endsection
