@@ -321,19 +321,34 @@
 
     {{-- ==================== HALAMAN 1: REKAPITULASI ==================== --}}
 
-    <div class="doc-title">REKAPITULASI PENGIRIMAN PAKAN</div>
-    <div class="doc-title">PT. SURYA UNGGAS MMANDIRI</div>
-    <div class="doc-title">UNIT JAMBI</div>
-    <div class="doc-title">PERIODE :&nbsp;
-        @if ($from && $to)
-            {{ date('d/m/Y', strtotime($from)) }} &ndash; {{ date('d/m/Y', strtotime($to)) }}
-        @elseif($from)
-            Dari {{ date('d/m/Y', strtotime($from)) }}
-        @elseif($to)
-            Sampai {{ date('d/m/Y', strtotime($to)) }}
-        @else
-            Semua Periode
+    @php
+        $cv = $pos->first()?->cv;
+        $cvLogo = $cv?->logo;
+    @endphp
+
+    {{-- Header dengan Logo --}}
+    <div style="position: relative; margin-bottom: 15px;">
+        @if ($cvLogo && file_exists(public_path('storage/' . $cvLogo)))
+            <div style="position: absolute; left: -25; top: -25;">
+                <img src="{{ public_path('storage/' . $cvLogo) }}"
+                    style="max-width: 80px; max-height: 80px; object-fit: contain;" alt="Logo CV">
+            </div>
         @endif
+
+        <div class="doc-title">REKAPITULASI PENGIRIMAN PAKAN</div>
+        <div class="doc-title">PT. SURYA UNGGAS MMANDIRI</div>
+        <div class="doc-title">UNIT JAMBI</div>
+        <div class="doc-title">PERIODE :&nbsp;
+            @if ($from && $to)
+                {{ date('d/m/Y', strtotime($from)) }} &ndash; {{ date('d/m/Y', strtotime($to)) }}
+            @elseif($from)
+                Dari {{ date('d/m/Y', strtotime($from)) }}
+            @elseif($to)
+                Sampai {{ date('d/m/Y', strtotime($to)) }}
+            @else
+                Semua Periode
+            @endif
+        </div>
     </div>
 
     {{-- Tabel Utama --}}
@@ -520,7 +535,7 @@
 
 
     @php
-        $cv = $pos->first()?->cv;
+        // $cv sudah didefinisikan di atas
         $cvNama = $cv?->nama_cv ?? '-';
         $cvAlamat = $cv?->alamat ?? '-';
         $cvNamaBank = $cv?->nama_bank ?? '-';

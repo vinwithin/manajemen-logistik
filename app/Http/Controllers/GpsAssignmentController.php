@@ -31,7 +31,6 @@ class GpsAssignmentController extends Controller
 
     public function allPositions(): JsonResponse
     {
-        // Ambil hanya assignment GPS yang masih aktif (belum di-unassign)
         $activeAssignments = GpsAssignment::active()
             ->with('assignable')
             ->get();
@@ -111,7 +110,6 @@ class GpsAssignmentController extends Controller
 
         try {
             $device = $this->idtrack->findDeviceByNopol($request->nopol);
-            Log::info("Device found for nopol '{$request->nopol}': ".json_encode($device));
 
             if (! $device) {
                 return response()->json([

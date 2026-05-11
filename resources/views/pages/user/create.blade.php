@@ -39,8 +39,10 @@
                                 <label for="level" class="col-sm-2 control-label">Level Akses</label>
                                 <div class="col-sm-7">
                                     <select class="form-control" name="level" id="level_akun">
-                                        <option value="1">Pusat (Semua Cv)</option>
-                                        <option value="2">Per Cv</option>
+                                        <option value="1" {{ old('level') == '1' ? 'selected' : '' }}>Pusat (Semua Cv)
+                                        </option>
+                                        <option value="2" {{ old('level', '2') == '2' ? 'selected' : '' }}>Per Cv
+                                        </option>
                                     </select>
                                 </div>
                             </div>
@@ -116,9 +118,20 @@
         });
 
         $("#level_akun").on("change", function() {
-            if ($(this).val() == '0') $("#unit_kerja").css('display', 'none');
+            if ($(this).val() == '1') {
+                $("#unit_kerja").css('display', 'none');
+            } else {
+                $("#unit_kerja").css('display', '');
+            }
+        });
 
-            else $("#unit_kerja").css('display', '');
+        // Set initial state on page load
+        $(document).ready(function() {
+            if ($("#level_akun").val() == '1') {
+                $("#unit_kerja").css('display', 'none');
+            } else {
+                $("#unit_kerja").css('display', '');
+            }
         });
     </script>
 @endsection

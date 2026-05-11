@@ -98,9 +98,11 @@
 
 
         $("#level_akun").on("change", function() {
-            if ($(this).val() == '0') $("#unit_kerja").css('display', 'none');
-
-            else $("#unit_kerja").css('display', '');
+            if ($(this).val() == '1') {
+                $("#unit_kerja").css('display', 'none');
+            } else {
+                $("#unit_kerja").css('display', '');
+            }
         });
 
         $(document).ready(function() {

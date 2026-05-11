@@ -13,8 +13,10 @@
                         <thead>
                             <tr>
                                 <th>No</th>
-                                <th>No. PO</th>
-                                <th>Tanggal</th>
+                                <th>Tipe</th>
+                                <th>No. Referensi</th>
+                                <th>Tanggal Lansir</th>
+                                <th>Tujuan</th>
                                 <th>CV</th>
                                 <th>Kendaraan</th>
                                 <th>Aksi</th>
@@ -48,12 +50,23 @@
                         width: '50px'
                     },
                     {
-                        data: 'no_po',
-                        name: 'no_po'
+                        data: 'tipe',
+                        name: 'tipe',
+                        searchable: false
                     },
                     {
-                        data: 'tanggal_po',
-                        name: 'tanggal_po'
+                        data: 'no_referensi',
+                        name: 'no_referensi',
+                        searchable: false
+                    },
+                    {
+                        data: 'tanggal_lansir',
+                        name: 'tanggal_lansir'
+                    },
+                    {
+                        data: 'nama_tujuan',
+                        name: 'nama_tujuan',
+                        searchable: false
                     },
                     {
                         data: 'cv_name',

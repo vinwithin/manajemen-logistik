@@ -1,7 +1,7 @@
 @extends('layout.app')
 @section('content')
     <div class="row">
-        <div class="col-12 col-md-5">
+        <div class="col-12">
             <div class="card">
                 <div class="card-header">
                     <h5 class="mb-0">Tambah Kode Pakan</h5>

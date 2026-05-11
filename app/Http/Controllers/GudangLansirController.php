@@ -352,19 +352,7 @@ class GudangLansirController extends Controller
             if ($cv) {
                 // Gunakan database transaction dan locking untuk menghindari race condition
                 $dokumen = \DB::transaction(function () use ($cvId, $from, $to, $cv, $request) {
-                    // Cek apakah sudah ada dokumen untuk periode ini
-                    $existing = PoPeriodeDokumen::where('cv_id', $cvId)
-                        ->where('dari', $from)
-                        ->where('sampai', $to)
-                        ->where('tipe', 'gudang_ptsum')
-                        ->lockForUpdate() // Lock row untuk menghindari race condition
-                        ->first();
-
-                    if ($existing) {
-                        return $existing;
-                    }
-
-                    // Generate nomor surat baru
+                    // Generate nomor surat baru (selalu increment)
                     $generated = PoPeriodeDokumen::generateNoSurat($cv, 'gudang_ptsum', $from);
 
                     // Buat dokumen baru

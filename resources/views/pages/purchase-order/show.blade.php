@@ -100,6 +100,25 @@
                 <div class="d-flex align-items-center gap-2">
                     <span class="badge bg-primary">{{ number_format($kendaraan->total_kg, 0, ',', '.') }} kg</span>
                     <span class="badge bg-{{ $kBadge['color'] }}">{{ $kBadge['label'] }}</span>
+
+                    {{-- GPS Assignment Status --}}
+                    @if ($kendaraan->activeGps)
+                        <span class="badge bg-success" title="GPS Device Assigned">
+                            <i class="fa fa-satellite-dish"></i> {{ $kendaraan->activeGps->device_name ?? 'GPS Active' }}
+                        </span>
+                        <button type="button" class="btn btn-xs btn-outline-danger btn-unassign-gps"
+                            data-kendaraan-id="{{ $kendaraan->id }}" data-nopol="{{ $kendaraan->no_polisi }}"
+                            title="Lepas GPS">
+                            <i class="fa fa-times"></i>
+                        </button>
+                    @else
+                        <button type="button" class="btn btn-xs btn-outline-warning btn-auto-assign-gps"
+                            data-kendaraan-id="{{ $kendaraan->id }}" data-nopol="{{ $kendaraan->no_polisi }}"
+                            title="Auto Assign GPS berdasarkan Nopol">
+                            <i class="fa fa-satellite-dish"></i> Auto Assign GPS
+                        </button>
+                    @endif
+
                     <button type="button" class="btn btn-xs btn-outline-info btn-lihat-gps"
                         data-nopol="{{ $kendaraan->no_polisi }}" title="Lihat Lokasi GPS">
                         <i class="fa fa-map-marker"></i> Lokasi
@@ -659,12 +678,47 @@
         </div>
     </div>
 
+    {{-- Modal Assign GPS --}}
+    <div class="modal fade" id="modalAssignGps" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header py-2">
+                    <h6 class="modal-title"><i class="fa fa-satellite-dish text-warning"></i> Assign GPS Device — <span
+                            id="assignNopol"></span></h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="formAssignGps">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">GPS Device <span class="text-danger">*</span></label>
+                            <select id="assignDeviceId" class="form-select" required>
+                                <option value="">-- Pilih GPS Device --</option>
+                            </select>
+                            <div class="form-text">Pilih GPS device yang akan di-assign ke kendaraan ini</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Catatan (opsional)</label>
+                            <textarea id="assignCatatan" class="form-control" rows="2" placeholder="Catatan tambahan..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer py-2">
+                        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-sm btn-warning">
+                            <i class="fa fa-check"></i> Assign GPS
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     @push('css')
         <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     @endpush
 
     @push('js')
         <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+        <script src="{{ asset('js/gps-auto-assign.js') }}"></script>
         <script>
             var gpsMap = null;
             var gpsMarker = null;
@@ -757,6 +811,120 @@
                     gpsMap = null;
                     gpsMarker = null;
                 }
+            });
+
+            // ── GPS Assignment ────────────────────────────────────────
+            var currentKendaraanId = null;
+
+            // Button: Assign GPS
+            $(document).on('click', '.btn-assign-gps', function() {
+                currentKendaraanId = $(this).data('kendaraan-id');
+                var nopol = $(this).data('nopol');
+
+                $('#assignNopol').text(nopol);
+                $('#assignDeviceId').html('<option value="">Loading...</option>');
+                $('#assignCatatan').val('');
+
+                var modal = new bootstrap.Modal(document.getElementById('modalAssignGps'));
+                modal.show();
+
+                // Load GPS devices
+                $.getJSON('{{ route('gps.devices') }}', function(res) {
+                    if (res.success && res.devices) {
+                        var options = '<option value="">-- Pilih GPS Device --</option>';
+                        res.devices.forEach(function(device) {
+                            var deviceId = device.DeviceID || device.device_id;
+                            var deviceName = device.DeviceName || device.device_name || device.Nopol ||
+                                'Device ' + deviceId;
+                            var isAssigned = device.is_assigned;
+                            var disabled = isAssigned ? ' disabled' : '';
+                            var badge = isAssigned ? ' (Sudah di-assign)' : '';
+                            options += '<option value="' + deviceId + '"' + disabled + '>' +
+                                deviceName + badge + '</option>';
+                        });
+                        $('#assignDeviceId').html(options);
+                    } else {
+                        $('#assignDeviceId').html('<option value="">Tidak ada device tersedia</option>');
+                    }
+                }).fail(function() {
+                    $('#assignDeviceId').html('<option value="">Gagal memuat device</option>');
+                });
+            });
+
+            // Form: Submit Assign GPS
+            $('#formAssignGps').on('submit', function(e) {
+                e.preventDefault();
+
+                var deviceId = $('#assignDeviceId').val();
+                var catatan = $('#assignCatatan').val();
+
+                if (!deviceId) {
+                    alertify.error('Pilih GPS device terlebih dahulu');
+                    return;
+                }
+
+                $.ajax({
+                    url: '/gps/kendaraan/' + currentKendaraanId + '/assign',
+                    method: 'POST',
+                    data: {
+                        _token: '{{ csrf_token() }}',
+                        device_id: deviceId,
+                        catatan: catatan
+                    },
+                    success: function(res) {
+                        if (res.success) {
+                            alertify.success(res.message || 'GPS berhasil di-assign');
+                            bootstrap.Modal.getInstance(document.getElementById('modalAssignGps')).hide();
+                            setTimeout(function() {
+                                location.reload();
+                            }, 700);
+                        } else {
+                            alertify.error(res.message || 'Gagal assign GPS');
+                        }
+                    },
+                    error: function(xhr) {
+                        var msg = xhr.responseJSON?.message || 'Gagal assign GPS';
+                        alertify.error(msg);
+                    }
+                });
+            });
+
+            // Button: Unassign GPS
+            $(document).on('click', '.btn-unassign-gps', function() {
+                var kendaraanId = $(this).data('kendaraan-id');
+                var nopol = $(this).data('nopol');
+
+                alertify.confirm(
+                    'Lepas GPS',
+                    'Yakin ingin melepas GPS dari kendaraan <strong>' + nopol + '</strong>?',
+                    function() {
+                        $.ajax({
+                            url: '/gps/kendaraan/' + kendaraanId + '/unassign',
+                            method: 'DELETE',
+                            data: {
+                                _token: '{{ csrf_token() }}'
+                            },
+                            success: function(res) {
+                                if (res.success) {
+                                    alertify.success(res.message || 'GPS berhasil dilepas');
+                                    setTimeout(function() {
+                                        location.reload();
+                                    }, 700);
+                                } else {
+                                    alertify.error(res.message || 'Gagal melepas GPS');
+                                }
+                            },
+                            error: function(xhr) {
+                                var msg = xhr.responseJSON?.message || 'Gagal melepas GPS';
+                                alertify.error(msg);
+                            }
+                        });
+                    },
+                    function() {}
+                ).set('labels', {
+                    ok: 'Ya, Lepas',
+                    cancel: 'Batal'
+                });
             });
         </script>
     @endpush

@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Exports\RekapLansirExport;
 use App\Models\LansirPayment;
+use App\Models\PoPenerimaLansir;
+use App\Models\GudangLansirHeader;
 use App\Models\PurchaseOrder;
 use App\Services\Datatables\RekapLansirDatatableService;
 use App\Services\RekapLansirService;
@@ -27,16 +29,47 @@ class RekapLansirController extends Controller
         $activeCvId = session('active_cv');
 
         if ($request->ajax()) {
-            $query = PurchaseOrder::with(['cv'])
+            // Gabungkan data dari PO Lansir dan Gudang Lansir
+            $poLansir = PoPenerimaLansir::with(['penerima.kendaraan.po.cv'])
+                ->withCount('mobils')
+                ->when($activeCvId, fn ($q) => $q->whereHas('penerima.kendaraan.po', fn ($q2) => $q2->where('cv_id', $activeCvId)))
+                ->get()
+                ->map(function ($item) {
+                    return [
+                        'id' => 'po_'.$item->id,
+                        'tipe' => 'PO Lansir',
+                        'no_referensi' => $item->penerima?->kendaraan?->po?->no_po ?? '-',
+                        'tanggal_lansir' => $item->tanggal_lansir,
+                        'nama_tujuan' => $item->penerima?->nama_penerima ?? '-',
+                        'cv_name' => $item->penerima?->kendaraan?->po?->cv?->nama_cv ?? '-',
+                        'jumlah_kendaraan' => $item->mobils_count ?? 0,
+                        'original_id' => $item->id,
+                    ];
+                });
+
+            $gudangLansir = GudangLansirHeader::with(['cv', 'gudang'])
                 ->withCount('kendaraans')
-                ->where('status', PurchaseOrder::STATUS_LOCKED)
-                ->orderBy('tanggal_po', 'desc');
+                ->when($activeCvId, fn ($q) => $q->where('cv_id', $activeCvId))
+                ->get()
+                ->map(function ($item) {
+                    return [
+                        'id' => 'gudang_'.$item->id,
+                        'tipe' => 'Gudang Lansir',
+                        'no_referensi' => $item->no_lansir ?? '-',
+                        'tanggal_lansir' => $item->tanggal_lansir,
+                        'nama_tujuan' => $item->gudang?->nama ?? '-',
+                        'cv_name' => $item->cv?->nama_cv ?? '-',
+                        'jumlah_kendaraan' => $item->kendaraans_count ?? 0,
+                        'original_id' => $item->id,
+                    ];
+                });
 
-            if ($activeCvId) {
-                $query->where('cv_id', $activeCvId);
-            }
+            // Gabungkan dan urutkan berdasarkan tanggal
+            $combined = $poLansir->concat($gudangLansir)
+                ->sortByDesc('tanggal_lansir')
+                ->values();
 
-            return $this->datatableService->getData($query);
+            return $this->datatableService->getDataFromCollection($combined);
         }
 
         return view('pages.keuangan.rekap-lansir.index');
@@ -109,9 +142,9 @@ class RekapLansirController extends Controller
         }
 
         // try {
-            $filename = 'rekap-lansir-'.$po->no_po.'-'.now()->format('Ymd').'.xlsx';
+        $filename = 'rekap-lansir-'.$po->no_po.'-'.now()->format('Ymd').'.xlsx';
 
-            return Excel::download(new RekapLansirExport($po), $filename);
+        return Excel::download(new RekapLansirExport($po), $filename);
         // } catch (\Exception $e) {
         //     return redirect()->back()->with('error', 'Gagal mengekspor data: '.$e->getMessage());
         // }

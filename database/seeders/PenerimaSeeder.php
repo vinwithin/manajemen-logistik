@@ -204,17 +204,17 @@ class PenerimaSeeder extends Seeder
         $now = now();
 
         // Insert Kerinci
-        foreach ($kerinci_data as [$nama, $oa, $bongkar]) {
-            DB::table('penerima')->insert([
-                'nama' => $nama,
-                'tujuan_id' => $kerinci->id,
-                'ongkos_angkut' => $oa,
-                'ongkos_bongkar' => $bongkar,
-                'is_aktif' => true,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ]);
-        }
+        // foreach ($kerinci_data as [$nama, $oa, $bongkar]) {
+        //     DB::table('penerima')->insert([
+        //         'nama' => $nama,
+        //         'tujuan_id' => $kerinci->id,
+        //         'ongkos_angkut' => $oa,
+        //         'ongkos_bongkar' => $bongkar,
+        //         'is_aktif' => true,
+        //         'created_at' => $now,
+        //         'updated_at' => $now,
+        //     ]);
+        // }
 
         // Insert Bangko
         foreach ($bangko_data as [$nama, $oa, $bongkar]) {
@@ -234,6 +234,18 @@ class PenerimaSeeder extends Seeder
             DB::table('penerima')->insert([
                 'nama' => $nama,
                 'tujuan_id' => $bungo->id,
+                'ongkos_angkut' => $oa,
+                'ongkos_bongkar' => $bongkar,
+                'is_aktif' => true,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+        }
+
+        foreach ($jambi_data as [$nama, $oa, $bongkar]) {
+            DB::table('penerima')->insert([
+                'nama' => $nama,
+                'tujuan_id' => $jambi->id,
                 'ongkos_angkut' => $oa,
                 'ongkos_bongkar' => $bongkar,
                 'is_aktif' => true,

@@ -433,7 +433,7 @@
                             <td class="td-total">
                                 {{ $totalOngkosPenerima > 0 ? number_format($totalOngkosPenerima, 0, ',', '.') : '-' }}
                             </td>
-                            <td style="font-weight: bold">{{$kendaraan->supplier?->nama ?? '-'}}</td>
+                            <td style="font-weight: bold">{{ $kendaraan->supplier?->nama ?? '-' }}</td>
                         </tr>
                         @php
                             $grandTotalKg += $totalKgPenerima;
@@ -464,25 +464,25 @@
             <td>
                 <span class="sign-label">Diverifikasi Oleh, <br>Finance Accounting</span>
                 <span
-                    class="sign-line">(&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)</span>
+                    class="sign-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
             </td>
             <td>
-                <span class="sign-label">Diketahui Oleh, <br>Branch Manager</span>
+                <span class="sign-label">Diketahui Oleh, <br> Branch Manager</span>
                 <span
-                    class="sign-line">(&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)</span>
+                    class="sign-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+            </td>
             </td>
             <td>
-                <span class="sign-label"></span>
+                <span class="sign-label">{{ now()->translatedFormat('d F Y') }}</span>
+
                 <span
-                    class="sign-line">(&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)</span>
+                    class="sign-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
             </td>
         </tr>
     </table>
 
-    {{-- ==================== PAGE BREAK ==================== --}}
-    <div class="page-break"></div>
+    {{-- <div class="page-break"></div>
 
-    {{-- ==================== HALAMAN 2: NOTA PEMBAYARAN ==================== --}}
     @php
         $cv = $pos->first()?->cv;
         $cvNama = $cv?->nama_cv ?? '-';
@@ -639,7 +639,7 @@
                 </td>
             </tr>
         </table>
-    </div>
+    </div> --}}
 
 </body>
 

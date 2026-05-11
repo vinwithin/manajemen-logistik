@@ -21,6 +21,7 @@ class UserController extends Controller
     {
         $this->userService = $userService;
     }
+
     /**
      * Display a listing of the resource.
      */
@@ -34,8 +35,10 @@ class UserController extends Controller
                 'aktif',
                 'level',
             ]);
+
             return $this->userService->getData($query);
         }
+
         return view('pages.user.index');
     }
 
@@ -45,9 +48,10 @@ class UserController extends Controller
     public function create()
     {
         $data = Cv::all();
+
         return view('pages.user.create', [
             'data' => $data,
-            'roles' => Role::all()
+            'roles' => Role::all(),
         ]);
     }
 
@@ -57,39 +61,52 @@ class UserController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'name'     => 'required|string|max:255',
-            'email'    => 'required|email|unique:users,email',
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:6',
-            'level'    => 'required',
-            'roles'    => 'array',
-            'id_cv'    => 'array',
+            'level' => 'required',
+            'roles' => 'array',
+            'roles.*' => 'exists:roles,id',
+            'id_cv' => 'array',
         ]);
 
         DB::beginTransaction();
         try {
             $user = User::create([
-                'name'     => $request->name,
-                'email'    => $request->email,
+                'name' => $request->name,
+                'email' => $request->email,
                 'password' => Hash::make($request->password),
-                'level'    => $request->level,
-                'aktif'    => $request->has('aktif') ? 1 : 0,
+                'level' => $request->level,
+                'aktif' => $request->has('aktif') ? 1 : 0,
             ]);
 
+            // Konversi ID role menjadi nama role
             if ($request->filled('roles')) {
-                $user->syncRoles($request->roles);
+                $validRoles = Role::whereIn('id', $request->roles)->pluck('name')->toArray();
+                $user->syncRoles($validRoles);
             }
 
-            if ($request->level == 1 && $request->filled('id_cv')) {
+            // Simpan CV berdasarkan level
+            if ($request->level == 1) {
+                // Level 1 = Pusat, create semua CV
+                $allCv = Cv::all();
+                foreach ($allCv as $cv) {
+                    UserCv::create(['user_id' => $user->id, 'cv_id' => $cv->id, 'role' => '']);
+                }
+            } elseif ($request->level == 2 && $request->filled('id_cv')) {
+                // Level 2 = Per CV, create CV yang dipilih saja
                 foreach ($request->id_cv as $cvId) {
                     UserCv::create(['user_id' => $user->id, 'cv_id' => $cvId, 'role' => '']);
                 }
             }
 
             DB::commit();
+
             return redirect()->route('user.index')->with('success', 'User berhasil ditambahkan.');
         } catch (Exception $e) {
             DB::rollBack();
-            return redirect()->back()->with('error', 'Gagal menyimpan user: ' . $e->getMessage())->withInput();
+
+            return redirect()->back()->with('error', 'Gagal menyimpan user: '.$e->getMessage())->withInput();
         }
     }
 
@@ -126,7 +143,7 @@ class UserController extends Controller
                 'user_roles' => $user_roles,
                 'roles' => $roles,
                 'user_cv' => $user_cv,
-                'cv' => $cv
+                'cv' => $cv,
             ]);
         } catch (Exception $e) {
             return redirect()->back()->with('error', 'Gagal memuat halaman!');
@@ -138,10 +155,12 @@ class UserController extends Controller
      */
     public function update(Request $request, string $id)
     {
+
         $request->validate([
-            'name'  => 'required|string|max:255',
+            'name' => 'required|string|max:255',
             'level' => 'required',
             'roles' => 'array',
+            'roles.*' => 'exists:roles,id',
             'id_cv' => 'array',
         ]);
 
@@ -150,7 +169,7 @@ class UserController extends Controller
             $user = User::findOrFail($id);
 
             $user->update([
-                'name'  => $request->name,
+                'name' => $request->name,
                 'level' => $request->level,
                 'aktif' => $request->has('aktif') ? 1 : 0,
             ]);
@@ -159,20 +178,36 @@ class UserController extends Controller
                 $user->update(['password' => Hash::make($request->password)]);
             }
 
-            $user->syncRoles($request->roles ?? []);
+            // Konversi ID role menjadi nama role
+            if ($request->filled('roles')) {
+                $validRoles = Role::whereIn('id', $request->roles)->pluck('name')->toArray();
+                $user->syncRoles($validRoles);
+            } else {
+                $user->syncRoles([]);
+            }
 
             UserCv::where('user_id', $user->id)->delete();
-            if ($request->level == 1 && $request->filled('id_cv')) {
+
+            // Simpan CV berdasarkan level
+            if ($request->level == 1) {
+                $allCv = Cv::all();
+                foreach ($allCv as $cv) {
+                    UserCv::create(['user_id' => $user->id, 'cv_id' => $cv->id, 'role' => '']);
+                }
+            } elseif ($request->level == 2 && $request->filled('id_cv')) {
+                // Level 2 = Per CV, create CV yang dipilih saja
                 foreach ($request->id_cv as $cvId) {
                     UserCv::create(['user_id' => $user->id, 'cv_id' => $cvId, 'role' => '']);
                 }
             }
 
             DB::commit();
+
             return redirect()->route('user.index')->with('success', 'User berhasil diperbarui.');
         } catch (Exception $e) {
             DB::rollBack();
-            return redirect()->back()->with('error', 'Gagal memperbarui user: ' . $e->getMessage())->withInput();
+
+            return redirect()->back()->with('error', 'Gagal memperbarui user: '.$e->getMessage())->withInput();
         }
     }
 
@@ -189,9 +224,11 @@ class UserController extends Controller
             $user->delete();
 
             DB::commit();
+
             return response()->json(['success' => true, 'message' => 'User berhasil dihapus.']);
         } catch (Exception $e) {
             DB::rollBack();
+
             return response()->json(['success' => false, 'message' => 'Gagal menghapus user.'], 500);
         }
     }

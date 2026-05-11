@@ -38,7 +38,7 @@
                                 <label class="form-label">Logo Perusahaan</label>
                                 <input type="file" class="form-control @error('logo') is-invalid @enderror"
                                     name="logo" accept="image/*" id="inputLogo">
-                                <small class="text-muted">Format: JPG, PNG, GIF, SVG. Maksimal 2MB</small>
+                                <small class="text-muted">Format: JPG, PNG, GIF, SVG, WEBP. Maksimal 2MB</small>
                                 @error('logo')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -113,7 +113,6 @@
 
 @push('scripts')
     <script>
-        // Preview logo saat file dipilih
         document.getElementById('inputLogo').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (file) {

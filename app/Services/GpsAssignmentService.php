@@ -13,10 +13,7 @@ class GpsAssignmentService
 {
     public function __construct(private IdtrackService $idtrack) {}
 
-    /**
-     * Assign device GPS ke entitas (PoKendaraan atau PoLansirMobil).
-     * Otomatis unassign dari entitas sebelumnya jika device masih aktif di tempat lain.
-     */
+    
     public function assign(Model $assignable, int $deviceId, ?string $catatan = null): GpsAssignment
     {
         return DB::transaction(function () use ($assignable, $deviceId, $catatan) {

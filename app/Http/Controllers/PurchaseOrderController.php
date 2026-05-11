@@ -386,19 +386,7 @@ class PurchaseOrderController extends Controller
             if ($buatNoSurat && $from && $to && $cv) {
                 // Gunakan database transaction dan locking untuk menghindari race condition
                 $dokumen = \DB::transaction(function () use ($cvId, $from, $to, $cv, $request) {
-                    // Cek apakah sudah ada dokumen untuk periode ini
-                    $existing = PoPeriodeDokumen::where('cv_id', $cvId)
-                        ->where('dari', $from)
-                        ->where('sampai', $to)
-                        ->where('tipe', 'ptsum')
-                        ->lockForUpdate() // Lock row untuk menghindari race condition
-                        ->first();
-
-                    if ($existing) {
-                        return $existing;
-                    }
-
-                    // Generate nomor surat baru
+                    // Generate nomor surat baru (selalu increment, tidak peduli periode)
                     $generated = PoPeriodeDokumen::generateNoSurat($cv, 'ptsum', $from);
 
                     // Buat dokumen baru
@@ -563,11 +551,9 @@ class PurchaseOrderController extends Controller
                     'dp_keterangan' => $kendaraanData['dp_keterangan'] ?? null,
                 ]);
 
-                // Variabel untuk menghitung total tagihan OA dari semua penerima di kendaraan ini
                 $totalTagihanKendaraan = 0;
 
                 foreach ($kendaraanData['penerima'] ?? [] as $penerimaData) {
-                    // Skip penerima yang nama_penerima-nya kosong
                     if (empty(trim($penerimaData['nama_penerima'] ?? ''))) {
                         continue;
                     }

@@ -53,7 +53,7 @@
                                 @endif
                                 <input type="file" class="form-control @error('logo') is-invalid @enderror"
                                     name="logo" accept="image/*" id="inputLogo">
-                                <small class="text-muted">Format: JPG, PNG, GIF, SVG. Maksimal 2MB. Kosongkan jika tidak
+                                <small class="text-muted">Format: JPG, PNG, GIF, SVG, WEBP. Maksimal 2MB. Kosongkan jika tidak
                                     ingin mengubah.</small>
                                 @error('logo')
                                     <div class="invalid-feedback">{{ $message }}</div>

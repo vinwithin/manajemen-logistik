@@ -22,10 +22,12 @@ class CvController extends Controller
     {
         if ($request->ajax()) {
             $query = Cv::select(['id', 'nama_cv', 'code', 'is_aktif']);
+
             return $this->cvService->getData($query);
         }
 
         $cvList = Cv::withOmzet();
+
         return view('pages.cv.index', compact('cvList'));
     }
 
@@ -38,33 +40,33 @@ class CvController extends Controller
     {
         $request->validate([
             'nama_cv' => 'required|string|max:255',
-            'code'    => 'nullable|string|max:50|unique:cv,code',
-            'alamat'             => 'nullable|string|max:500',
-            'nama_bank'          => 'nullable|string|max:100',
-            'no_rekening'        => 'nullable|string|max:50',
+            'code' => 'nullable|string|max:50|unique:cv,code',
+            'alamat' => 'nullable|string|max:500',
+            'nama_bank' => 'nullable|string|max:100',
+            'no_rekening' => 'nullable|string|max:50',
             'atas_nama_rekening' => 'nullable|string|max:255',
-            'nama_pimpinan'      => 'nullable|string|max:255',
-            'no_dokumen_prefix'  => 'nullable|string|max:100',
-            'logo'               => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'nama_pimpinan' => 'nullable|string|max:255',
+            'no_dokumen_prefix' => 'nullable|string|max:100',
+            'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
         ]);
 
         try {
             $data = [
-                'nama_cv'            => $request->nama_cv,
-                'code'               => $request->code,
-                'is_aktif'           => $request->has('is_aktif') ? 1 : 0,
-                'alamat'             => $request->alamat,
-                'nama_bank'          => $request->nama_bank,
-                'no_rekening'        => $request->no_rekening,
+                'nama_cv' => $request->nama_cv,
+                'code' => $request->code,
+                'is_aktif' => $request->has('is_aktif') ? 1 : 0,
+                'alamat' => $request->alamat,
+                'nama_bank' => $request->nama_bank,
+                'no_rekening' => $request->no_rekening,
                 'atas_nama_rekening' => $request->atas_nama_rekening,
-                'nama_pimpinan'      => $request->nama_pimpinan,
-                'no_dokumen_prefix'  => $request->no_dokumen_prefix,
+                'nama_pimpinan' => $request->nama_pimpinan,
+                'no_dokumen_prefix' => $request->no_dokumen_prefix,
             ];
 
             // Handle logo upload
             if ($request->hasFile('logo')) {
                 $file = $request->file('logo');
-                $filename = 'logo_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                $filename = 'logo_'.time().'_'.uniqid().'.'.$file->getClientOriginalExtension();
                 $path = $file->storeAs('logos', $filename, 'public');
                 $data['logo'] = $path;
             }
@@ -73,7 +75,7 @@ class CvController extends Controller
 
             return redirect()->route('perusahaan.index')->with('success', 'Perusahaan berhasil ditambahkan.');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'Gagal menyimpan: ' . $e->getMessage())->withInput();
+            return redirect()->back()->with('error', 'Gagal menyimpan: '.$e->getMessage())->withInput();
         }
     }
 
@@ -85,8 +87,9 @@ class CvController extends Controller
     public function edit(string $id)
     {
         try {
-            $id   = decrypt($id);
+            $id = decrypt($id);
             $data = Cv::findOrFail($id);
+
             return view('pages.cv.edit', compact('data'));
         } catch (Exception $e) {
             return redirect()->back()->with('error', 'Gagal memuat halaman!');
@@ -97,29 +100,29 @@ class CvController extends Controller
     {
         $request->validate([
             'nama_cv' => 'required|string|max:255',
-            'code'    => 'nullable|string|max:50|unique:cv,code,' . $id,
-            'alamat'             => 'nullable|string|max:500',
-            'nama_bank'          => 'nullable|string|max:100',
-            'no_rekening'        => 'nullable|string|max:50',
+            'code' => 'nullable|string|max:50|unique:cv,code,'.$id,
+            'alamat' => 'nullable|string|max:500',
+            'nama_bank' => 'nullable|string|max:100',
+            'no_rekening' => 'nullable|string|max:50',
             'atas_nama_rekening' => 'nullable|string|max:255',
-            'nama_pimpinan'      => 'nullable|string|max:255',
-            'no_dokumen_prefix'  => 'nullable|string|max:100',
-            'logo'               => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'nama_pimpinan' => 'nullable|string|max:255',
+            'no_dokumen_prefix' => 'nullable|string|max:100',
+            'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
         ]);
 
         try {
             $cv = Cv::findOrFail($id);
-            
+
             $data = [
-                'nama_cv'            => $request->nama_cv,
-                'code'               => $request->code,
-                'is_aktif'           => $request->has('is_aktif') ? 1 : 0,
-                'alamat'             => $request->alamat,
-                'nama_bank'          => $request->nama_bank,
-                'no_rekening'        => $request->no_rekening,
+                'nama_cv' => $request->nama_cv,
+                'code' => $request->code,
+                'is_aktif' => $request->has('is_aktif') ? 1 : 0,
+                'alamat' => $request->alamat,
+                'nama_bank' => $request->nama_bank,
+                'no_rekening' => $request->no_rekening,
                 'atas_nama_rekening' => $request->atas_nama_rekening,
-                'nama_pimpinan'      => $request->nama_pimpinan,
-                'no_dokumen_prefix'  => $request->no_dokumen_prefix,
+                'nama_pimpinan' => $request->nama_pimpinan,
+                'no_dokumen_prefix' => $request->no_dokumen_prefix,
             ];
 
             // Handle logo upload
@@ -130,7 +133,7 @@ class CvController extends Controller
                 }
 
                 $file = $request->file('logo');
-                $filename = 'logo_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                $filename = 'logo_'.time().'_'.uniqid().'.'.$file->getClientOriginalExtension();
                 $path = $file->storeAs('logos', $filename, 'public');
                 $data['logo'] = $path;
             }
@@ -147,7 +150,7 @@ class CvController extends Controller
 
             return redirect()->route('perusahaan.index')->with('success', 'Perusahaan berhasil diperbarui.');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'Gagal memperbarui: ' . $e->getMessage())->withInput();
+            return redirect()->back()->with('error', 'Gagal memperbarui: '.$e->getMessage())->withInput();
         }
     }
 
@@ -155,14 +158,14 @@ class CvController extends Controller
     {
         try {
             $cv = Cv::findOrFail($id);
-            
+
             // Hapus logo jika ada
             if ($cv->logo && Storage::disk('public')->exists($cv->logo)) {
                 Storage::disk('public')->delete($cv->logo);
             }
-            
+
             $cv->delete();
-            
+
             return response()->json(['success' => true, 'message' => 'Perusahaan berhasil dihapus.']);
         } catch (Exception $e) {
             return response()->json(['success' => false, 'message' => 'Gagal menghapus.'], 500);
