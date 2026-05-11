@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Exports\RekapLansirExport;
+use App\Models\GudangLansirHeader;
 use App\Models\LansirPayment;
 use App\Models\PoPenerimaLansir;
-use App\Models\GudangLansirHeader;
 use App\Models\PurchaseOrder;
 use App\Services\Datatables\RekapLansirDatatableService;
 use App\Services\RekapLansirService;
@@ -36,7 +36,7 @@ class RekapLansirController extends Controller
                 ->get()
                 ->map(function ($item) {
                     return [
-                        'id' => 'po_'.$item->id,
+                        'id' => encrypt('po_'.$item->id),
                         'tipe' => 'PO Lansir',
                         'no_referensi' => $item->penerima?->kendaraan?->po?->no_po ?? '-',
                         'tanggal_lansir' => $item->tanggal_lansir,
@@ -53,7 +53,7 @@ class RekapLansirController extends Controller
                 ->get()
                 ->map(function ($item) {
                     return [
-                        'id' => 'gudang_'.$item->id,
+                        'id' => encrypt('gudang_'.$item->id),
                         'tipe' => 'Gudang Lansir',
                         'no_referensi' => $item->no_lansir ?? '-',
                         'tanggal_lansir' => $item->tanggal_lansir,
@@ -78,13 +78,37 @@ class RekapLansirController extends Controller
     public function show(string $id): View|RedirectResponse
     {
         try {
-            $po = PurchaseOrder::with('cv')->findOrFail(decrypt($id));
+            $decryptedId = decrypt($id);
+
+            // Cek apakah ini PO Lansir atau Gudang Lansir berdasarkan prefix
+            if (str_starts_with($decryptedId, 'po_')) {
+                // PO Lansir
+                $lansirId = (int) str_replace('po_', '', $decryptedId);
+                $lansir = PoPenerimaLansir::with(['penerima.kendaraan.po.cv'])->findOrFail($lansirId);
+                $po = $lansir->penerima->kendaraan->po;
+                $tipe = 'po';
+
+            } elseif (str_starts_with($decryptedId, 'gudang_')) {
+                // Gudang Lansir
+                $gudangLansirId = (int) str_replace('gudang_', '', $decryptedId);
+                $gudangLansir = GudangLansirHeader::with(['cv'])->findOrFail($gudangLansirId);
+                $tipe = 'gudang';
+
+                // Untuk gudang lansir, kita perlu membuat struktur data yang berbeda
+                return $this->showGudangLansir($gudangLansir);
+
+            } else {
+                // Fallback untuk backward compatibility (jika ada ID lama tanpa prefix)
+                $po = PurchaseOrder::with('cv')->findOrFail($decryptedId);
+                $tipe = 'po';
+            }
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'PO tidak ditemukan.');
+            return redirect()->back()->with('error', 'Data lansir tidak ditemukan: '.$e->getMessage());
         }
 
+        // Untuk PO Lansir
         $rekapMobil = $this->service->getRekapMobil($po);
-        $rekapTim = $this->service->getRekapTim($po)->load('mobils');
+        $rekapTim = $this->service->getRekapTim($po);
         $grandTotalMobil = $this->service->getGrandTotalMobil($po);
         $grandTotalTim = $this->service->getGrandTotalTim($po);
 
@@ -96,8 +120,14 @@ class RekapLansirController extends Controller
         return view('pages.keuangan.rekap-lansir.show', compact(
             'po', 'rekapMobil', 'rekapTim',
             'grandTotalMobil', 'grandTotalTim',
-            'paymentMobil', 'paymentTim'
+            'paymentMobil', 'paymentTim', 'tipe'
         ));
+    }
+
+    private function showGudangLansir(GudangLansirHeader $gudangLansir): View
+    {
+        // Untuk gudang lansir, redirect ke halaman gudang lansir show
+        return redirect()->route('gudang-lansir.show', encrypt($gudangLansir->id));
     }
 
     public function bayar(Request $request, string $id): RedirectResponse

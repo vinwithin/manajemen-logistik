@@ -357,10 +357,16 @@
             var defaultOngkosMobil = {{ $defaultOngkosMobil }};
             var defaultUpahTim = {{ $gabungOngkos ? 0 : $penerima->penerima?->ongkos_bongkar ?? 0 }};
 
-            // Auto-calc karung dari berat
+            // Auto-calc karung dari berat (untuk mobil)
             $(document).on('input', '.input-berat', function() {
                 var berat = parseFloat($(this).val()) || 0;
                 $(this).closest('.item-mobil').find('.input-karung').val(berat > 0 ? Math.ceil(berat / 50) : '');
+            });
+
+            // Auto-calc karung dari berat (untuk tim)
+            $(document).on('input', '.input-berat-tim', function() {
+                var berat = parseFloat($(this).val()) || 0;
+                $(this).closest('.item-tim').find('.input-karung-tim').val(berat > 0 ? Math.ceil(berat / 50) : '');
             });
 
             // Tambah kendaraan lansir
@@ -415,11 +421,11 @@
                 </div>
                 <div class="col-md-2">
                     <label class="form-label small">Berat (kg)</label>
-                    <input type="number" name="tims[${i}][berat]" class="form-control form-control-sm" placeholder="0" step="0.01" min="0">
+                    <input type="number" name="tims[${i}][berat]" class="form-control form-control-sm input-berat-tim" placeholder="0" step="0.01" min="0">
                 </div>
                 <div class="col-md-1">
                     <label class="form-label small">Karung</label>
-                    <input type="number" name="tims[${i}][jumlah_karung]" class="form-control form-control-sm" placeholder="0" min="0">
+                    <input type="number" name="tims[${i}][jumlah_karung]" class="form-control form-control-sm input-karung-tim" placeholder="0" min="0" readonly>
                 </div>
                 <div class="col-md-2">
                     <label class="form-label small">Upah (Rp/kg)</label>

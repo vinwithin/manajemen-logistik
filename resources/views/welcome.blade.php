@@ -5,6 +5,30 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HRZ Group - Sistem Manajemen Distribusi Pakan</title>
+
+    <!-- SEO Meta Tags -->
+    <meta name="description"
+        content="Sistem Manajemen Distribusi Pakan Terintegrasi dengan GPS Tracking Real-time. Kelola Purchase Order, Gudang, Lansir, dan Pembayaran dengan mudah dan efisien.">
+    <meta name="keywords"
+        content="sistem distribusi pakan, manajemen gudang, GPS tracking, purchase order, lansir pakan, HRZ Group">
+    <meta name="author" content="HRZ Group">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ url('/') }}">
+    <meta property="og:title" content="HRZ Group - Sistem Manajemen Distribusi Pakan">
+    <meta property="og:description"
+        content="Sistem Manajemen Distribusi Pakan Terintegrasi dengan GPS Tracking Real-time. Kelola Purchase Order, Gudang, Lansir, dan Pembayaran dengan mudah dan efisien.">
+    <meta property="og:site_name" content="HRZ Group">
+    <meta property="og:locale" content="id_ID">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:url" content="{{ url('/') }}">
+    <meta name="twitter:title" content="HRZ Group - Sistem Manajemen Distribusi Pakan">
+    <meta name="twitter:description"
+        content="Sistem Manajemen Distribusi Pakan Terintegrasi dengan GPS Tracking Real-time. Kelola Purchase Order, Gudang, Lansir, dan Pembayaran dengan mudah dan efisien.">
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -315,7 +339,7 @@
                     <li class="nav-item">
                         <a class="nav-link" href="#features">Fitur</a>
                     </li>
-                   
+
                     <li class="nav-item">
                         <a class="nav-link" href="#contact">Kontak</a>
                     </li>

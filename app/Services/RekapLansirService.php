@@ -25,7 +25,12 @@ class RekapLansirService
     {
         return PoPenerimaLansir::with(['tims', 'mobils', 'penerima.kendaraan'])
             ->whereHas('penerima.kendaraan', fn($q) => $q->where('po_id', $po->id))
-            ->get();
+            ->get()
+            ->map(function ($lansir) {
+                // Hitung total berat dari mobils untuk digunakan di view
+                $lansir->total_berat_calculated = $lansir->total_berat;
+                return $lansir;
+            });
     }
 
     public function getGrandTotalMobil(PurchaseOrder $po): float
