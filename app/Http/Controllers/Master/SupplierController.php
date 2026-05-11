@@ -95,16 +95,25 @@ class SupplierController extends Controller
             $supplier = Supplier::findOrFail($id);
             $supplier->update($request->only('nama', 'initial'));
 
-            // Detach all existing tujuans first
-            $supplier->tujuans()->detach();
+            // Delete all existing supplier_tujuan records for this supplier
+            \DB::table('supplier_tujuan')->where('supplier_id', $id)->delete();
 
-            // Re-attach with new data (allows multiple entries with same tujuan_id but different jenis_kendaraan)
+            // Insert new data
             if ($request->has('tujuans')) {
                 foreach ($request->tujuans as $tujuan) {
-                    $supplier->tujuans()->attach($tujuan['tujuan_id'], [
-                        'ongkos_angkut' => $tujuan['ongkos_angkut'],
-                        'jenis_kendaraan' => $tujuan['jenis_kendaraan'] ?? null,
-                    ]);
+                    // Check if this exact combination already exists (safety check)
+                    $exists = \DB::table('supplier_tujuan')
+                        ->where('supplier_id', $id)
+                        ->where('tujuan_id', $tujuan['tujuan_id'])
+                        ->where('jenis_kendaraan', $tujuan['jenis_kendaraan'] ?? null)
+                        ->exists();
+
+                    if (!$exists) {
+                        $supplier->tujuans()->attach($tujuan['tujuan_id'], [
+                            'ongkos_angkut' => $tujuan['ongkos_angkut'],
+                            'jenis_kendaraan' => $tujuan['jenis_kendaraan'] ?? null,
+                        ]);
+                    }
                 }
             }
 

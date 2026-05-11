@@ -53,12 +53,11 @@ class GudangLansirController extends Controller
         $tujuans = Tujuan::where('is_aktif', true)->orderBy('nama')->get();
         $kodePakans = KodePakan::orderBy('kode')->get();
 
-        // Get stok tersedia per gudang
+        // Get stok tersedia per gudang (ambil semua, termasuk yang stok 0)
         $stokList = collect();
         if ($gudangId) {
             $stokList = GudangStok::where('tujuan_id', $gudangId)
                 ->with('kodePakan')
-                ->where('stok_kg', '>', 0)
                 ->get();
         }
 

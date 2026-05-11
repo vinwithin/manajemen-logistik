@@ -273,10 +273,12 @@ function tambahPakan(kendaraanIdx, penerimaIdx) {
     const pakanIdx = container.find('.row-pakan').length;
 
     const kodePakanOptions = kodePakanList.map(kp => {
+        // Cari stok untuk kode pakan ini
         const stok = stokData.find(s => s.kode_pakan_id === kp.id);
         const stokKg = stok ? parseFloat(stok.stok_kg) : 0;
         const disabled = stokKg <= 0 ? 'disabled' : '';
-        return `<option value="${kp.id}" data-stok="${stokKg}" ${disabled}>${kp.kode} - ${kp.nama} (Stok: ${stokKg.toLocaleString('id-ID')} kg)</option>`;
+        const stokText = stokKg > 0 ? stokKg.toLocaleString('id-ID') : '0';
+        return `<option value="${kp.id}" data-stok="${stokKg}" ${disabled}>${kp.kode} - ${kp.nama} (Stok: ${stokText} kg)</option>`;
     }).join('');
 
     const html = `

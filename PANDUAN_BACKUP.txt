@@ -1,0 +1,54 @@
+═══════════════════════════════════════════════════════════════
+    PANDUAN SINGKAT BACKUP DATABASE - HRZ GROUP
+═══════════════════════════════════════════════════════════════
+
+✅ FITUR BACKUP SUDAH AKTIF!
+
+📁 Lokasi Backup: storage/app/backups/
+⏰ Jadwal Otomatis: Setiap hari jam 02:00 WIB
+🗑️  Auto Cleanup: Hapus backup lebih dari 7 hari
+
+═══════════════════════════════════════════════════════════════
+CARA SETUP DI SERVER (WAJIB!)
+═══════════════════════════════════════════════════════════════
+
+1. Login ke server via SSH
+
+2. Jalankan: crontab -e
+
+3. Tambahkan baris ini (ganti path sesuai lokasi project):
+   * * * * * cd /var/www/hrz-group && php artisan schedule:run >> /dev/null 2>&1
+
+4. Simpan dan keluar
+
+═══════════════════════════════════════════════════════════════
+PERINTAH MANUAL
+═══════════════════════════════════════════════════════════════
+
+Backup sekarang:
+  php artisan db:backup
+
+Backup dengan simpan 30 hari:
+  php artisan db:backup --keep-days=30
+
+Lihat daftar backup:
+  ls -lh storage/app/backups/
+
+Lihat jadwal backup:
+  php artisan schedule:list
+
+═══════════════════════════════════════════════════════════════
+RESTORE DATABASE
+═══════════════════════════════════════════════════════════════
+
+1. Extract file backup:
+   gunzip storage/app/backups/backup_hrz-group-db_2026-05-11_141651.sql.gz
+
+2. Restore ke database:
+   mysql -u root -p hrz-group-db < storage/app/backups/backup_hrz-group-db_2026-05-11_141651.sql
+
+═══════════════════════════════════════════════════════════════
+
+📖 Dokumentasi lengkap: Lihat file BACKUP_SETUP.md
+
+═══════════════════════════════════════════════════════════════
