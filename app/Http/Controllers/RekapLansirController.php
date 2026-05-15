@@ -124,10 +124,10 @@ class RekapLansirController extends Controller
         ));
     }
 
-    private function showGudangLansir(GudangLansirHeader $gudangLansir): View
+    private function showGudangLansir(GudangLansirHeader $gudangLansir): RedirectResponse
     {
         // Untuk gudang lansir, redirect ke halaman gudang lansir show
-        return redirect()->route('gudang-lansir.show', encrypt($gudangLansir->id));
+        return redirect()->route('gudang.lansir.show', encrypt($gudangLansir->id));
     }
 
     public function bayar(Request $request, string $id): RedirectResponse

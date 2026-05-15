@@ -45,7 +45,9 @@ class KartuStockMutasiExport implements FromArray, WithEvents, WithTitle
             'tujuan',
             'kodePakan',
             'poPenerima.kendaraan.po',
+            'poPenerima.tujuan',
             'gudangLansirPakan.penerima.kendaraan.lansirHeader',
+            'gudangLansirPakan.penerima.tujuan',
         ])->orderBy('created_at', 'desc');
 
         if ($tujuanId) {
@@ -54,7 +56,7 @@ class KartuStockMutasiExport implements FromArray, WithEvents, WithTitle
         if ($kodePakanId) {
             $query->where('kode_pakan_id', $kodePakanId);
         }
-        if ($tipe) {
+        if ($tipe !== null && $tipe !== '' && in_array($tipe, ['masuk', 'keluar'], true)) {
             $query->where('tipe', $tipe);
         }
         if ($dariTanggal) {
@@ -155,7 +157,8 @@ class KartuStockMutasiExport implements FromArray, WithEvents, WithTitle
         foreach ($this->kodePakanList as $i => $kp) {
             $sisaCol = self::FIXED_COLS + ($i * self::COLS_PER_PAKAN) + 4;
 
-            $lastMutasi = $this->mutasis->where('kode_pakan_id', $kp->id)->last();
+            // Koleksi diurut created_at desc → saldo akhir periode = mutasi terbaru (= first())
+            $lastMutasi = $this->mutasis->where('kode_pakan_id', $kp->id)->first();
             $rowSaldo[$sisaCol] = $lastMutasi ? (float) $lastMutasi->saldo_kg_after : '';
         }
         $rows[] = $rowSaldo;
@@ -251,20 +254,26 @@ class KartuStockMutasiExport implements FromArray, WithEvents, WithTitle
         return $rows;
     }
 
+    /**
+     * Kolom sub-keluar per kode pakan: 0=Masuk, 1=PIR, 2=CO.Farm, 3=CH, 4=Sisa.
+     * Sumber type tujuan: (1) tujuan baris lansir gudang, (2) PO penerima terlink di lansir, (3) PO penerima di baris mutasi (jarang untuk keluar nested).
+     */
     private function resolveKeluarSubCol(GudangMutasiStok $m): int
     {
-        $tipe = strtolower($m->poPenerima?->tujuan->type);
-        if (str_contains($tipe, 'direct')) {
-            return 1;
-        }
-        if (str_contains($tipe, 'co_farm')) {
-            return 2;
-        }
-        if (str_contains($tipe, 'rent_farm')) {
-            return 3;
-        }
+        $typeRaw = $m->gudangLansirPakan?->penerima?->tujuan?->type
+            ?? $m->gudangLansirPakan?->penerima?->poPenerima?->tujuan?->type
+            ?? $m->poPenerima?->tujuan?->type
+            ?? '';
 
-        return 1; // default PIR
+        $slug = strtolower(trim((string) $typeRaw));
+
+        // Nilai diselaraskan dengan App\Models\Tujuan::TYPES (kolom DB `tujuan.type`)
+        return match ($slug) {
+            'co_farm' => 2,
+            'rent_farm' => 3,
+            'direct' => 1,
+            default => 1, // termasuk `gudang` / kosong → kolom PIR (perilaku lama)
+        };
     }
 
     // ── title() ────────────────────────────────────────────────────────────

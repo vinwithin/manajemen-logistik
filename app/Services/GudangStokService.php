@@ -112,7 +112,9 @@ class GudangStokService
             ]);
         }
 
-        GudangMutasiStok::create([
+        $waktuMutasi = $penerima->tiba_at ?? now();
+
+        (new GudangMutasiStok)->forceFill([
             'tujuan_id' => $tujuanId,
             'kode_pakan_id' => $kodePakanId,
             'tipe' => 'masuk',
@@ -123,7 +125,9 @@ class GudangStokService
             'po_penerima_id' => $penerima->id,
             'saldo_kg_after' => $stok->stok_kg,
             'saldo_karung_after' => $stok->stok_karung,
-        ]);
+            'created_at' => $waktuMutasi,
+            'updated_at' => $waktuMutasi,
+        ])->save();
     }
 
     /**
@@ -247,12 +251,12 @@ class GudangStokService
 
             // Buat header lansir
             $header = GudangLansirHeader::create([
-                'no_lansir'      => GudangLansirHeader::generateNoLansir(),
-                'gudang_id'      => $gudangId,
-                'cv_id'          => $data['cv_id'] ?? null,
+                'no_lansir' => GudangLansirHeader::generateNoLansir(),
+                'gudang_id' => $gudangId,
+                'cv_id' => $data['cv_id'] ?? null,
                 'tanggal_lansir' => $data['tanggal_lansir'],
-                'catatan'        => $data['catatan'] ?? null,
-                'created_by'     => Auth::id(),
+                'catatan' => $data['catatan'] ?? null,
+                'created_by' => Auth::id(),
             ]);
 
             // Loop kendaraan
@@ -309,32 +313,32 @@ class GudangStokService
 
                         // Simpan pakan
                         $lansirPakan = GudangLansirPakan::create([
-                            'penerima_id'   => $penerima->id,
+                            'penerima_id' => $penerima->id,
                             'kode_pakan_id' => $kodePakanId,
-                            'jumlah_kg'     => $jumlahKg,
+                            'jumlah_kg' => $jumlahKg,
                             'jumlah_karung' => $jumlahKarung,
-                            'ongkos_oa'     => $pakanData['ongkos_oa'] ?? 0,
-                            'harga_pt_sum'  => $pakanData['harga_pt_sum'] ?? 0,
-                            'keterangan'    => $pakanData['keterangan'] ?? null,
+                            'ongkos_oa' => $pakanData['ongkos_oa'] ?? 0,
+                            'harga_pt_sum' => $pakanData['harga_pt_sum'] ?? 0,
+                            'keterangan' => $pakanData['keterangan'] ?? null,
                         ]);
 
                         // Kurangi stok
-                        $stok->stok_kg     = $stok->stok_kg - $jumlahKg;
+                        $stok->stok_kg = $stok->stok_kg - $jumlahKg;
                         $stok->stok_karung = max(0, $stok->stok_karung - $jumlahKarung);
                         $stok->save();
 
                         // Catat mutasi keluar — referensi ke gudang_lansir_pakan
                         GudangMutasiStok::create([
-                            'tujuan_id'              => $gudangId,
-                            'kode_pakan_id'          => $kodePakanId,
-                            'tipe'                   => 'keluar',
-                            'jumlah_kg'              => $jumlahKg,
-                            'jumlah_karung'          => $jumlahKarung,
-                            'referensi_tipe'         => 'lansir_gudang_header',
-                            'referensi_id'           => $header->id,
+                            'tujuan_id' => $gudangId,
+                            'kode_pakan_id' => $kodePakanId,
+                            'tipe' => 'keluar',
+                            'jumlah_kg' => $jumlahKg,
+                            'jumlah_karung' => $jumlahKarung,
+                            'referensi_tipe' => 'lansir_gudang_header',
+                            'referensi_id' => $header->id,
                             'gudang_lansir_pakan_id' => $lansirPakan->id,
-                            'saldo_kg_after'         => $stok->stok_kg,
-                            'saldo_karung_after'     => $stok->stok_karung,
+                            'saldo_kg_after' => $stok->stok_kg,
+                            'saldo_karung_after' => $stok->stok_karung,
                         ]);
 
                         $totalKgKendaraan += $jumlahKg;
@@ -348,10 +352,10 @@ class GudangStokService
                         }
                         GudangLansirTim::create([
                             'penerima_id' => $penerima->id,
-                            'nama_tim'    => trim($timData['nama_tim']),
-                            'jumlah_kg'   => $timData['jumlah_kg'] ?? 0,
+                            'nama_tim' => trim($timData['nama_tim']),
+                            'jumlah_kg' => $timData['jumlah_kg'] ?? 0,
                             'upah_per_kg' => $timData['upah_per_kg'] ?? null,
-                            'keterangan'  => $timData['keterangan'] ?? null,
+                            'keterangan' => $timData['keterangan'] ?? null,
                         ]);
                     }
                 }

@@ -39,11 +39,11 @@
                                 </div>
                             </div>
                         @endif
-                        @if ($kendaraan->oaPayment)
+                        @if ($kendaraan->oaPaymentOnly)
                             <div class="col-6 col-md-3">
                                 <div class="text-muted">Sudah Dibayar</div>
                                 <div class="fw-bold text-success">
-                                    Rp {{ number_format($kendaraan->oaPayment->jumlah_bayar, 0, ',', '.') }}
+                                    Rp {{ number_format($kendaraan->oaPaymentOnly->jumlah_bayar, 0, ',', '.') }}
                                 </div>
                             </div>
                         @endif
@@ -89,10 +89,10 @@
                         </div>
                     @endif
 
-                    @if ($kendaraan->oaPayment && $kendaraan->oaPayment->sisa_tagihan > 0)
+                    @if ($kendaraan->oaPaymentOnly && $kendaraan->oaPaymentOnly->sisa_tagihan > 0)
                         <div class="alert alert-warning py-2 mt-2 mb-0 small">
                             Sisa tagihan: <strong>Rp
-                                {{ number_format($kendaraan->oaPayment->sisa_tagihan, 0, ',', '.') }}</strong>
+                                {{ number_format($kendaraan->oaPaymentOnly->sisa_tagihan, 0, ',', '.') }}</strong>
                         </div>
                     @endif
                 </div>
@@ -104,72 +104,85 @@
                     <h6 class="mb-0">Catat Pembayaran OA</h6>
                 </div>
                 <div class="card-body">
-                    <form method="post" action="{{ route('keuangan.oa.store-bayar', encrypt($kendaraan->id)) }}"
-                        enctype="multipart/form-data">
-                        @csrf
+                    @if ($kendaraan->oaPaymentOnly?->status === 'lunas')
+                        <div class="alert alert-success d-flex align-items-center gap-2 mb-0">
+                            <i class="fa fa-check-circle fa-lg"></i>
+                            <div>
+                                <strong>Pembayaran sudah lunas.</strong>
+                                Dibayar pada {{ $kendaraan->oaPaymentOnly->tanggal_bayar?->format('d M Y') ?? '-' }}
+                                sebesar <strong>Rp
+                                    {{ number_format($kendaraan->oaPaymentOnly->jumlah_bayar, 0, ',', '.') }}</strong>.
+                            </div>
+                        </div>
+                    @else
+                        <form method="post" action="{{ route('keuangan.oa.store-bayar', encrypt($kendaraan->id)) }}"
+                            enctype="multipart/form-data">
+                            @csrf
 
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Jumlah Bayar <span class="text-danger">*</span></label>
-                                <div class="input-group">
-                                    <span class="input-group-text">Rp</span>
-                                    <input type="number" name="jumlah_bayar"
-                                        class="form-control @error('jumlah_bayar') is-invalid @enderror"
-                                        value="{{ old('jumlah_bayar', $kendaraan->oaPayment?->sisa_tagihan ?? $tagihan) }}"
-                                        step="1" min="1">
-                                    @error('jumlah_bayar')
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Jumlah Bayar <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">Rp</span>
+                                        <input type="number" name="jumlah_bayar"
+                                            class="form-control @error('jumlah_bayar') is-invalid @enderror"
+                                            value="{{ old('jumlah_bayar', $kendaraan->oaPaymentOnly?->sisa_tagihan ?? $tagihan) }}"
+                                            step="1" min="1">
+                                        @error('jumlah_bayar')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Tanggal Bayar <span class="text-danger">*</span></label>
+                                    <input type="date" name="tanggal_bayar"
+                                        class="form-control @error('tanggal_bayar') is-invalid @enderror"
+                                        value="{{ old('tanggal_bayar', date('Y-m-d')) }}">
+                                    @error('tanggal_bayar')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Metode Bayar <span class="text-danger">*</span></label>
+                                    <select name="metode_bayar"
+                                        class="form-select @error('metode_bayar') is-invalid @enderror">
+                                        <option value="">-- Pilih --</option>
+                                        @foreach (\App\Models\OaPayment::METODE as $key => $label)
+                                            <option value="{{ $key }}"
+                                                {{ old('metode_bayar') === $key ? 'selected' : '' }}>
+                                                {{ $label }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('metode_bayar')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Bukti Bayar</label>
+                                    <input type="file" name="bukti_bayar"
+                                        class="form-control @error('bukti_bayar') is-invalid @enderror"
+                                        accept=".jpg,.jpeg,.png,.pdf">
+                                    <small class="text-muted">JPG, PNG, PDF · Maks 5MB</small>
+                                    @error('bukti_bayar')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Keterangan</label>
+                                    <input type="text" name="keterangan" class="form-control"
+                                        value="{{ old('keterangan') }}" placeholder="Opsional">
+                                </div>
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Tanggal Bayar <span class="text-danger">*</span></label>
-                                <input type="date" name="tanggal_bayar"
-                                    class="form-control @error('tanggal_bayar') is-invalid @enderror"
-                                    value="{{ old('tanggal_bayar', date('Y-m-d')) }}">
-                                @error('tanggal_bayar')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Metode Bayar <span class="text-danger">*</span></label>
-                                <select name="metode_bayar" class="form-select @error('metode_bayar') is-invalid @enderror">
-                                    <option value="">-- Pilih --</option>
-                                    @foreach (\App\Models\OaPayment::METODE as $key => $label)
-                                        <option value="{{ $key }}"
-                                            {{ old('metode_bayar') === $key ? 'selected' : '' }}>
-                                            {{ $label }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                @error('metode_bayar')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Bukti Bayar</label>
-                                <input type="file" name="bukti_bayar"
-                                    class="form-control @error('bukti_bayar') is-invalid @enderror"
-                                    accept=".jpg,.jpeg,.png,.pdf">
-                                <small class="text-muted">JPG, PNG, PDF · Maks 5MB</small>
-                                @error('bukti_bayar')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label">Keterangan</label>
-                                <input type="text" name="keterangan" class="form-control"
-                                    value="{{ old('keterangan') }}" placeholder="Opsional">
-                            </div>
-                        </div>
 
-                        <div class="mt-4 d-flex gap-2">
-                            <button class="btn btn-primary" type="submit">
-                                <i class="fa fa-save"></i> Simpan Pembayaran
-                            </button>
-                            <a href="{{ route('keuangan.oa.index') }}" class="btn btn-secondary">Batal</a>
-                        </div>
-                    </form>
+                            <div class="mt-4 d-flex gap-2">
+                                <button class="btn btn-primary" type="submit">
+                                    <i class="fa fa-save"></i> Simpan Pembayaran
+                                </button>
+                                <a href="{{ route('keuangan.oa.index') }}" class="btn btn-secondary">Batal</a>
+                            </div>
+                        </form>
+                    @endif
                 </div>
             </div>
 

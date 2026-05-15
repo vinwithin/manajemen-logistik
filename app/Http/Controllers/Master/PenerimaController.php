@@ -22,14 +22,17 @@ class PenerimaController extends Controller
     {
         if ($request->ajax()) {
             $query = Penerima::with('tujuan')->select('penerima.*');
+
             return $this->penerimaService->getData($query);
         }
+
         return view('pages.penerima.index');
     }
 
     public function create()
     {
         $tujuans = Tujuan::where('is_aktif', true)->orderBy('nama')->get();
+
         return view('pages.penerima.create', compact('tujuans'));
     }
 
@@ -43,13 +46,24 @@ class PenerimaController extends Controller
             'alamat' => 'nullable|string',
             'telepon' => 'nullable|string|max:20',
             'is_aktif' => 'boolean',
+            'idtrack_marker_id' => 'nullable|integer|min:1',
         ]);
 
         try {
-            Penerima::create($request->all());
+            Penerima::create([
+                'nama' => $request->nama,
+                'tujuan_id' => $request->tujuan_id,
+                'ongkos_angkut' => $request->ongkos_angkut,
+                'ongkos_bongkar' => $request->ongkos_bongkar,
+                'alamat' => $request->alamat,
+                'telepon' => $request->telepon,
+                'is_aktif' => $request->boolean('is_aktif'),
+                'idtrack_marker_id' => $request->idtrack_marker_id ?: null,
+            ]);
+
             return redirect()->route('penerima.index')->with('success', 'Penerima berhasil ditambahkan.');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'Gagal menyimpan: ' . $e->getMessage())->withInput();
+            return redirect()->back()->with('error', 'Gagal menyimpan: '.$e->getMessage())->withInput();
         }
     }
 
@@ -60,6 +74,7 @@ class PenerimaController extends Controller
         try {
             $data = Penerima::findOrFail(decrypt($id));
             $tujuans = Tujuan::where('is_aktif', true)->orderBy('nama')->get();
+
             return view('pages.penerima.edit', compact('data', 'tujuans'));
         } catch (Exception $e) {
             return redirect()->back()->with('error', 'Gagal memuat halaman!');
@@ -69,16 +84,17 @@ class PenerimaController extends Controller
     public function update(Request $request, string $id)
     {
         $request->validate([
-            'nama'            => 'required|string|max:255',
-            'tujuan_id'       => 'required|exists:tujuan,id',
-            'ongkos_angkut'   => 'required|numeric|min:0',
-            'ongkos_bongkar'  => 'nullable|numeric|min:0',
-            'alamat'          => 'nullable|string',
-            'telepon'         => 'nullable|string|max:20',
-            'is_aktif'        => 'boolean',
-            'lat'             => 'nullable|numeric|between:-90,90',
-            'lng'             => 'nullable|numeric|between:-180,180',
+            'nama' => 'required|string|max:255',
+            'tujuan_id' => 'required|exists:tujuan,id',
+            'ongkos_angkut' => 'required|numeric|min:0',
+            'ongkos_bongkar' => 'nullable|numeric|min:0',
+            'alamat' => 'nullable|string',
+            'telepon' => 'nullable|string|max:20',
+            'is_aktif' => 'boolean',
+            'lat' => 'nullable|numeric|between:-90,90',
+            'lng' => 'nullable|numeric|between:-180,180',
             'geofence_radius' => 'nullable|integer|min:50|max:5000',
+            'idtrack_marker_id' => 'nullable|integer|min:1',
         ]);
 
         try {
@@ -86,10 +102,14 @@ class PenerimaController extends Controller
             $penerima->update($request->only([
                 'nama', 'tujuan_id', 'ongkos_angkut', 'ongkos_bongkar',
                 'alamat', 'telepon', 'is_aktif', 'lat', 'lng', 'geofence_radius',
-            ]) + ['is_aktif' => $request->has('is_aktif') ? 1 : 0]);
+            ]) + [
+                'is_aktif' => $request->has('is_aktif') ? 1 : 0,
+                'idtrack_marker_id' => $request->idtrack_marker_id ?: null,
+            ]);
+
             return redirect()->route('penerima.index')->with('success', 'Penerima berhasil diperbarui.');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'Gagal memperbarui: ' . $e->getMessage())->withInput();
+            return redirect()->back()->with('error', 'Gagal memperbarui: '.$e->getMessage())->withInput();
         }
     }
 
@@ -97,6 +117,7 @@ class PenerimaController extends Controller
     {
         try {
             Penerima::findOrFail($id)->delete();
+
             return response()->json(['success' => true, 'message' => 'Penerima berhasil dihapus.']);
         } catch (Exception $e) {
             return response()->json(['success' => false, 'message' => 'Gagal menghapus.'], 500);
@@ -111,7 +132,7 @@ class PenerimaController extends Controller
         try {
             $penerimaId = $request->penerima_id;
 
-            if (!$penerimaId) {
+            if (! $penerimaId) {
                 return response()->json(['success' => false, 'message' => 'Penerima harus diisi'], 400);
             }
 
@@ -136,7 +157,7 @@ class PenerimaController extends Controller
         try {
             $tujuanId = $request->tujuan_id;
 
-            if (!$tujuanId) {
+            if (! $tujuanId) {
                 return response()->json(['success' => false, 'message' => 'Tujuan harus diisi'], 400);
             }
 

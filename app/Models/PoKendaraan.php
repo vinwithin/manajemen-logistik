@@ -13,23 +13,40 @@ class PoKendaraan extends Model
     protected $table = 'po_kendaraan';
 
     protected $fillable = [
-        'po_id', 'no_polisi', 'nama_sopir', 'no_surat_jalan', 'supplier_id', 'jenis_kendaraan', 'jumlah_kg', 'jumlah_karung', 'status',
-        'dp_nominal', 'dp_persen', 'dp_tanggal', 'dp_metode', 'dp_keterangan',
+        'po_id',
+        'no_polisi',
+        'nama_sopir',
+        'no_surat_jalan',
+        'supplier_id',
+        'tujuan_id',
+        'ongkos_angkut',
+        'jenis_kendaraan',
+        'jumlah_kg',
+        'jumlah_karung',
+        'status',
+        'dp_nominal',
+        'dp_persen',
+        'dp_tanggal',
+        'dp_metode',
+        'dp_keterangan',
+        'idtrack_spj_sent_at',
+        'idtrack_spj_nomor_surat',
     ];
 
     protected $casts = [
         'dp_tanggal' => 'date',
         'dp_nominal' => 'decimal:2',
         'dp_persen' => 'decimal:2',
+        'idtrack_spj_sent_at' => 'datetime',
     ];
 
     const STATUSES = ['pending', 'berangkat', 'selesai', 'batal'];
 
     const VALID_TRANSITIONS = [
-        'pending'   => ['berangkat', 'batal'],
+        'pending' => ['berangkat', 'batal'],
         'berangkat' => ['selesai', 'batal'],
-        'selesai'   => [],
-        'batal'     => [],
+        'selesai' => [],
+        'batal' => [],
     ];
 
     public function po(): BelongsTo
@@ -40,6 +57,11 @@ class PoKendaraan extends Model
     public function supplier(): BelongsTo
     {
         return $this->belongsTo(Supplier::class, 'supplier_id');
+    }
+
+    public function tujuan(): BelongsTo
+    {
+        return $this->belongsTo(Tujuan::class, 'tujuan_id');
     }
 
     public function penerimas(): HasMany
@@ -54,12 +76,30 @@ class PoKendaraan extends Model
             ->whereIn('tipe_pembayaran', ['oa', 'dp_supplier']);
     }
 
+    // Pembayaran OA murni (bukan DP) — digunakan untuk status di rekap OA
+    public function oaPaymentOnly()
+    {
+        return $this->hasOne(OaPayment::class, 'po_kendaraan_id')
+            ->where('tipe_pembayaran', 'oa');
+    }
 
+    // DP Supplier
+    public function dpPayment()
+    {
+        return $this->hasOne(OaPayment::class, 'po_kendaraan_id')
+            ->where('tipe_pembayaran', 'dp_supplier');
+    }
 
     // Total KG seluruh penerima di kendaraan ini
     public function getTotalKgAttribute(): float
     {
         return (float) $this->penerimas->sum('total_kg');
+    }
+
+    // Total OA dari level kendaraan (jumlah_kg × ongkos_angkut)
+    public function getTotalOaKendaraanAttribute(): float
+    {
+        return (float) ($this->jumlah_kg ?? 0) * (float) ($this->ongkos_angkut ?? 0);
     }
 
     // Total OA seluruh penerima di kendaraan ini
@@ -97,12 +137,12 @@ class PoKendaraan extends Model
         if ($this->dp_nominal == 0) {
             return 'Belum Bayar DP';
         }
-        
+
         if ($this->dp_nominal >= $this->total_tagihan_supplier) {
             return 'Lunas';
         }
-        
-        return 'DP ' . number_format($this->dp_persen ?? 0, 0) . '%';
+
+        return 'DP '.number_format($this->dp_persen ?? 0, 0).'%';
     }
 
     // Badge class untuk status pembayaran
@@ -111,11 +151,11 @@ class PoKendaraan extends Model
         if ($this->dp_nominal == 0) {
             return 'bg-secondary';
         }
-        
+
         if ($this->dp_nominal >= $this->total_tagihan_supplier) {
             return 'bg-success';
         }
-        
+
         return 'bg-warning';
     }
 
@@ -123,6 +163,12 @@ class PoKendaraan extends Model
     public function gpsAssignments(): MorphMany
     {
         return $this->morphMany(GpsAssignment::class, 'assignable');
+    }
+
+    /** Riwayat tiba di marker Idtrack (callback SPJ) — untuk penanda di peta */
+    public function idtrackMarkerVisits(): HasMany
+    {
+        return $this->hasMany(PoKendaraanIdtrackMarkerVisit::class, 'po_kendaraan_id')->orderBy('arrived_at');
     }
 
     /** Assignment GPS yang sedang aktif */

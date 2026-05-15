@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\KartuStockMutasiExport;
+use App\Exports\StokKeluarExport;
 use App\Models\GudangStok;
 use App\Models\KodePakan;
 use App\Models\Tujuan;
 use App\Services\Datatables\GudangMutasiDatatableService;
 use App\Services\Datatables\GudangStokDatatableService;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
 use Yajra\DataTables\DataTables;
 
 class GudangStokController extends Controller
@@ -62,9 +65,10 @@ class GudangStokController extends Controller
                 ->addColumn('stok_karung_fmt', fn ($q) => number_format($q->stok_karung, 0, ',', '.').' karung')
                 ->addColumn('action', function ($q) use ($id) {
                     $url = route('gudang.mutasi.index', [
-                        'tujuan_id'     => $id,
+                        'tujuan_id' => $id,
                         'kode_pakan_id' => $q->kode_pakan_id,
                     ]);
+
                     return '<a href="'.$url.'" class="btn btn-xs btn-outline-info py-0 px-2 small">
                                 <i class="fa fa-history"></i> Mutasi
                             </a>';
@@ -93,27 +97,38 @@ class GudangStokController extends Controller
 
     public function mutasiExport(Request $request)
     {
+        $tipeFilter = null;
+        if ($request->filled('tipe')) {
+            $t = strtolower(trim((string) $request->input('tipe')));
+            if (in_array($t, ['masuk', 'keluar'], true)) {
+                $tipeFilter = $t;
+            }
+        }
+
         $filename = 'kartu-stock';
         if ($request->tujuan_id) {
             $gudang = Tujuan::find($request->tujuan_id);
-            $filename .= '-' . str_replace(' ', '-', strtolower($gudang?->nama ?? 'gudang'));
+            $filename .= '-'.str_replace(' ', '-', strtolower($gudang?->nama ?? 'gudang'));
         }
         if ($request->kode_pakan_id) {
             $pakan = KodePakan::find($request->kode_pakan_id);
-            $filename .= '-' . strtolower($pakan?->kode ?? 'pakan');
+            $filename .= '-'.strtolower($pakan?->kode ?? 'pakan');
+        }
+        if ($tipeFilter) {
+            $filename .= '-'.$tipeFilter;
         }
         if ($request->dari_tanggal) {
-            $filename .= '-' . $request->dari_tanggal;
+            $filename .= '-'.$request->dari_tanggal;
         }
         $filename .= '.xlsx';
 
-        return \Maatwebsite\Excel\Facades\Excel::download(
-            new \App\Exports\KartuStockMutasiExport(
-                $request->tujuan_id  ? (int) $request->tujuan_id  : null,
-                $request->dari_tanggal   ?: null,
+        return Excel::download(
+            new KartuStockMutasiExport(
+                $request->tujuan_id ? (int) $request->tujuan_id : null,
+                $request->dari_tanggal ?: null,
                 $request->sampai_tanggal ?: null,
-                $request->kode_pakan_id  ? (int) $request->kode_pakan_id : null,
-                $request->tipe           ?: null,
+                $request->kode_pakan_id ? (int) $request->kode_pakan_id : null,
+                $tipeFilter,
             ),
             $filename
         );
@@ -122,17 +137,21 @@ class GudangStokController extends Controller
     public function stokKeluarExport(Request $request)
     {
         $tujuanId = $request->tujuan_id ? (int) $request->tujuan_id : null;
-        $dari     = $request->dari_tanggal ?: null;
-        $sampai   = $request->sampai_tanggal ?: null;
+        $dari = $request->dari_tanggal ?: null;
+        $sampai = $request->sampai_tanggal ?: null;
 
-        $gudang   = $tujuanId ? Tujuan::find($tujuanId) : null;
+        $gudang = $tujuanId ? Tujuan::find($tujuanId) : null;
         $filename = 'stok-keluar';
-        if ($gudang) $filename .= '-' . str_replace(' ', '-', strtolower($gudang->nama));
-        if ($dari)   $filename .= '-' . $dari;
+        if ($gudang) {
+            $filename .= '-'.str_replace(' ', '-', strtolower($gudang->nama));
+        }
+        if ($dari) {
+            $filename .= '-'.$dari;
+        }
         $filename .= '.xlsx';
 
-        return \Maatwebsite\Excel\Facades\Excel::download(
-            new \App\Exports\StokKeluarExport($tujuanId, $dari, $sampai),
+        return Excel::download(
+            new StokKeluarExport($tujuanId, $dari, $sampai),
             $filename
         );
     }

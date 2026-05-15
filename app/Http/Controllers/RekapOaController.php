@@ -19,7 +19,7 @@ class RekapOaController extends Controller
             $from = $request->from;
             $to = $request->to;
 
-            $query = PoKendaraan::with(['po.cv', 'supplier', 'penerimas', 'oaPayment'])
+            $query = PoKendaraan::with(['po.cv', 'supplier', 'penerimas', 'oaPaymentOnly'])
                 ->whereIn('status', ['selesai', 'batal'])
                 ->whereHas('po', function ($q) use ($activeCvId, $from, $to) {
                     if ($activeCvId) {
@@ -35,10 +35,10 @@ class RekapOaController extends Controller
                 ->when($supplierId, fn ($q) => $q->where('supplier_id', $supplierId))
                 ->when($status, function ($q) use ($status) {
                     if ($status === 'pending') {
-                        $q->whereDoesntHave('oaPayment')
-                            ->orWhereHas('oaPayment', fn ($q2) => $q2->where('status', 'pending'));
+                        $q->whereDoesntHave('oaPaymentOnly')
+                            ->orWhereHas('oaPaymentOnly', fn ($q2) => $q2->where('status', 'pending'));
                     } else {
-                        $q->whereHas('oaPayment', fn ($q2) => $q2->where('status', $status));
+                        $q->whereHas('oaPaymentOnly', fn ($q2) => $q2->where('status', $status));
                     }
                 })
                 ->select('po_kendaraan.*')
@@ -55,15 +55,21 @@ class RekapOaController extends Controller
                 ->addColumn('total_oa', fn ($q) => $q->total_oa)
                 ->addColumn('dp_nominal', fn ($q) => number_format($q->dp_nominal ?? 0, 0, ',', '.'))
                 ->addColumn('status_bayar', function ($q) {
-                    $s = $q->oaPayment?->status ?? 'pending';
+                    // Gunakan oaPaymentOnly untuk status yang akurat
+                    $s = $q->oaPaymentOnly?->status ?? 'pending';
                     $map = ['pending' => ['secondary', 'Belum Bayar'], 'partial' => ['warning', 'Bayar Sebagian'], 'lunas' => ['success', 'Lunas']];
-                    [$color, $label] = $map[$s];
+                    [$color, $label] = $map[$s] ?? ['secondary', 'Belum Bayar'];
 
                     return "<span class='badge bg-{$color}'>{$label}</span>";
                 })
-                ->addColumn('sisa', fn ($q) => max(0, $q->total_oa - ($q->oaPayment?->jumlah_bayar ?? 0)))
+                ->addColumn('sisa', fn ($q) => max(0, $q->total_oa - ($q->oaPaymentOnly?->jumlah_bayar ?? 0)))
                 ->addColumn('action', function ($q) {
                     $url = route('keuangan.oa.bayar', encrypt($q->id));
+                    $status = $q->oaPaymentOnly?->status ?? 'pending';
+
+                    if ($status === 'lunas') {
+                        return "<a href='{$url}' class='btn btn-xs btn-success'><i class='fa fa-check'></i> Lunas</a>";
+                    }
 
                     return "<a href='{$url}' class='btn btn-xs btn-primary'><i class='fa fa-money'></i> Bayar</a>";
                 })
@@ -79,7 +85,7 @@ class RekapOaController extends Controller
 
     public function bayar(string $id)
     {
-        $kendaraan = PoKendaraan::with(['po.cv', 'supplier', 'penerimas.pakans.kodePakan', 'penerimas.tujuan', 'oaPayment'])
+        $kendaraan = PoKendaraan::with(['po.cv', 'supplier', 'penerimas.pakans.kodePakan', 'penerimas.tujuan', 'oaPaymentOnly'])
             ->findOrFail(decrypt($id));
 
         $tagihan = $kendaraan->total_oa;
@@ -100,14 +106,23 @@ class RekapOaController extends Controller
         $kendaraan = PoKendaraan::with('supplier')->findOrFail(decrypt($id));
         $tagihan = $kendaraan->total_oa;
 
+        // Guard: jika sudah lunas, tolak pembayaran baru
+        $existingOa = OaPayment::where('po_kendaraan_id', $kendaraan->id)
+            ->where('tipe_pembayaran', 'oa')
+            ->first();
+
+        if ($existingOa && $existingOa->status === 'lunas') {
+            return redirect()->route('keuangan.oa.index')
+                ->with('error', 'Pembayaran sudah lunas, tidak dapat menambah pembayaran baru.');
+        }
+
         $path = null;
         if ($request->hasFile('bukti_bayar')) {
             $path = $request->file('bukti_bayar')->store('bukti-bayar', 'public');
         }
 
-        $existing = OaPayment::where('po_kendaraan_id', $kendaraan->id)
-            ->where('tipe_pembayaran', 'oa')
-            ->first();
+        // Gunakan $existingOa yang sudah di-query di atas
+        $existing = $existingOa;
         $totalBayar = ($existing?->jumlah_bayar ?? 0) + $request->jumlah_bayar;
         $status = $totalBayar >= $tagihan ? 'lunas' : 'partial';
 

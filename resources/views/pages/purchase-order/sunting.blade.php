@@ -228,6 +228,21 @@
                             class="form-control input-muatan-karung" placeholder="0" readonly>
                     </div>
                     <div class="col-md-3">
+                        <label class="form-label">Tujuan <span class="text-muted small">(untuk menentukan
+                                ongkos)</span></label>
+                        <select name="kendaraan[__KI__][tujuan_id]" class="form-select input-tujuan-id" disabled>
+                            <option value="">-- Pilih Supplier Dulu --</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Ongkos Angkut (Rp/kg) <span class="text-muted small">— per
+                                kendaraan</span></label>
+                        <input type="number" name="kendaraan[__KI__][ongkos_angkut]"
+                            class="form-control input-ongkos-angkut" placeholder="0" step="0.01" min="0"
+                            value="0">
+                        <small class="text-muted input-oa-info"></small>
+                    </div>
+                    <div class="col-md-3">
                         <label class="form-label">Status Kendaraan</label>
                         <select name="kendaraan[__KI__][status]" class="form-select select-status-kendaraan">
                             <option value="pending">Pending</option>
@@ -447,9 +462,12 @@
                     $card.find('[name="kendaraan[' + ki + '][supplier_id]"]').val(data.supplier_id);
 
                     var $jenisSelect = $card.find('.input-jenis-kendaraan');
+                    var $tujuanSelect = $card.find('.input-tujuan-id');
                     $jenisSelect.html('<option value="">-- Loading... --</option>').prop('disabled', true);
+                    $tujuanSelect.html('<option value="">-- Loading... --</option>').prop('disabled', true);
 
                     var savedJenis = data.jenis_kendaraan || '';
+                    var savedTujuan = data.tujuan_id || '';
                     $.ajax({
                         url: '{{ route('supplier.get-jenis-kendaraan') }}',
                         method: 'GET',
@@ -457,23 +475,49 @@
                             supplier_id: data.supplier_id
                         },
                         success: function(response) {
-                            if (response.success && response.jenis_kendaraan.length > 0) {
-                                var options = '<option value="">-- Pilih Jenis Kendaraan --</option>';
-                                response.jenis_kendaraan.forEach(function(jenis) {
-                                    options += '<option value="' + jenis + '">' + jenis + '</option>';
-                                });
-                                $jenisSelect.html(options).prop('disabled', false);
-                                // Restore nilai yang sudah tersimpan
-                                if (savedJenis) {
-                                    $jenisSelect.val(savedJenis);
+                            if (response.success) {
+                                $card.data('ongkos-map', response.ongkos_map || {});
+
+                                if (response.jenis_kendaraan.length > 0) {
+                                    var jenisOpts = '<option value="">-- Pilih Jenis Kendaraan --</option>';
+                                    response.jenis_kendaraan.forEach(function(jenis) {
+                                        jenisOpts += '<option value="' + jenis + '">' + jenis +
+                                            '</option>';
+                                    });
+                                    $jenisSelect.html(jenisOpts).prop('disabled', false);
+                                    if (savedJenis) $jenisSelect.val(savedJenis);
+                                } else {
+                                    $jenisSelect.html(
+                                            '<option value="">-- Tidak Ada Jenis Kendaraan --</option>')
+                                        .prop('disabled', true);
                                 }
-                            } else {
-                                $jenisSelect.html('<option value="">-- Tidak Ada Jenis Kendaraan --</option>')
-                                    .prop('disabled', true);
+
+                                if (response.tujuans.length > 0) {
+                                    var tujuanOpts = '<option value="">-- Pilih Tujuan --</option>';
+                                    response.tujuans.forEach(function(tujuan) {
+                                        tujuanOpts += '<option value="' + tujuan.id + '">' + tujuan
+                                            .nama + '</option>';
+                                    });
+                                    $tujuanSelect.html(tujuanOpts).prop('disabled', false);
+                                    if (savedTujuan) $tujuanSelect.val(savedTujuan);
+                                } else {
+                                    $tujuanSelect.html('<option value="">-- Tidak Ada Tujuan --</option>')
+                                        .prop('disabled', true);
+                                }
+
+                                // Restore ongkos angkut
+                                var savedOa = parseFloat(data.ongkos_angkut) || 0;
+                                $card.find('.input-ongkos-angkut').val(savedOa);
+                                if (savedOa > 0) {
+                                    $card.find('.input-oa-info').text('Rp ' + savedOa.toLocaleString('id-ID') +
+                                        '/kg');
+                                }
                             }
                         },
                         error: function() {
                             $jenisSelect.html('<option value="">-- Error Loading --</option>').prop('disabled',
+                                true);
+                            $tujuanSelect.html('<option value="">-- Error Loading --</option>').prop('disabled',
                                 true);
                         }
                     });
@@ -687,17 +731,22 @@
         $(document).on('change', '.input-supplier', function() {
             var $kCard = $(this).closest('.item-kendaraan');
             var $jenisSelect = $kCard.find('.input-jenis-kendaraan');
+            var $tujuanSelect = $kCard.find('.input-tujuan-id');
             var supplierId = $(this).val();
 
-            // Reset jenis kendaraan dropdown
+            // Reset
             $jenisSelect.html('<option value="">-- Loading... --</option>').prop('disabled', true);
+            $tujuanSelect.html('<option value="">-- Loading... --</option>').prop('disabled', true);
+            $kCard.removeData('ongkos-map');
+            $kCard.find('.input-ongkos-angkut').val(0);
+            $kCard.find('.input-oa-info').text('');
 
             if (!supplierId) {
                 $jenisSelect.html('<option value="">-- Pilih Supplier Dulu --</option>').prop('disabled', true);
+                $tujuanSelect.html('<option value="">-- Pilih Supplier Dulu --</option>').prop('disabled', true);
                 return;
             }
 
-            // Get jenis kendaraan dari API
             $.ajax({
                 url: '{{ route('supplier.get-jenis-kendaraan') }}',
                 method: 'GET',
@@ -706,29 +755,80 @@
                 },
                 success: function(response) {
                     if (response.success) {
-                        var options = '<option value="">-- Pilih Jenis Kendaraan --</option>';
+                        $kCard.data('ongkos-map', response.ongkos_map || {});
 
                         if (response.jenis_kendaraan.length > 0) {
+                            var jenisOpts = '<option value="">-- Pilih Jenis Kendaraan --</option>';
                             response.jenis_kendaraan.forEach(function(jenis) {
-                                options += '<option value="' + jenis + '">' + jenis +
+                                jenisOpts += '<option value="' + jenis + '">' + jenis +
                                     '</option>';
                             });
-                            $jenisSelect.html(options).prop('disabled', false);
+                            $jenisSelect.html(jenisOpts).prop('disabled', false);
                         } else {
                             $jenisSelect.html(
                                 '<option value="">-- Tidak Ada Jenis Kendaraan --</option>').prop(
                                 'disabled', true);
-                            alertify.warning(
-                                'Supplier ini belum memiliki jenis kendaraan yang terdaftar.');
+                        }
+
+                        if (response.tujuans.length > 0) {
+                            var tujuanOpts = '<option value="">-- Pilih Tujuan --</option>';
+                            response.tujuans.forEach(function(tujuan) {
+                                tujuanOpts += '<option value="' + tujuan.id + '">' + tujuan
+                                    .nama + '</option>';
+                            });
+                            $tujuanSelect.html(tujuanOpts).prop('disabled', false);
+                        } else {
+                            $tujuanSelect.html('<option value="">-- Tidak Ada Tujuan --</option>').prop(
+                                'disabled', true);
+                            alertify.warning('Supplier ini belum memiliki tujuan yang terdaftar.');
                         }
                     }
                 },
                 error: function() {
                     $jenisSelect.html('<option value="">-- Error Loading --</option>').prop('disabled',
                         true);
-                    alertify.error('Gagal mengambil jenis kendaraan');
+                    $tujuanSelect.html('<option value="">-- Error Loading --</option>').prop('disabled',
+                        true);
+                    alertify.error('Gagal mengambil data supplier');
                 }
             });
+        });
+
+        // ── Auto-fill OA kendaraan saat tujuan atau jenis kendaraan berubah ──
+        function updateOaKendaraan($kCard) {
+            var ongkosMap = $kCard.data('ongkos-map') || {};
+            var tujuanId = $kCard.find('.input-tujuan-id').val();
+            var jenis = $kCard.find('.input-jenis-kendaraan').val() || '';
+
+            if (!tujuanId) {
+                $kCard.find('.input-ongkos-angkut').val(0);
+                $kCard.find('.input-oa-info').text('');
+                return;
+            }
+
+            var oa = 0;
+            if (ongkosMap[tujuanId]) {
+                if (jenis && ongkosMap[tujuanId][jenis] !== undefined) {
+                    oa = ongkosMap[tujuanId][jenis];
+                } else if (ongkosMap[tujuanId][''] !== undefined) {
+                    oa = ongkosMap[tujuanId][''];
+                } else {
+                    var vals = Object.values(ongkosMap[tujuanId]);
+                    if (vals.length > 0) oa = vals[0];
+                }
+            }
+
+            $kCard.find('.input-ongkos-angkut').val(oa);
+            if (oa > 0) {
+                $kCard.find('.input-oa-info').text('Auto dari supplier: Rp ' + oa.toLocaleString('id-ID') + '/kg');
+            } else {
+                $kCard.find('.input-oa-info').text('Tidak ada data OA, isi manual');
+            }
+        }
+
+        $(document).on('change', '.input-tujuan-id', function() {
+            var $kCard = $(this).closest('.item-kendaraan');
+            if ($kCard.length) updateOaKendaraan($kCard);
         });
 
         // ── Dropdown penerima: gunakan native select + change event ──
@@ -830,6 +930,7 @@
         // Trigger saat jenis kendaraan berubah
         $(document).on('change', '.input-jenis-kendaraan', function() {
             var $kCard = $(this).closest('.item-kendaraan');
+            updateOaKendaraan($kCard);
             $kCard.find('.item-penerima').each(function() {
                 var $pCard = $(this);
                 if ($pCard.find('.input-tujuan-id').val()) {
@@ -886,6 +987,8 @@
                         'no_surat_jalan' => $k->no_surat_jalan,
                         'supplier_id' => $k->supplier_id,
                         'jenis_kendaraan' => $k->jenis_kendaraan,
+                        'tujuan_id' => $k->tujuan_id,
+                        'ongkos_angkut' => $k->ongkos_angkut,
                         'jumlah_kg' => $k->jumlah_kg,
                         'status' => $k->status,
                         'penerima' => $k->penerimas

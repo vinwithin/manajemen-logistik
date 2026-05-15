@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Exceptions\InsufficientStockException;
 use App\Exports\RekapLansirGudangExport;
+use App\Models\Cv;
 use App\Models\GudangLansirHeader;
 use App\Models\GudangLansirPenerima;
 use App\Models\GudangStok;
@@ -11,13 +12,13 @@ use App\Models\KodePakan;
 use App\Models\Penerima;
 use App\Models\PoPenerima;
 use App\Models\PoPeriodeDokumen;
+use App\Models\Supplier;
 use App\Models\Tujuan;
 use App\Services\Datatables\GudangLansirDatatableService;
 use App\Services\GudangStokService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Exception;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 
 class GudangLansirController extends Controller
@@ -82,7 +83,7 @@ class GudangLansirController extends Controller
                 'ongkos_bongkar' => (float) $p->ongkos_bongkar,
             ]);
 
-        $cvList = \App\Models\Cv::where('is_aktif', true)->orderBy('nama_cv')->get();
+        $cvList = Cv::where('is_aktif', true)->orderBy('nama_cv')->get();
 
         return view('pages.gudang.lansir.create', compact('gudangs', 'tujuans', 'kodePakans', 'gudangId', 'stokList', 'poPenerimaList', 'penerimaList', 'cvList'));
     }
@@ -90,10 +91,10 @@ class GudangLansirController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'gudang_id'      => 'required|exists:tujuan,id',
-            'cv_id'          => 'required|exists:cv,id',
+            'gudang_id' => 'required|exists:tujuan,id',
+            'cv_id' => 'required|exists:cv,id',
             'tanggal_lansir' => 'required|date',
-            'catatan'        => 'nullable|string',
+            'catatan' => 'nullable|string',
             'kendaraans' => 'required|array|min:1',
             'kendaraans.*.no_polisi' => 'required|string|max:20',
             'kendaraans.*.nama_sopir' => 'nullable|string|max:255',
@@ -265,19 +266,19 @@ class GudangLansirController extends Controller
     public function exportPdfPtSumConfirm(Request $request)
     {
         $gudangs = Tujuan::where('type', 'gudang')->where('is_aktif', true)->orderBy('nama')->get();
-        $cvList  = \App\Models\Cv::where('is_aktif', true)->orderBy('nama_cv')->get();
-        $suppliers = \App\Models\Supplier::orderBy('nama')->get();
+        $cvList = Cv::where('is_aktif', true)->orderBy('nama_cv')->get();
+        $suppliers = Supplier::orderBy('nama')->get();
         $tujuans = Tujuan::where('is_aktif', true)->orderBy('nama')->get();
-        
-        $from     = $request->from;
-        $to       = $request->to;
+
+        $from = $request->from;
+        $to = $request->to;
         $gudangId = $request->gudang_id;
-        $cvId     = $request->cv_id;
+        $cvId = $request->cv_id;
         $supplierId = $request->supplier_id;
         $tujuanId = $request->tujuan_id;
-        $lansirCount    = null;
+        $lansirCount = null;
         $noSuratSuggest = null;
-        $dokumen        = null;
+        $dokumen = null;
 
         if ($from && $to) {
             $query = GudangLansirHeader::whereDate('tanggal_lansir', '>=', $from)
@@ -287,22 +288,20 @@ class GudangLansirController extends Controller
 
             // Filter supplier: cek dari poPenerima -> kendaraan -> po -> supplier
             if ($supplierId) {
-                $query->whereHas('kendaraans.penerimas.poPenerima.kendaraan', fn ($q) => 
-                    $q->where('supplier_id', $supplierId)
+                $query->whereHas('kendaraans.penerimas.poPenerima.kendaraan', fn ($q) => $q->where('supplier_id', $supplierId)
                 );
             }
 
             // Filter tujuan: cek dari penerimas
             if ($tujuanId) {
-                $query->whereHas('kendaraans.penerimas', fn ($q) => 
-                    $q->where('tujuan_id', $tujuanId)
+                $query->whereHas('kendaraans.penerimas', fn ($q) => $q->where('tujuan_id', $tujuanId)
                 );
             }
 
             $lansirCount = $query->count();
 
             if ($cvId) {
-                $cv = \App\Models\Cv::find($cvId);
+                $cv = Cv::find($cvId);
 
                 $dokumen = PoPeriodeDokumen::where('cv_id', $cvId)
                     ->where('dari', $from)
@@ -317,16 +316,16 @@ class GudangLansirController extends Controller
             } else {
                 // Tanpa CV: generate preview sederhana
                 $bulanRomawi = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
-                $bulan  = $bulanRomawi[(int) date('n', strtotime($from)) - 1];
-                $tahun  = date('Y', strtotime($from));
+                $bulan = $bulanRomawi[(int) date('n', strtotime($from)) - 1];
+                $tahun = date('Y', strtotime($from));
                 $urutan = PoPeriodeDokumen::where('tipe', 'gudang_ptsum')
                     ->whereYear('dari', $tahun)->max('urutan') ?? 0;
-                $noSuratSuggest = ($urutan + 1) . '-GL/' . $bulan . '/' . $tahun;
+                $noSuratSuggest = ($urutan + 1).'-GL/'.$bulan.'/'.$tahun;
             }
         }
 
         return view('pages.gudang.lansir.export-ptsum-confirm', compact(
-            'gudangs', 'cvList', 'suppliers', 'tujuans', 'from', 'to', 'gudangId', 'cvId', 
+            'gudangs', 'cvList', 'suppliers', 'tujuans', 'from', 'to', 'gudangId', 'cvId',
             'supplierId', 'tujuanId', 'lansirCount', 'noSuratSuggest', 'dokumen'
         ));
     }
@@ -346,7 +345,7 @@ class GudangLansirController extends Controller
 
         // Simpan / ambil nomor surat jika checkbox dicentang
         if ($buatNoSurat && $from && $to) {
-            $cv = $cvId ? \App\Models\Cv::find($cvId) : null;
+            $cv = $cvId ? Cv::find($cvId) : null;
 
             if ($cv) {
                 // Gunakan database transaction dan locking untuk menghindari race condition
@@ -368,13 +367,13 @@ class GudangLansirController extends Controller
 
                     // Buat dokumen baru
                     return PoPeriodeDokumen::create([
-                        'cv_id'      => $cvId,
-                        'dari'       => $from,
-                        'sampai'     => $to,
-                        'tipe'       => 'gudang_ptsum',
-                        'urutan'     => $generated['urutan'],
-                        'no_surat'   => $generated['no_surat'],
-                        'catatan'    => $request->catatan,
+                        'cv_id' => $cvId,
+                        'dari' => $from,
+                        'sampai' => $to,
+                        'tipe' => 'gudang_ptsum',
+                        'urutan' => $generated['urutan'],
+                        'no_surat' => $generated['no_surat'],
+                        'catatan' => $request->catatan,
                         'created_by' => auth()->id(),
                     ]);
                 });
@@ -396,25 +395,21 @@ class GudangLansirController extends Controller
 
         // Filter supplier
         if ($supplierId) {
-            $query->whereHas('kendaraans.penerimas.poPenerima.kendaraan', fn ($q) => 
-                $q->where('supplier_id', $supplierId)
+            $query->whereHas('kendaraans.penerimas.poPenerima.kendaraan', fn ($q) => $q->where('supplier_id', $supplierId)
             );
         }
 
         // Filter tujuan
         if ($tujuanId) {
-            $query->whereHas('kendaraans.penerimas', fn ($q) => 
-                $q->where('tujuan_id', $tujuanId)
+            $query->whereHas('kendaraans.penerimas', fn ($q) => $q->where('tujuan_id', $tujuanId)
             );
         }
 
         $headers = $query->orderBy('tanggal_lansir')->get();
-
-        $kodePakanList = KodePakan::orderBy('kode')->get();
-
+        
         $pdf = Pdf::loadView('pdf.gudang-lansir-ptsum',
-            compact('headers', 'kodePakanList', 'from', 'to', 'noSurat'))
-            ->setPaper('a4', 'landscape')
+            compact('headers', 'from', 'to', 'noSurat'))
+            ->setPaper('legal', 'landscape')
             ->setOption('margin-top', 10)->setOption('margin-bottom', 10)
             ->setOption('margin-left', 10)->setOption('margin-right', 10);
 
@@ -424,14 +419,14 @@ class GudangLansirController extends Controller
     public function exportPdfSupplierConfirm(Request $request)
     {
         $gudangs = Tujuan::where('type', 'gudang')->where('is_aktif', true)->orderBy('nama')->get();
-        $cvList  = \App\Models\Cv::where('is_aktif', true)->orderBy('nama_cv')->get();
-        $suppliers = \App\Models\Supplier::orderBy('nama')->get();
+        $cvList = Cv::where('is_aktif', true)->orderBy('nama_cv')->get();
+        $suppliers = Supplier::orderBy('nama')->get();
         $tujuans = Tujuan::where('is_aktif', true)->orderBy('nama')->get();
-        
-        $from     = $request->from;
-        $to       = $request->to;
+
+        $from = $request->from;
+        $to = $request->to;
         $gudangId = $request->gudang_id;
-        $cvId     = $request->cv_id;
+        $cvId = $request->cv_id;
         $supplierId = $request->supplier_id;
         $tujuanId = $request->tujuan_id;
         $lansirCount = null;
@@ -444,15 +439,13 @@ class GudangLansirController extends Controller
 
             // Filter supplier
             if ($supplierId) {
-                $query->whereHas('kendaraans.penerimas.poPenerima.kendaraan', fn ($q) => 
-                    $q->where('supplier_id', $supplierId)
+                $query->whereHas('kendaraans.penerimas.poPenerima.kendaraan', fn ($q) => $q->where('supplier_id', $supplierId)
                 );
             }
 
             // Filter tujuan
             if ($tujuanId) {
-                $query->whereHas('kendaraans.penerimas', fn ($q) => 
-                    $q->where('tujuan_id', $tujuanId)
+                $query->whereHas('kendaraans.penerimas', fn ($q) => $q->where('tujuan_id', $tujuanId)
                 );
             }
 
@@ -460,7 +453,7 @@ class GudangLansirController extends Controller
         }
 
         return view('pages.gudang.lansir.export-supplier-confirm', compact(
-            'gudangs', 'cvList', 'suppliers', 'tujuans', 'from', 'to', 'gudangId', 'cvId', 
+            'gudangs', 'cvList', 'suppliers', 'tujuans', 'from', 'to', 'gudangId', 'cvId',
             'supplierId', 'tujuanId', 'lansirCount'
         ));
     }
@@ -468,7 +461,7 @@ class GudangLansirController extends Controller
     public function exportPdfSupplier(Request $request)
     {
         $request->validate(['from' => 'required|date', 'to' => 'required|date']);
-        
+
         $from = $request->from;
         $to = $request->to;
         $gudangId = $request->gudang_id;
@@ -489,28 +482,21 @@ class GudangLansirController extends Controller
 
         // Filter supplier
         if ($supplierId) {
-            $query->whereHas('kendaraans.penerimas.poPenerima.kendaraan', fn ($q) => 
-                $q->where('supplier_id', $supplierId)
+            $query->whereHas('kendaraans.penerimas.poPenerima.kendaraan', fn ($q) => $q->where('supplier_id', $supplierId)
             );
         }
 
         // Filter tujuan
         if ($tujuanId) {
-            $query->whereHas('kendaraans.penerimas', fn ($q) => 
-                $q->where('tujuan_id', $tujuanId)
+            $query->whereHas('kendaraans.penerimas', fn ($q) => $q->where('tujuan_id', $tujuanId)
             );
         }
 
         $headers = $query->orderBy('tanggal_lansir')->get();
 
-        $kodePakanList = $headers->flatMap(fn ($h) => $h->kendaraans)
-            ->flatMap(fn ($k) => $k->penerimas)
-            ->flatMap(fn ($p) => $p->pakans)
-            ->map(fn ($pk) => $pk->kodePakan)->filter()->unique('id')->sortBy('kode')->values();
-
         $pdf = Pdf::loadView('pdf.gudang-lansir-supplier',
-            compact('headers', 'kodePakanList', 'from', 'to'))
-            ->setPaper('a4', 'landscape')
+            compact('headers', 'from', 'to'))
+            ->setPaper('legal', 'landscape')
             ->setOption('margin-top', 10)->setOption('margin-bottom', 10)
             ->setOption('margin-left', 10)->setOption('margin-right', 10);
 

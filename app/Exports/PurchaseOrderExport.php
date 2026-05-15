@@ -18,9 +18,19 @@ class PurchaseOrderExport implements FromArray, WithEvents, WithTitle
 
     protected array $kodePakanList;
 
+    /** No | Tanggal | No Polisi | No. DO | Tujuan | Penerima */
+    protected int $identitasCols = 6;
+
     public function __construct(PurchaseOrder $po)
     {
-        $this->po = $po->load(['kendaraans.penerimas.lansirs.mobils', 'kendaraans.penerimas.lansirs.tims']);
+        $this->po = $po->load([
+            'cv',
+            'kendaraans.tujuan',
+            'kendaraans.penerimas.tujuan',
+            'kendaraans.penerimas.pakans.kodePakan',
+            'kendaraans.penerimas.lansirs.mobils',
+            'kendaraans.penerimas.lansirs.tims',
+        ]);
 
         $this->kodePakanList = KodePakan::orderBy('kode')->get()->all();
     }
@@ -29,9 +39,10 @@ class PurchaseOrderExport implements FromArray, WithEvents, WithTitle
     {
         $rows = [];
         $kpCount = count($this->kodePakanList);
+        $idCols = $this->identitasCols;
 
         // ── Header baris 1: label group ───────────────────────────────
-        $header1 = ['No', 'Tanggal', 'No Polisi', 'No. DO', 'Tujuan'];
+        $header1 = ['No', 'Tanggal', 'No Polisi', 'No. DO', 'Tujuan', 'Penerima'];
 
         // Group Jumlah Karung
         $header1[] = 'Jumlah (bag)';
@@ -68,7 +79,7 @@ class PurchaseOrderExport implements FromArray, WithEvents, WithTitle
         $rows[] = $header1;
 
         // ── Header baris 2: kode pakan + lansir detail ────────────────
-        $header2 = ['', '', '', '', ''];
+        $header2 = array_fill(0, $idCols, '');
 
         foreach ($this->kodePakanList as $kp) {
             $header2[] = $kp->kode; // sub-header Jumlah Karung
@@ -100,85 +111,140 @@ class PurchaseOrderExport implements FromArray, WithEvents, WithTitle
 
         $rows[] = $header2;
 
-        // ── Data: 1 baris per penerima ───────────────────────────────
+        // ── Data: 1 baris per penerima (atau 1 baris muatan kendaraan jika belum ada penerima) ──
         $no = 1;
         foreach ($this->po->kendaraans->sortBy('no_polisi') as $kendaraan) {
-            foreach ($kendaraan->penerimas as $penerima) {
+            foreach (
+                $kendaraan->penerimas->count() > 0
+                    ? $kendaraan->penerimas
+                    : [null] as $penerima
+            ) {
+                $lansir = null;
+
+                $namaTujuan = $penerima !== null
+                    ? ($penerima->tujuan?->nama ?? '')
+                    : ($kendaraan->tujuan?->nama ?? '');
+
                 $row = [
                     $no++,
                     $this->po->tanggal_po->translatedFormat('d F Y'),
                     $kendaraan->no_polisi,
                     $kendaraan->no_surat_jalan ?? '-',
-                    $penerima->nama_penerima,
+                    $namaTujuan,
+                    $penerima?->nama_penerima ?? '',
                 ];
 
-                // Kolom Jumlah Karung per kode pakan
-                foreach ($this->kodePakanList as $kp) {
-                    $pakan = $penerima->pakans->firstWhere('kode_pakan_id', $kp->id);
-                    $row[] = ($pakan && $pakan->jumlah_karung) ? $pakan->jumlah_karung : '';
-                }
+                if ($penerima !== null) {
 
-                // Kolom KG per kode pakan
-                $totalOngkos = 0;
-                foreach ($this->kodePakanList as $kp) {
-                    $pakan = $penerima->pakans->firstWhere('kode_pakan_id', $kp->id);
-                    if ($pakan && $pakan->jumlah_kg) {
-                        $row[] = $pakan->jumlah_kg;
-                        $totalOngkos += (float) $pakan->jumlah_kg * (float) ($pakan->ongkos_oa ?? 0);
+                    // Kolom Jumlah Karung per kode pakan
+                    foreach ($this->kodePakanList as $kp) {
+                        $pakan = $penerima->pakans->firstWhere('kode_pakan_id', $kp->id);
+                        $row[] = ($pakan && $pakan->jumlah_karung) ? $pakan->jumlah_karung : '';
+                    }
+
+                    // Kolom KG per kode pakan
+                    $totalOngkos = 0;
+                    foreach ($this->kodePakanList as $kp) {
+                        $pakan = $penerima->pakans->firstWhere('kode_pakan_id', $kp->id);
+                        if ($pakan && $pakan->jumlah_kg) {
+                            $row[] = $pakan->jumlah_kg;
+                            $totalOngkos += (float) $pakan->jumlah_kg * (float) ($pakan->ongkos_oa ?? 0);
+                        } else {
+                            $row[] = '';
+                        }
+                    }
+
+                    // Ongkos Angkut
+                    $oaAngkut = $penerima->pakans
+                        ->whereNotNull('ongkos_oa')
+                        ->first()?->ongkos_oa;
+                    $row[] = $oaAngkut ?: '';
+
+                    // Jumlah (Rp)
+                    $row[] = $totalOngkos > 0 ? $totalOngkos : '';
+
+                    $lansir = $penerima->lansirs->first();
+
+                    // Keterangan: tipe tujuan penerima (kosong jika tidak ada)
+                    $row[] = $penerima->tujuan?->type ?? '';
+
+                    // ── LANSIR MOBIL DATA ─────────────────────────────────
+                    if ($lansir && $lansir->mobils->count() > 0) {
+                        $firstMobil = $lansir->mobils->first();
+                        $row[] = ''; // Spacer
+                        $row[] = $firstMobil->no_polisi ?? '';
+                        $row[] = $firstMobil->nama_sopir ?? '';
+                        $row[] = $firstMobil->berat ?? '';
+                        $row[] = $firstMobil->jumlah_karung ?? '';
+                        $row[] = $firstMobil->ongkos ?? '';
+                        $row[] = (float) ($firstMobil->berat ?? 0) * (float) ($firstMobil->ongkos ?? 0);
                     } else {
+                        $row[] = ''; // Spacer
+                        $row[] = '';
+                        $row[] = '';
+                        $row[] = '';
+                        $row[] = '';
+                        $row[] = '';
                         $row[] = '';
                     }
-                }
 
-                // Ongkos Angkut
-                $oaAngkut = $penerima->pakans
-                    ->whereNotNull('ongkos_oa')
-                    ->first()?->ongkos_oa;
-                $row[] = $oaAngkut ?: '';
-
-                // Jumlah (Rp)
-                $row[] = $totalOngkos > 0 ? $totalOngkos : '';
-
-                $lansir = $penerima->lansirs->first();
-
-                if (! $lansir) {
-                    $row[] = 'Direct';
+                    // ── TIM BONGKAR DATA ──────────────────────────────────
+                    if ($lansir && $lansir->tims->count() > 0) {
+                        $firstTim = $lansir->tims->first();
+                        $totalBerat = $lansir->mobils->sum('berat');
+                        $row[] = ''; // Spacer
+                        $row[] = $firstTim->nama_tim ?? '';
+                        $row[] = $firstTim->berat ?? $totalBerat;
+                        $row[] = $firstTim->jumlah_karung ?? '';
+                        $row[] = $firstTim->upah ?? '';
+                        $row[] = (float) ($firstTim->berat ?? $totalBerat) * (float) ($firstTim->upah ?? 0);
+                    } else {
+                        $row[] = ''; // Spacer
+                        $row[] = '';
+                        $row[] = '';
+                        $row[] = '';
+                        $row[] = '';
+                        $row[] = '';
+                    }
                 } else {
-                    $row[] = '';
-                }
+                    // Kendaraan belum punya penerima: muatan & OA level kendaraan
+                    $kgMuatan = (float) ($kendaraan->jumlah_kg ?? 0);
+                    $karungMuatan = $kendaraan->jumlah_karung;
+                    $ongkosAngkut = $kendaraan->ongkos_angkut;
 
-                // ── LANSIR MOBIL DATA ─────────────────────────────────
-                if ($lansir && $lansir->mobils->count() > 0) {
-                    $firstMobil = $lansir->mobils->first();
-                    $row[] = ''; // Spacer
-                    $row[] = $firstMobil->no_polisi ?? '';
-                    $row[] = $firstMobil->nama_sopir ?? '';
-                    $row[] = $firstMobil->berat ?? '';
-                    $row[] = $firstMobil->jumlah_karung ?? '';
-                    $row[] = $firstMobil->ongkos ?? '';
-                    $row[] = (float) ($firstMobil->berat ?? 0) * (float) ($firstMobil->ongkos ?? 0);
-                } else {
-                    $row[] = ''; // Spacer
-                    $row[] = '';
-                    $row[] = '';
-                    $row[] = '';
-                    $row[] = '';
-                    $row[] = '';
-                    $row[] = '';
-                }
+                    foreach ($this->kodePakanList as $idx => $_kp) {
+                        if ($idx === 0 && $karungMuatan !== null && $karungMuatan !== '') {
+                            $row[] = $karungMuatan;
+                        } elseif ($idx === 0 && $karungMuatan === 0) {
+                            $row[] = 0;
+                        } else {
+                            $row[] = '';
+                        }
+                    }
 
-                // ── TIM BONGKAR DATA ──────────────────────────────────
-                if ($lansir && $lansir->tims->count() > 0) {
-                    $firstTim = $lansir->tims->first();
-                    $totalBerat = $lansir->mobils->sum('berat');
-                    $row[] = ''; // Spacer
-                    $row[] = $firstTim->nama_tim ?? '';
-                    $row[] = $firstTim->berat ?? $totalBerat;
-                    $row[] = $firstTim->jumlah_karung ?? '';
-                    $row[] = $firstTim->upah ?? '';
-                    $row[] = (float) ($firstTim->berat ?? $totalBerat) * (float) ($firstTim->upah ?? 0);
-                } else {
-                    $row[] = ''; // Spacer
+                    $totalOaKendaraan = 0.0;
+                    foreach ($this->kodePakanList as $idx => $_kp) {
+                        if ($idx === 0 && $kgMuatan > 0) {
+                            $row[] = $kgMuatan;
+                            $totalOaKendaraan = $kgMuatan * (float) ($ongkosAngkut ?? 0);
+                        } else {
+                            $row[] = '';
+                        }
+                    }
+
+                    $row[] = ($ongkosAngkut !== null && $ongkosAngkut !== '') ? $ongkosAngkut : '';
+                    $row[] = $totalOaKendaraan > 0 ? $totalOaKendaraan : '';
+                    $row[] = 'Belum ada penerima';
+
+                    $row[] = '';
+                    $row[] = '';
+                    $row[] = '';
+                    $row[] = '';
+                    $row[] = '';
+                    $row[] = '';
+                    $row[] = '';
+
+                    $row[] = '';
                     $row[] = '';
                     $row[] = '';
                     $row[] = '';
@@ -189,13 +255,13 @@ class PurchaseOrderExport implements FromArray, WithEvents, WithTitle
                 $rows[] = $row;
 
                 // Tambahkan baris extra untuk mobil/tim tambahan (zip bersama)
-                if ($lansir) {
+                if ($penerima !== null && $lansir) {
                     $extraMobils = $lansir->mobils->slice(1)->values();
-                    $extraTims   = $lansir->tims->slice(1)->values();
-                    $extraCount  = max($extraMobils->count(), $extraTims->count());
+                    $extraTims = $lansir->tims->slice(1)->values();
+                    $extraCount = max($extraMobils->count(), $extraTims->count());
 
                     for ($ei = 0; $ei < $extraCount; $ei++) {
-                        $extraRow = array_fill(0, 5 + ($kpCount * 2) + 3, '');
+                        $extraRow = array_fill(0, $idCols + ($kpCount * 2) + 3, '');
 
                         // Mobil lansir extra
                         $mobil = $extraMobils->get($ei);
@@ -223,7 +289,8 @@ class PurchaseOrderExport implements FromArray, WithEvents, WithTitle
         }
 
         // ── Baris TOTAL ───────────────────────────────────────────────
-        $totalRow = ['Total', '', '', '', ''];
+        $totalRow = array_fill(0, $idCols, '');
+        $totalRow[0] = 'Total';
         // Empty cells for karung columns
         for ($i = 0; $i < $kpCount; $i++) {
             $totalRow[] = '';
@@ -273,6 +340,7 @@ class PurchaseOrderExport implements FromArray, WithEvents, WithTitle
         return [
             AfterSheet::class => function (AfterSheet $event) use ($po, $kodePakanCount) {
                 $sheet = $event->sheet->getDelegate();
+                $idCols = $this->identitasCols;
 
                 // ── Insert 3 baris info di atas ──────────────────────
                 $sheet->insertNewRowBefore(1, 3);
@@ -291,41 +359,27 @@ class PurchaseOrderExport implements FromArray, WithEvents, WithTitle
                 $dataStartRow = 6;
                 $totalRowNum = $sheet->getHighestRow();
 
-                // ── Posisi kolom ──────────────────────────────────────
-                // A(1)..E(5) = identitas
-                // F(6)..(5+kpCount) = Jumlah Karung per kode pakan
-                // (6+kpCount)..(5+2*kpCount) = KG per kode pakan
-                // (6+2*kpCount) = Ongkos Angkut
-                // (7+2*kpCount) = Jumlah (Rp)
-                // (8+2*kpCount) = Keterangan
-                // (9+2*kpCount) = Spacer 1
-                // (10+2*kpCount) = Lansir No Polisi
-                // (11+2*kpCount) = Lansir Sopir
-                // (12+2*kpCount) = Lansir Berat
-                // (13+2*kpCount) = Lansir Karung
-                // (14+2*kpCount) = Lansir Ongkos
-                // (15+2*kpCount) = Lansir Total
-                // (16+2*kpCount) = Spacer 2
-                // (17+2*kpCount) = Tim Nama
-                // (18+2*kpCount) = Tim Berat
-                // (19+2*kpCount) = Tim Upah
-                // (20+2*kpCount) = Tim Total
-                $karungStartCol = 6;
-                $karungEndCol = 5 + $kodePakanCount;
-                $kgStartCol = 6 + $kodePakanCount;
-                $kgEndCol = 5 + 2 * $kodePakanCount;
-                $oaCol = 6 + 2 * $kodePakanCount;
-                $jumlahCol = 7 + 2 * $kodePakanCount;
-                $ketCol = 8 + 2 * $kodePakanCount;
-                $spacer1Col = 9 + 2 * $kodePakanCount;
-                $lansirStartCol = 10 + 2 * $kodePakanCount;
-                $lansirEndCol = 15 + 2 * $kodePakanCount;
-                $spacer2Col = 16 + 2 * $kodePakanCount;
-                $timStartCol = 17 + 2 * $kodePakanCount;
-                $timEndCol = 21 + 2 * $kodePakanCount;
+                // ── Posisi kolom (1-based) ───────────────────────────
+                // 1..idCols = identitas | lalu karung, kg, OA, jumlah, ket, lansir, tim
+                $karungStartCol = $idCols + 1;
+                $karungEndCol = $idCols + $kodePakanCount;
+                $kgStartCol = $idCols + $kodePakanCount + 1;
+                $kgEndCol = $idCols + 2 * $kodePakanCount;
+                $oaCol = $idCols + 2 * $kodePakanCount + 1;
+                $jumlahCol = $idCols + 2 * $kodePakanCount + 2;
+                $ketCol = $idCols + 2 * $kodePakanCount + 3;
+                $spacer1Col = $idCols + 2 * $kodePakanCount + 4;
+                $lansirStartCol = $idCols + 2 * $kodePakanCount + 5;
+                $lansirEndCol = $idCols + 2 * $kodePakanCount + 10;
+                $spacer2Col = $idCols + 2 * $kodePakanCount + 11;
+                $timStartCol = $idCols + 2 * $kodePakanCount + 12;
+                $timEndCol = $idCols + 2 * $kodePakanCount + 16;
                 $totalCols = $timEndCol;
 
                 $lastCol = $this->getColumnLetter($totalCols);
+                $lastIdentitasCol = $this->getColumnLetter($idCols);
+                $tujuanColLetter = $this->getColumnLetter($idCols - 1);
+                $penerimaColLetter = $this->getColumnLetter($idCols);
                 $karungStartLetter = $this->getColumnLetter($karungStartCol);
                 $karungEndLetter = $this->getColumnLetter($karungEndCol);
                 $kgStartLetter = $this->getColumnLetter($kgStartCol);
@@ -342,8 +396,8 @@ class PurchaseOrderExport implements FromArray, WithEvents, WithTitle
 
                 // ── Merge header level 1 ──────────────────────────────
 
-                // A-E: merge 2 baris untuk kolom identitas
-                foreach (['A', 'B', 'C', 'D', 'E'] as $col) {
+                // Kolom identitas: merge 2 baris
+                foreach (range('A', $lastIdentitasCol) as $col) {
                     $sheet->mergeCells("{$col}{$hRow1}:{$col}{$hRow2}");
                     $sheet->getStyle("{$col}{$hRow1}:{$col}{$hRow2}")
                         ->getAlignment()
@@ -448,7 +502,7 @@ class PurchaseOrderExport implements FromArray, WithEvents, WithTitle
                 }
 
                 // ── Style & merge baris TOTAL ─────────────────────────
-                $sheet->mergeCells("A{$totalRowNum}:E{$totalRowNum}");
+                $sheet->mergeCells("A{$totalRowNum}:{$lastIdentitasCol}{$totalRowNum}");
                 $sheet->getStyle("A{$totalRowNum}:{$lastCol}{$totalRowNum}")
                     ->applyFromArray([
                         'font' => ['bold' => true, 'name' => 'Arial', 'size' => 10],
@@ -456,7 +510,7 @@ class PurchaseOrderExport implements FromArray, WithEvents, WithTitle
                         'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
                     ]);
 
-                // ── Style data rows + merge A-D per kendaraan ─────────
+                // ── Style data rows + merge A–D per kendaraan (sampai No. DO) ─────────
                 $currentRow = $dataStartRow;
                 $colorIndex = 0;
                 $colors = ['FFF3F4F6', 'FFFFFFFF'];
@@ -464,22 +518,26 @@ class PurchaseOrderExport implements FromArray, WithEvents, WithTitle
                 foreach ($po->kendaraans->sortBy('no_polisi') as $kendaraan) {
                     // Hitung total baris per kendaraan (termasuk extra rows lansir)
                     $totalRows = 0;
-                    foreach ($kendaraan->penerimas as $penerima) {
-                        $lansir = $penerima->lansirs->first();
-                        $extraCount = 0;
-                        if ($lansir) {
-                            $extraCount = max(
-                                $lansir->mobils->count() - 1,
-                                $lansir->tims->count() - 1
-                            );
+                    if ($kendaraan->penerimas->count() > 0) {
+                        foreach ($kendaraan->penerimas as $penerima) {
+                            $lansir = $penerima->lansirs->first();
+                            $extraCount = 0;
+                            if ($lansir) {
+                                $extraCount = max(
+                                    $lansir->mobils->count() - 1,
+                                    $lansir->tims->count() - 1
+                                );
+                            }
+                            $totalRows += 1 + $extraCount;
                         }
-                        $totalRows += 1 + $extraCount;
+                    } else {
+                        $totalRows = 1;
                     }
 
                     $start = $currentRow;
                     $end = $currentRow + $totalRows - 1;
 
-                    // Merge A-D jika > 1 baris
+                    // Merge A–D jika > 1 baris
                     if ($totalRows > 1) {
                         foreach (['A', 'B', 'C', 'D'] as $col) {
                             $sheet->mergeCells("{$col}{$start}:{$col}{$end}");
@@ -490,27 +548,34 @@ class PurchaseOrderExport implements FromArray, WithEvents, WithTitle
                         }
                     }
 
-                    // Merge kolom E (Tujuan/Penerima) per penerima jika ada extra rows
+                    // Merge kolom Tujuan & Penerima per penerima jika ada extra rows lansir
                     $penerimaRow = $currentRow;
-                    foreach ($kendaraan->penerimas as $penerima) {
-                        $lansir = $penerima->lansirs->first();
-                        $extraCount = 0;
-                        if ($lansir) {
-                            $extraCount = max(
-                                $lansir->mobils->count() - 1,
-                                $lansir->tims->count() - 1
-                            );
+                    if ($kendaraan->penerimas->count() > 0) {
+                        foreach ($kendaraan->penerimas as $penerima) {
+                            $lansir = $penerima->lansirs->first();
+                            $extraCount = 0;
+                            if ($lansir) {
+                                $extraCount = max(
+                                    $lansir->mobils->count() - 1,
+                                    $lansir->tims->count() - 1
+                                );
+                            }
+                            $penerimaRows = 1 + $extraCount;
+                            if ($penerimaRows > 1) {
+                                $penerimaEnd = $penerimaRow + $penerimaRows - 1;
+                                $sheet->mergeCells("{$tujuanColLetter}{$penerimaRow}:{$tujuanColLetter}{$penerimaEnd}");
+                                $sheet->getStyle("{$tujuanColLetter}{$penerimaRow}:{$tujuanColLetter}{$penerimaEnd}")
+                                    ->getAlignment()
+                                    ->setVertical(Alignment::VERTICAL_CENTER)
+                                    ->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                                $sheet->mergeCells("{$penerimaColLetter}{$penerimaRow}:{$penerimaColLetter}{$penerimaEnd}");
+                                $sheet->getStyle("{$penerimaColLetter}{$penerimaRow}:{$penerimaColLetter}{$penerimaEnd}")
+                                    ->getAlignment()
+                                    ->setVertical(Alignment::VERTICAL_CENTER)
+                                    ->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                            }
+                            $penerimaRow += $penerimaRows;
                         }
-                        $penerimaRows = 1 + $extraCount;
-                        if ($penerimaRows > 1) {
-                            $penerimaEnd = $penerimaRow + $penerimaRows - 1;
-                            $sheet->mergeCells("E{$penerimaRow}:E{$penerimaEnd}");
-                            $sheet->getStyle("E{$penerimaRow}:E{$penerimaEnd}")
-                                ->getAlignment()
-                                ->setVertical(Alignment::VERTICAL_CENTER)
-                                ->setHorizontal(Alignment::HORIZONTAL_CENTER);
-                        }
-                        $penerimaRow += $penerimaRows;
                     }
 
                     $fill = $colors[$colorIndex % 2];
@@ -521,7 +586,7 @@ class PurchaseOrderExport implements FromArray, WithEvents, WithTitle
                                 'font' => ['name' => 'Arial', 'size' => 10],
                                 'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
                             ]);
-                        $sheet->getStyle("E{$r}:{$ketLetter}{$r}")
+                        $sheet->getStyle("{$tujuanColLetter}{$r}:{$ketLetter}{$r}")
                             ->applyFromArray([
                                 'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => $fill]],
                                 'font' => ['name' => 'Arial', 'size' => 10],

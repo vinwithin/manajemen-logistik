@@ -76,7 +76,8 @@
                                         </button>
                                     </div>
                                     <small class="text-muted">Pilih marker dari Idtrack agar SPJ bisa di-set otomatis saat
-                                        kendaraan berangkat.</small>
+                                        kendaraan berangkat. Prioritas SPJ memakai marker di <strong>Master Penerima</strong>;
+                                        field ini tetap dipakai sebagai cadangan jika penerima belum punya marker.</small>
                                 </div>
                                 <div class="row g-2 mb-2">
                                     <div class="col-md-4">

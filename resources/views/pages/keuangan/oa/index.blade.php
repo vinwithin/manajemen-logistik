@@ -125,7 +125,7 @@
                         render: d => d && d !== '0' ? 'Rp ' + d : '-'
                     },
                     {
-                        data: 'oaPayment.jumlah_bayar',
+                        data: 'oaPaymentOnly.jumlah_bayar',
                         name: 'jumlah_bayar',
                         searchable: false,
                         render: d => fmt(d || 0)

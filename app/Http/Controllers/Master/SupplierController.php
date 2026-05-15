@@ -108,7 +108,7 @@ class SupplierController extends Controller
                         ->where('jenis_kendaraan', $tujuan['jenis_kendaraan'] ?? null)
                         ->exists();
 
-                    if (!$exists) {
+                    if (! $exists) {
                         $supplier->tujuans()->attach($tujuan['tujuan_id'], [
                             'ongkos_angkut' => $tujuan['ongkos_angkut'],
                             'jenis_kendaraan' => $tujuan['jenis_kendaraan'] ?? null,
@@ -121,7 +121,6 @@ class SupplierController extends Controller
         } catch (Exception $e) {
             return redirect()->back()->with('error', 'Gagal memperbarui: '.$e->getMessage())->withInput();
         }
-
     }
 
     public function destroy(string $id)
@@ -195,17 +194,35 @@ class SupplierController extends Controller
 
             $supplier = Supplier::with('tujuans')->findOrFail($supplierId);
 
-            // Get unique jenis kendaraan dari supplier ini
-            $jenisKendaraanList = $supplier->tujuans
-                ->pluck('pivot.jenis_kendaraan')
-                ->filter() 
-                ->unique()
-                ->values()
-                ->toArray();
+            $tujuans = [];
+            $jenisKendaraan = [];
+            // Map: tujuan_id -> jenis_kendaraan -> ongkos_angkut
+            $ongkosMap = [];
+
+            foreach ($supplier->tujuans as $tujuan) {
+                // unique tujuan by id
+                $tujuans[$tujuan->id] = [
+                    'id' => $tujuan->id,
+                    'nama' => $tujuan->nama,
+                ];
+
+                if (! empty($tujuan->pivot->jenis_kendaraan)) {
+                    $jenisKendaraan[$tujuan->pivot->jenis_kendaraan] = $tujuan->pivot->jenis_kendaraan;
+                }
+
+                // Build ongkos map: [tujuan_id][jenis_kendaraan] = ongkos_angkut
+                $jenis = $tujuan->pivot->jenis_kendaraan ?? '';
+                if (! isset($ongkosMap[$tujuan->id])) {
+                    $ongkosMap[$tujuan->id] = [];
+                }
+                $ongkosMap[$tujuan->id][$jenis] = (float) ($tujuan->pivot->ongkos_angkut ?? 0);
+            }
 
             return response()->json([
                 'success' => true,
-                'jenis_kendaraan' => $jenisKendaraanList,
+                'jenis_kendaraan' => array_values($jenisKendaraan),
+                'tujuans' => array_values($tujuans),
+                'ongkos_map' => $ongkosMap,
             ]);
         } catch (Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);

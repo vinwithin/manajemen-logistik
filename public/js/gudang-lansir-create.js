@@ -319,7 +319,7 @@ function tambahPakan(kendaraanIdx, penerimaIdx) {
             </div>
             <div class="col-md-1">
                 <button type="button" class="btn btn-sm btn-outline-danger btn-hapus-pakan w-100">
-                    <i class="fa fa-times"></i>
+                   Hapus
                 </button>
             </div>
         </div>

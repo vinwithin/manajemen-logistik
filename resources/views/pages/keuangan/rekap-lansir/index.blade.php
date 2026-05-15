@@ -38,7 +38,7 @@
                 serverSide: true,
                 bDestroy: true,
                 order: [
-                    [2, 'desc']
+                    [3, 'desc']
                 ],
                 ajax: {
                     url: '{{ route('rekap-lansir.index') }}'

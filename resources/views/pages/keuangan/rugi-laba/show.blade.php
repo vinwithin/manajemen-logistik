@@ -68,11 +68,6 @@
                         @endforeach
                         <tr>
                             <td></td>
-                            <td class="ps-4 text-muted">- Cab. Bungo</td>
-                            <td class="text-end">0</td>
-                        </tr>
-                        <tr>
-                            <td></td>
                             <td class="ps-4 text-muted">- Transper Pakan</td>
                             <td class="text-end">0</td>
                         </tr>
@@ -101,11 +96,6 @@
                         @endforeach
                         <tr>
                             <td></td>
-                            <td class="ps-4 text-muted">- Cab. Bungo</td>
-                            <td class="text-end">0</td>
-                        </tr>
-                        <tr>
-                            <td></td>
                             <td class="ps-4 text-muted">- Transper Pakan</td>
                             <td class="text-end">0</td>
                         </tr>
@@ -129,7 +119,7 @@
                             $biayaRows = [
                                 ['GAJI', $rl->gaji],
                                 ['ATK', $rl->atk],
-                                ['PEMBAYARAN SUPLIER LINTAS', $rl->pembayaran_supplier_lintas],
+                               
                                 [
                                     'PEMBAYARAN MOBIL LOKAL',
                                     (float) $rl->pembayaran_mobil_lokal + $data['mobilLokalOtomatis'],

@@ -99,10 +99,30 @@
                             <div class="col-12">
                                 <div class="card border-info mb-3">
                                     <div class="card-header bg-info bg-opacity-10 py-2">
-                                        <h6 class="mb-0 small"><i class="fa fa-map-marker text-info"></i> Koordinat Lokasi
-                                            (untuk GPS Tracking)</h6>
+                                        <h6 class="mb-0 small"><i class="fa fa-map-marker text-info"></i> Koordinat, Marker
+                                            Idtrack & peta</h6>
                                     </div>
                                     <div class="card-body">
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-semibold">Marker Idtrack (POI)</label>
+                                            <div class="d-flex gap-2">
+                                                <select name="idtrack_marker_id" id="selectMarker"
+                                                    class="form-select form-select-sm">
+                                                    <option value="">-- Pilih Marker (opsional) --</option>
+                                                    @if ($data->idtrack_marker_id)
+                                                        <option value="{{ $data->idtrack_marker_id }}" selected>
+                                                            Marker #{{ $data->idtrack_marker_id }} (tersimpan)
+                                                        </option>
+                                                    @endif
+                                                </select>
+                                                <button type="button" class="btn btn-sm btn-outline-info text-nowrap"
+                                                    id="btnLoadMarkers">
+                                                    <i class="fa fa-refresh"></i> Muat
+                                                </button>
+                                            </div>
+                                            <small class="text-muted">Disarankan diisi per penerima; marker di Master
+                                                Tujuan tetap ada sebagai cadangan.</small>
+                                        </div>
                                         <div class="row g-2 mb-2">
                                             <div class="col-md-4">
                                                 <label class="form-label small">Latitude</label>
@@ -202,6 +222,41 @@
                         map.setView([lat, lng], 15);
                     }
                 });
+            });
+
+            document.getElementById('btnLoadMarkers').addEventListener('click', function() {
+                var btn = this;
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+                $.getJSON('{{ route('idtrack.markers') }}', function(res) {
+                    if (!res.success) return;
+                    console.log(res);
+                    var sel = document.getElementById('selectMarker');
+                    var savedId = {{ $data->idtrack_marker_id ?? 'null' }};
+                    sel.innerHTML = '<option value="">-- Pilih Marker --</option>';
+                    res.markers.forEach(function(m) {
+                        var opt = document.createElement('option');
+                        opt.value = m.IDMarker;
+                        opt.text = m.Name + (m.Address ? ' — ' + m.Address : '');
+                        opt.dataset.lat = m.Lat;
+                        opt.dataset.lng = m.Lng;
+                        if (m.IDMarker == savedId) opt.selected = true;
+                        sel.appendChild(opt);
+                    });
+                }).always(function() {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa fa-refresh"></i> Muat';
+                });
+            });
+
+            document.getElementById('selectMarker').addEventListener('change', function() {
+                var opt = this.options[this.selectedIndex];
+                if (opt.dataset.lat && opt.dataset.lng) {
+                    var lat = parseFloat(opt.dataset.lat);
+                    var lng = parseFloat(opt.dataset.lng);
+                    placeMarker(lat, lng);
+                    map.setView([lat, lng], 15);
+                }
             });
         </script>
     @endpush

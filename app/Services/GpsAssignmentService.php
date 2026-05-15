@@ -3,8 +3,6 @@
 namespace App\Services;
 
 use App\Models\GpsAssignment;
-use App\Models\PoKendaraan;
-use App\Models\PoLansirMobil;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -13,7 +11,6 @@ class GpsAssignmentService
 {
     public function __construct(private IdtrackService $idtrack) {}
 
-    
     public function assign(Model $assignable, int $deviceId, ?string $catatan = null): GpsAssignment
     {
         return DB::transaction(function () use ($assignable, $deviceId, $catatan) {
@@ -32,13 +29,13 @@ class GpsAssignmentService
             $deviceName = $this->resolveDeviceName($deviceId);
 
             return GpsAssignment::create([
-                'device_id'        => $deviceId,
-                'device_name'      => $deviceName,
-                'assignable_type'  => get_class($assignable),
-                'assignable_id'    => $assignable->getKey(),
-                'assigned_at'      => now(),
-                'unassigned_at'    => null,
-                'catatan'          => $catatan,
+                'device_id' => $deviceId,
+                'device_name' => $deviceName,
+                'assignable_type' => get_class($assignable),
+                'assignable_id' => $assignable->getKey(),
+                'assigned_at' => now(),
+                'unassigned_at' => null,
+                'catatan' => $catatan,
             ]);
         });
     }
@@ -72,7 +69,8 @@ class GpsAssignmentService
         try {
             return $this->idtrack->getDevicePosition($assignment->device_id);
         } catch (\Exception $e) {
-            Log::warning("GPS position fetch failed for device {$assignment->device_id}: " . $e->getMessage());
+            Log::warning("GPS position fetch failed for device {$assignment->device_id}: ".$e->getMessage());
+
             return null;
         }
     }
@@ -83,17 +81,21 @@ class GpsAssignmentService
     public function getAvailableDevices(): array
     {
         try {
-            $devices = $this->idtrack->getDeviceTracking();
+            $flat = $this->idtrack->getAllDevicesFlattened();
 
-            // Tandai device mana yang sedang aktif di-assign
-            $activeDeviceIds = GpsAssignment::active()->pluck('device_id')->toArray();
+            $activeDeviceIds = GpsAssignment::active()->pluck('device_id')->all();
 
-            return collect($devices)->map(function ($device) use ($activeDeviceIds) {
-                $device['is_assigned'] = in_array($device['DeviceID'] ?? $device['device_id'] ?? 0, $activeDeviceIds);
-                return $device;
-            })->all();
+            return $flat->map(function (array $d) use ($activeDeviceIds) {
+                $id = (int) ($d['DeviceID'] ?? $d['device_id'] ?? 0);
+
+                return array_merge($d, [
+                    'DeviceID' => $id ?: null,
+                    'is_assigned' => $id > 0 && in_array($id, $activeDeviceIds, true),
+                ]);
+            })->values()->all();
         } catch (\Exception $e) {
-            Log::warning('GPS device list fetch failed: ' . $e->getMessage());
+            Log::warning('GPS device list fetch failed: '.$e->getMessage());
+
             return [];
         }
     }
@@ -101,10 +103,17 @@ class GpsAssignmentService
     private function resolveDeviceName(int $deviceId): ?string
     {
         try {
-            $devices = $this->idtrack->getDeviceTracking();
-            $device  = collect($devices)->firstWhere('DeviceID', $deviceId)
-                     ?? collect($devices)->firstWhere('device_id', $deviceId);
-            return $device['DeviceName'] ?? $device['device_name'] ?? null;
+            $row = $this->idtrack->getAllDevicesFlattened()->first(function ($d) use ($deviceId) {
+                $id = (int) ($d['DeviceID'] ?? $d['device_id'] ?? 0);
+
+                return $id === $deviceId;
+            });
+
+            if (! $row) {
+                return null;
+            }
+
+            return $row['DeviceName'] ?? $row['device_name'] ?? $row['Nopol'] ?? $row['nopol'] ?? null;
         } catch (\Exception $e) {
             return null;
         }

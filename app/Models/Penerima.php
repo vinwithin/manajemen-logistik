@@ -30,6 +30,7 @@ class Penerima extends Model
         'lat' => 'decimal:7',
         'lng' => 'decimal:7',
         'geofence_radius' => 'integer',
+        'idtrack_marker_id' => 'integer',
     ];
 
     /**

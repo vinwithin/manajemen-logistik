@@ -120,7 +120,7 @@
                     @endif
 
                     <button type="button" class="btn btn-xs btn-outline-info btn-lihat-gps"
-                        data-nopol="{{ $kendaraan->no_polisi }}" title="Lihat Lokasi GPS">
+                        data-kendaraan-id="{{ $kendaraan->id }}" data-nopol="{{ $kendaraan->no_polisi }}" title="Lihat Lokasi GPS">
                         <i class="fa fa-map-marker"></i> Lokasi
                     </button>
                 </div>
@@ -258,7 +258,7 @@
                                         <span class="badge bg-{{ $pBadge['color'] }}">{{ $pBadge['label'] }}</span>
                                         @if ($penerima->validasi_oleh)
                                             <div class="text-muted small mt-1">{{ $penerima->validasi_oleh }}</div>
-                                            <div class="text-muted small">{{ $penerima->tiba_at?->format('d/m H:i') }}
+                                            <div class="text-muted small">{{ $penerima->tiba_at?->format('d/m/Y') }}
                                             </div>
                                         @endif
                                     </td>
@@ -452,6 +452,11 @@
                         <input type="text" id="selesaiValidator" class="form-control form-control-sm"
                             placeholder="Nama admin / petugas">
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label form-label-sm">Tanggal Tiba <span class="text-danger">*</span></label>
+                        <input type="date" id="selesaiTanggal" class="form-control form-control-sm">
+                        <small class="text-muted">Hanya tanggal (boleh diisi mundur).</small>
+                    </div>
                     <div class="mb-2">
                         <label class="form-label form-label-sm">Bukti Tiba <span class="text-danger">*</span></label>
                         <input type="file" id="selesaiBukti" class="form-control form-control-sm"
@@ -473,6 +478,13 @@
     @if ($po->isLocked())
         <script>
             var activePenerimaId = null;
+
+            function formatDateInput(d) {
+                var pad = function(n) {
+                    return String(n).padStart(2, '0');
+                };
+                return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+            }
 
             // Tombol Berangkat / Batal — aksi di level KENDARAAN
             $(document).on('click', '.btn-aksi-kendaraan', function() {
@@ -525,6 +537,7 @@
 
                 $('#selesaiNama').text(namaPenerima);
                 $('#selesaiValidator').val('');
+                $('#selesaiTanggal').val(formatDateInput(new Date()));
                 $('#selesaiBukti').val('');
                 $('#errSelesai').hide().text('');
 
@@ -541,11 +554,16 @@
             // Konfirmasi Tiba
             $('#btnKonfirmasiSelesai').on('click', function() {
                 var validator = $('#selesaiValidator').val().trim();
+                var tanggal = $('#selesaiTanggal').val().trim();
                 var file = $('#selesaiBukti')[0].files[0];
                 $('#errSelesai').hide().text('');
 
                 if (!validator) {
                     $('#errSelesai').text('Nama validator wajib diisi.').show();
+                    return;
+                }
+                if (!tanggal) {
+                    $('#errSelesai').text('Tanggal tiba wajib diisi.').show();
                     return;
                 }
                 if (!file) {
@@ -557,6 +575,7 @@
                 fd.append('_token', '{{ csrf_token() }}');
                 fd.append('status', 'tiba');
                 fd.append('validasi_oleh', validator);
+                fd.append('tanggal_tiba', tanggal);
                 fd.append('bukti_tiba', file);
 
                 $(this).prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i>');
@@ -650,8 +669,17 @@
                                     id="gpsSpeed">—</strong></div>
                             <div class="col-auto"><i class="fa fa-clock-o text-muted"></i> Update: <strong
                                     id="gpsTime">—</strong></div>
-                            <div class="col"><i class="fa fa-map-pin text-muted"></i> <span id="gpsAddress">—</span>
+                            <div class="col-12 col-md"><i class="fa fa-map-pin text-muted"></i> <span id="gpsAddress">—</span>
                             </div>
+                        </div>
+                        <div class="row g-2 small mt-1 pt-1 border-top">
+                            <div class="col-6 col-md-3"><i class="fa fa-user text-secondary"></i> Driver: <strong
+                                    id="gpsDriverName">—</strong></div>
+                            <div class="col-6 col-md-3"><i class="fa fa-info-circle text-secondary"></i> Status: <strong
+                                    id="gpsStatusEng">—</strong></div>
+                            <div class="col-6 col-md-3"><i class="fa fa-phone text-secondary"></i> <span id="gpsPhone">—</span></div>
+                            <div class="col-6 col-md-3 text-break"><i class="fa fa-mobile text-secondary"></i> IMEI: <span
+                                    id="gpsImei">—</span></div>
                         </div>
                     </div>
                     <div id="gpsLoading" class="text-center py-5">
@@ -662,6 +690,10 @@
                         <i class="fa fa-exclamation-triangle fa-2x text-warning"></i>
                         <div class="text-muted mt-2 small" id="gpsErrorMsg">Kendaraan tidak ditemukan di GPS tracker.
                         </div>
+                    </div>
+                    <div id="gpsLegend" class="px-3 py-1 border-bottom small d-none bg-white text-muted">
+                        <span class="text-danger me-3"><i class="fa fa-flag"></i> Merah: sudah tiba di marker (Idtrack)</span>
+                        <span class="text-primary"><i class="fa fa-truck"></i> Biru: posisi kendaraan sekarang</span>
                     </div>
                     <div id="gpsMapWrap" style="height:380px; display:none;">
                         <div id="gpsMap" style="height:100%;"></div>
@@ -722,21 +754,37 @@
         <script>
             var gpsMap = null;
             var gpsMarker = null;
+            var gpsVisitMarkers = [];
+
+            function clearGpsVisitMarkers() {
+                if (!gpsMap) return;
+                gpsVisitMarkers.forEach(function(m) {
+                    gpsMap.removeLayer(m);
+                });
+                gpsVisitMarkers = [];
+            }
 
             $(document).on('click', '.btn-lihat-gps', function() {
                 var nopol = $(this).data('nopol');
+                var kendaraanId = $(this).data('kendaraan-id');
                 $('#gpsNopol').text(nopol);
                 $('#gpsLoading').show();
                 $('#gpsError').addClass('d-none');
                 $('#gpsMapWrap').hide();
+                $('#gpsLegend').addClass('d-none');
                 $('#gpsInfo').addClass('d-none');
 
                 var modal = new bootstrap.Modal(document.getElementById('modalGps'));
                 modal.show();
 
-                $.getJSON('{{ route('gps.position-by-nopol') }}', {
-                        nopol: nopol
-                    })
+                var reqData = {
+                    nopol: nopol
+                };
+                if (kendaraanId) {
+                    reqData.po_kendaraan_id = kendaraanId;
+                }
+
+                $.getJSON('{{ route('gps.position-by-nopol') }}', reqData)
                     .done(function(res) {
                         $('#gpsLoading').hide();
                         if (!res.success || !res.lat || !res.lng) {
@@ -748,9 +796,14 @@
                         $('#gpsSpeed').text(res.speed != null ? res.speed + ' km/h' : '—');
                         $('#gpsTime').text(res.gps_time || '—');
                         $('#gpsAddress').text(res.address || '—');
+                        $('#gpsDriverName').text(res.DriverName || res.driverName || '—');
+                        $('#gpsStatusEng').text(res.statusEng || res.StatusEng || '—');
+                        $('#gpsPhone').text(res.phone || '—');
+                        $('#gpsImei').text(res.imei || '—');
                         $('#gpsInfo').removeClass('d-none');
 
                         $('#gpsMapWrap').show();
+                        $('#gpsLegend').removeClass('d-none');
 
                         if (!gpsMap) {
                             gpsMap = L.map('gpsMap').setView([res.lat, res.lng], 15);
@@ -760,11 +813,33 @@
                                     maxZoom: 19,
                                 }).addTo(gpsMap);
                         } else {
+                            clearGpsVisitMarkers();
                             gpsMap.setView([res.lat, res.lng], 15);
                         }
 
-                        var icon = L.divIcon({
-                            html: `<div style="background:#ef4444;color:#fff;border-radius:50%;width:36px;height:36px;
+                        var visitIcon = L.divIcon({
+                            html: '<div style="background:#b91c1c;color:#fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35);font-size:13px;"><i class="fa fa-flag"></i></div>',
+                            className: '',
+                            iconSize: [28, 28],
+                            iconAnchor: [14, 14],
+                            popupAnchor: [0, -16],
+                        });
+
+                        (res.visited_markers || []).forEach(function(v) {
+                            if (v.lat == null || v.lng == null) return;
+                            var label = v.name || ('Marker #' + v.idtrack_marker_id);
+                            var when = v.arrived_at ? new Date(v.arrived_at).toLocaleString('id-ID') : '';
+                            var vm = L.marker([v.lat, v.lng], {
+                                    icon: visitIcon
+                                })
+                                .addTo(gpsMap)
+                                .bindPopup('<strong class="text-danger">' + label + '</strong><br><span class="small text-muted">Tiba: ' +
+                                    (when || '—') + '</span>');
+                            gpsVisitMarkers.push(vm);
+                        });
+
+                        var truckIcon = L.divIcon({
+                            html: `<div style="background:#1d4ed8;color:#fff;border-radius:50%;width:36px;height:36px;
                                         display:flex;align-items:center;justify-content:center;
                                         border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.4);font-size:16px;">
                                         <i class="fa fa-truck"></i></div>`,
@@ -774,21 +849,39 @@
                             popupAnchor: [0, -20],
                         });
 
+                        var driverLine = (res.DriverName || res.driverName) ?
+                            ('Driver: <b>' + (res.DriverName || res.driverName) + '</b><br>') : '';
+                        var statusLine = (res.statusEng || res.StatusEng) ?
+                            ('Status: <b>' + (res.statusEng || res.StatusEng) + '</b><br>') : '';
+                        var phoneLine = res.phone ? ('Telp: ' + res.phone + '<br>') : '';
+                        var imeiLine = res.imei ? ('IMEI: <span class="small">' + res.imei + '</span><br>') : '';
+
                         var popupContent =
-                            `<strong>${nopol}</strong><br>
+                            `<strong>${nopol}</strong> <span class="badge bg-primary">Sekarang</span><br>
+                            ${driverLine}${statusLine}${phoneLine}${imeiLine}
                             ${res.speed != null ? 'Kecepatan: <b>' + res.speed + ' km/h</b><br>' : ''}
                             ${res.address ? '<span class="text-muted small">' + res.address + '</span><br>' : ''}
                             ${res.gps_time ? '<span class="text-muted small">Update: ' + res.gps_time + '</span>' : ''}`;
 
                         if (gpsMarker) {
-                            gpsMarker.setLatLng([res.lat, res.lng]).setPopupContent(popupContent);
+                            gpsMarker.setLatLng([res.lat, res.lng]).setIcon(truckIcon).setPopupContent(popupContent);
                         } else {
                             gpsMarker = L.marker([res.lat, res.lng], {
-                                    icon
+                                    icon: truckIcon
                                 })
                                 .addTo(gpsMap)
                                 .bindPopup(popupContent)
                                 .openPopup();
+                        }
+
+                        var bounds = L.latLngBounds([
+                            [res.lat, res.lng]
+                        ]);
+                        (res.visited_markers || []).forEach(function(v) {
+                            if (v.lat != null && v.lng != null) bounds.extend([v.lat, v.lng]);
+                        });
+                        if ((res.visited_markers || []).length > 0) {
+                            gpsMap.fitBounds(bounds.pad(0.2));
                         }
 
                         // Invalidate size karena modal baru dibuka
@@ -810,6 +903,7 @@
                     gpsMap.remove();
                     gpsMap = null;
                     gpsMarker = null;
+                    gpsVisitMarkers = [];
                 }
             });
 

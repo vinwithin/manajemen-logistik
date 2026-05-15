@@ -23,6 +23,7 @@ use App\Models\Supplier;
 use App\Models\Tujuan;
 use App\Services\Datatables\PurchaseOrderService;
 use App\Services\GudangStokService;
+use App\Services\PoKendaraanIdtrackSpjService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Exception;
 use Illuminate\Database\QueryException;
@@ -38,10 +39,16 @@ class PurchaseOrderController extends Controller
 
     protected $gudangStokService;
 
-    public function __construct(PurchaseOrderService $poService, GudangStokService $gudangStokService)
-    {
+    protected PoKendaraanIdtrackSpjService $poKendaraanIdtrackSpj;
+
+    public function __construct(
+        PurchaseOrderService $poService,
+        GudangStokService $gudangStokService,
+        PoKendaraanIdtrackSpjService $poKendaraanIdtrackSpj,
+    ) {
         $this->poService = $poService;
         $this->gudangStokService = $gudangStokService;
+        $this->poKendaraanIdtrackSpj = $poKendaraanIdtrackSpj;
     }
 
     public function export(Request $request)
@@ -223,7 +230,7 @@ class PurchaseOrderController extends Controller
         $cvList = Cv::orderBy('nama_cv')->get();
         $supplierList = Supplier::orderBy('nama')->get();
         $tujuans = Tujuan::where('is_aktif', true)->orderBy('nama')->get();
-        
+
         $cvId = $request->cv_id;   // opsional
         $supplierId = $request->supplier_id; // opsional
         $tujuanId = $request->tujuan_id; // opsional
@@ -284,10 +291,9 @@ class PurchaseOrderController extends Controller
             }
 
             $pos = $query->get();
-            $kodePakanList = KodePakan::orderBy('kode')->get();
 
-            $pdf = Pdf::loadView('pdf.purchase-order-period-supplier', compact('pos', 'kodePakanList', 'from', 'to'))
-                ->setPaper('a4', 'landscape')
+            $pdf = Pdf::loadView('pdf.purchase-order-period-supplier', compact('pos', 'from', 'to'))
+                ->setPaper('legal', 'landscape')
                 ->setOption('margin-top', 10)
                 ->setOption('margin-bottom', 10)
                 ->setOption('margin-left', 10)
@@ -306,7 +312,7 @@ class PurchaseOrderController extends Controller
         $cvList = Cv::orderBy('nama_cv')->get();
         $suppliers = Supplier::orderBy('nama')->get();
         $tujuans = Tujuan::where('is_aktif', true)->orderBy('nama')->get();
-        
+
         $cvId = $request->cv_id ?? session('active_cv');
         $from = $request->from;
         $to = $request->to;
@@ -321,17 +327,17 @@ class PurchaseOrderController extends Controller
             $query = PurchaseOrder::where('cv_id', $cvId)
                 ->whereDate('tanggal_po', '>=', $from)
                 ->whereDate('tanggal_po', '<=', $to);
-            
+
             // Filter supplier
             if ($supplierId) {
                 $query->whereHas('kendaraans', fn ($q) => $q->where('supplier_id', $supplierId));
             }
-            
+
             // Filter tujuan
             if ($tujuanId) {
                 $query->whereHas('kendaraans.penerimas', fn ($q) => $q->where('tujuan_id', $tujuanId));
             }
-            
+
             $poCount = $query->count();
 
             $cv = Cv::find($cvId);
@@ -367,6 +373,16 @@ class PurchaseOrderController extends Controller
 
     public function exportPdfPtSum(Request $request)
     {
+        $request->validate([
+            'from' => 'required|date',
+            'to' => 'required|date|after_or_equal:from',
+            'tujuan_id' => 'required|integer',
+        ], [
+            'from.required' => 'Tanggal awal periode wajib diisi.',
+            'to.required' => 'Tanggal akhir periode wajib diisi.',
+            'to.after_or_equal' => 'Tanggal akhir harus sama atau setelah tanggal awal.',
+        ]);
+
         try {
             $cvId = $request->cv_id ?? session('active_cv');
             $from = $request->from;
@@ -424,31 +440,28 @@ class PurchaseOrderController extends Controller
                 'kendaraans.penerimas.tujuan',
             ])->orderBy('tanggal_po', 'asc')->orderBy('no_po', 'asc');
 
-            if ($from) {
-                $query->whereDate('tanggal_po', '>=', $from);
-            }
-            if ($to) {
-                $query->whereDate('tanggal_po', '<=', $to);
-            }
+            $query->whereDate('tanggal_po', '>=', $from)
+                ->whereDate('tanggal_po', '<=', $to);
+
             if ($cvId) {
                 $query->where('cv_id', $cvId);
             }
-            
+
             // Filter supplier
             if ($supplierId) {
                 $query->whereHas('kendaraans', fn ($q) => $q->where('supplier_id', $supplierId));
             }
-            
+
             // Filter tujuan
             if ($tujuanId) {
                 $query->whereHas('kendaraans.penerimas', fn ($q) => $q->where('tujuan_id', $tujuanId));
             }
 
             $pos = $query->get();
-            $kodePakanList = KodePakan::orderBy('kode')->get();
+            $tujuanNama = Tujuan::find($tujuanId)->nama;
 
-            $pdf = Pdf::loadView('pdf.purchase-order-period-ptsum', compact('pos', 'kodePakanList', 'from', 'to', 'noSurat'))
-                ->setPaper('a4', 'landscape')
+            $pdf = Pdf::loadView('pdf.purchase-order-period-ptsum', compact('pos', 'from', 'to', 'noSurat', 'tujuanNama'))
+                ->setPaper('legal', 'landscape')
                 ->setOption('margin-top', 10)
                 ->setOption('margin-bottom', 10)
                 ->setOption('margin-left', 10)
@@ -498,6 +511,7 @@ class PurchaseOrderController extends Controller
 
     public function store(Request $request)
     {
+        // dd($request->all());
         $request->validate([
             'no_po' => 'required|string|max:100|unique:purchase_orders,no_po',
             'tanggal_po' => 'required|date',
@@ -509,8 +523,10 @@ class PurchaseOrderController extends Controller
             'kendaraan.*.no_surat_jalan' => 'nullable|string|max:100',
             'kendaraan.*.supplier_id' => 'nullable|exists:suppliers,id',
             'kendaraan.*.jenis_kendaraan' => 'nullable|string|max:100',
+            'kendaraan.*.tujuan_id' => 'required|exists:tujuan,id',
             'kendaraan.*.jumlah_kg' => 'nullable|string|max:100',
             'kendaraan.*.jumlah_karung' => 'nullable|string|max:100',
+            'kendaraan.*.ongkos_angkut' => 'nullable|numeric|min:0',
 
             // Validasi DP
             'kendaraan.*.dp_nominal' => 'nullable|numeric|min:0',
@@ -550,6 +566,8 @@ class PurchaseOrderController extends Controller
                     'no_surat_jalan' => $kendaraanData['no_surat_jalan'] ?? null,
                     'supplier_id' => $kendaraanData['supplier_id'] ?? null,
                     'jenis_kendaraan' => $kendaraanData['jenis_kendaraan'] ?? null,
+                    'tujuan_id' => $kendaraanData['tujuan_id'] ?? null,
+                    'ongkos_angkut' => $kendaraanData['ongkos_angkut'] ?? 0,
                     'jumlah_kg' => $kendaraanData['jumlah_kg'] ?? null,
                     'jumlah_karung' => isset($kendaraanData['jumlah_kg']) && $kendaraanData['jumlah_kg'] > 0
                         ? (int) ceil($kendaraanData['jumlah_kg'] / 50)
@@ -598,7 +616,6 @@ class PurchaseOrderController extends Controller
                     }
                 }
 
-             
                 if ($totalTagihanKendaraan > 0) {
                     $dpNominal = (! empty($kendaraanData['dp_nominal']) && $kendaraanData['dp_nominal'] > 0)
                         ? $kendaraanData['dp_nominal']
@@ -610,7 +627,7 @@ class PurchaseOrderController extends Controller
                     $jumlahBayar = $dpNominal;
                     $tanggalBayar = $dpNominal > 0 ? ($dpTanggal ?? now()) : null;
                     $metodeBayar = $dpNominal > 0 ? ($dpMetode ?? 'transfer') : null;
-                    
+
                     $keterangan = 'Pembayaran OA - Kendaraan '.$kendaraan->no_polisi.' (PO: '.$po->no_po.')';
                     if ($dpNominal > 0 && $dpKeterangan) {
                         $keterangan .= ' | DP: '.$dpKeterangan;
@@ -736,7 +753,9 @@ class PurchaseOrderController extends Controller
             'kendaraan.*.no_surat_jalan' => 'nullable|string|max:100',
             'kendaraan.*.supplier_id' => 'nullable|exists:suppliers,id',
             'kendaraan.*.jenis_kendaraan' => 'nullable|string|max:100',
+            'kendaraan.*.tujuan_id' => 'required|exists:tujuan,id',
             'kendaraan.*.jumlah_kg' => 'nullable|numeric|min:0',
+            'kendaraan.*.ongkos_angkut' => 'nullable|numeric|min:0',
             'kendaraan.*.status' => 'nullable|in:pending,berangkat,selesai,batal',
             'kendaraan.*.penerima' => 'nullable|array',
             'kendaraan.*.penerima.*.id' => 'nullable|exists:po_penerima,id',
@@ -764,6 +783,8 @@ class PurchaseOrderController extends Controller
             $submittedKendaraanIds = collect($request->kendaraan)->pluck('id')->filter()->values();
             $po->kendaraans()->whereNotIn('id', $submittedKendaraanIds)->delete();
 
+            $savedKendaraanIds = [];
+
             foreach ($request->kendaraan as $kendaraanData) {
                 $kendaraanId = $kendaraanData['id'] ?? null;
 
@@ -777,6 +798,8 @@ class PurchaseOrderController extends Controller
                     'no_surat_jalan' => $kendaraanData['no_surat_jalan'] ?? null,
                     'supplier_id' => $kendaraanData['supplier_id'] ?? null,
                     'jenis_kendaraan' => $kendaraanData['jenis_kendaraan'] ?? null,
+                    'tujuan_id' => $kendaraanData['tujuan_id'] ?? null,
+                    'ongkos_angkut' => $kendaraanData['ongkos_angkut'] ?? 0,
                     'jumlah_kg' => $kendaraanData['jumlah_kg'] ?? null,
                     'jumlah_karung' => isset($kendaraanData['jumlah_kg']) && $kendaraanData['jumlah_kg'] > 0
                         ? (int) ceil($kendaraanData['jumlah_kg'] / 50)
@@ -784,6 +807,7 @@ class PurchaseOrderController extends Controller
                     'status' => $kendaraanData['status'] ?? 'pending',
                 ]);
                 $kendaraan->save();
+                $savedKendaraanIds[] = $kendaraan->id;
                 $statusKendaraan = $kendaraanData['status'] ?? 'pending';
 
                 $submittedPenerimaIds = collect($kendaraanData['penerima'] ?? [])->pluck('id')->filter()->values();
@@ -826,6 +850,19 @@ class PurchaseOrderController extends Controller
             }
 
             DB::commit();
+
+            foreach ($savedKendaraanIds as $kid) {
+                $k = PoKendaraan::find($kid);
+                if (! $k) {
+                    continue;
+                }
+                $sync = $this->poKendaraanIdtrackSpj->trySync($k, false, null);
+                if ($sync['success'] && empty($sync['skipped'])) {
+                    Log::info('Idtrack SPJ otomatis OK', ['po_kendaraan_id' => $kid]);
+                } elseif (! $sync['success'] && empty($sync['skipped'])) {
+                    Log::warning('Idtrack SPJ otomatis gagal', ['po_kendaraan_id' => $kid, 'message' => $sync['message']]);
+                }
+            }
 
             return redirect()->back()->with('success', 'Data PO berhasil diperbarui.');
         } catch (QueryException $e) {
@@ -988,7 +1025,22 @@ class PurchaseOrderController extends Controller
                 $kendaraan->penerimas()->whereIn('status', ['pending', 'berangkat'])->update(['status' => 'batal']);
             }
 
-            return response()->json(['success' => true, 'message' => 'Status kendaraan diperbarui.']);
+            $idtrackSpj = null;
+            if ($request->status === 'berangkat') {
+                $kendaraan->refresh()->load(['penerimas.penerima', 'penerimas.tujuan', 'po']);
+                $idtrackSpj = $this->poKendaraanIdtrackSpj->trySync($kendaraan, false, null);
+                if ($idtrackSpj['success'] && empty($idtrackSpj['skipped'])) {
+                    Log::info('Idtrack SPJ otomatis OK', ['po_kendaraan_id' => $kendaraan->id]);
+                } elseif (! $idtrackSpj['success'] && empty($idtrackSpj['skipped'])) {
+                    Log::warning('Idtrack SPJ otomatis gagal', ['po_kendaraan_id' => $kendaraan->id, 'message' => $idtrackSpj['message']]);
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Status kendaraan diperbarui.',
+                'idtrack_spj' => $idtrackSpj,
+            ]);
         } catch (Exception $e) {
             return response()->json(['success' => false, 'message' => 'Gagal: '.$e->getMessage()], 500);
         }
@@ -999,9 +1051,11 @@ class PurchaseOrderController extends Controller
         $request->validate([
             'status' => 'required|in:berangkat,tiba,selesai,batal',
             'validasi_oleh' => 'required_if:status,tiba|nullable|string|max:255',
+            'tanggal_tiba' => 'required_if:status,tiba|nullable|date',
             'bukti_tiba' => 'required_if:status,tiba|nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
         ], [
             'validasi_oleh.required_if' => 'Nama validator wajib diisi saat menandai tiba.',
+            'tanggal_tiba.required_if' => 'Tanggal tiba wajib diisi saat menandai tiba.',
             'bukti_tiba.required_if' => 'Bukti tiba wajib diunggah saat menandai tiba.',
         ]);
 
@@ -1024,15 +1078,17 @@ class PurchaseOrderController extends Controller
 
             $updateData = ['status' => $request->status];
 
-            // Saat tiba: simpan validator, waktu, dan bukti
             if ($request->status === 'tiba') {
+                $tibaAt = $request->date('tanggal_tiba');
                 $updateData['validasi_oleh'] = $request->validasi_oleh;
-                $updateData['tiba_at'] = now();
+                $updateData['tiba_at'] = $tibaAt->format('Y-m-d H:i:s');
                 if ($request->hasFile('bukti_tiba')) {
                     $updateData['bukti_tiba'] = $request->file('bukti_tiba')->store('bukti-tiba', 'public');
                 }
 
-                // Jika tujuan adalah gudang, proses stok masuk
+                // Simpan tiba_at dulu agar stok mutasi & layanan lain memakai waktu tiba manual yang sama
+                $penerima->update($updateData);
+
                 if ($penerima->tujuan && $penerima->tujuan->type === 'gudang') {
                     foreach ($penerima->pakans as $pakan) {
                         if (! $pakan->kode_pakan_id) {
@@ -1047,9 +1103,9 @@ class PurchaseOrderController extends Controller
                         $this->gudangStokService->prosesStokMasukPoPenerima($penerima, $pakan);
                     }
                 }
+            } else {
+                $penerima->update($updateData);
             }
-
-            $penerima->update($updateData);
 
             // Jika selesai → cek apakah semua penerima kendaraan sudah selesai/batal
             // → otomatis update kendaraan ke selesai

@@ -58,9 +58,6 @@
                 <button type="button" class="btn btn-sm btn-success" id="btnExportKartuStock">
                     <i class="fa fa-file-excel-o"></i> Export Kartu Stock
                 </button>
-                <button type="button" class="btn btn-sm btn-warning" id="btnExportStokKeluar">
-                    <i class="fa fa-file-excel-o"></i> Export Stok Keluar
-                </button>
             </div>
         </div>
 
@@ -139,6 +136,15 @@
             var params = new URLSearchParams(window.location.search);
             if (params.get('kode_pakan_id')) {
                 $('#filterPakan').val(params.get('kode_pakan_id'));
+            }
+            if (params.get('tipe')) {
+                $('#filterTipe').val(params.get('tipe'));
+            }
+            if (params.get('dari_tanggal')) {
+                $('#filterDariTanggal').val(params.get('dari_tanggal'));
+            }
+            if (params.get('sampai_tanggal')) {
+                $('#filterSampaiTanggal').val(params.get('sampai_tanggal'));
             }
 
             // Filter hanya dipakai untuk export — tidak ada reload tabel di sini

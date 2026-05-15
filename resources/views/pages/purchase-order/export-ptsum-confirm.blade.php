@@ -18,6 +18,22 @@
                         </div>
                     @endif
 
+                    @if (session('error'))
+                        <div class="alert alert-danger py-2">
+                            {{ session('error') }}
+                        </div>
+                    @endif
+
+                    @if ($errors->any())
+                        <div class="alert alert-danger py-2 small">
+                            <ul class="mb-0 ps-3">
+                                @foreach ($errors->all() as $err)
+                                    <li>{{ $err }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+
                     <form method="GET" action="{{ route('purchase-order.export-pdf-ptsum') }}" target="_blank">
 
                         {{-- Filter Periode --}}
@@ -39,14 +55,18 @@
                                         </select>
                                     </div>
                                     <div class="col-md-4">
-                                        <label class="form-label small">Dari Tanggal</label>
+                                        <label class="form-label small">Dari Tanggal <span
+                                                class="text-danger">*</span></label>
                                         <input type="date" name="from" id="inputFrom"
-                                            class="form-control form-control-sm" value="{{ request('from') }}">
+                                            class="form-control form-control-sm" value="{{ old('from', request('from')) }}"
+                                            required>
                                     </div>
                                     <div class="col-md-4">
-                                        <label class="form-label small">Sampai Tanggal</label>
+                                        <label class="form-label small">Sampai Tanggal <span
+                                                class="text-danger">*</span></label>
                                         <input type="date" name="to" id="inputTo"
-                                            class="form-control form-control-sm" value="{{ request('to') }}">
+                                            class="form-control form-control-sm" value="{{ old('to', request('to')) }}"
+                                            required>
                                     </div>
                                 </div>
 
@@ -66,9 +86,9 @@
                                         </select>
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label small">Tujuan <span
-                                                class="text-muted">(opsional)</span></label>
-                                        <select name="tujuan_id" id="selectTujuan" class="form-select form-select-sm">
+                                        <label class="form-label small">Tujuan<span
+                                                class="text-danger">*</span></label>
+                                        <select name="tujuan_id" id="selectTujuan" class="form-select form-select-sm" required>
                                             <option value="">-- Semua Tujuan --</option>
                                             @foreach ($tujuans as $t)
                                                 <option value="{{ $t->id }}"
@@ -106,7 +126,7 @@
                                                 Tersimpan: <strong>{{ $dokumen->no_surat }}</strong> (urutan
                                                 #{{ $dokumen->urutan }})
                                             </span>
-                                        @elseif ($noSuratSuggest && $cvId && $from)
+                                        @elseif ($noSuratSuggest && $cvId && $from && $to)
                                             <span class="text-info ms-1">
                                                 <i class="fa fa-info-circle"></i>
                                                 Nomor berikutnya: <strong>{{ $noSuratSuggest }}</strong>
@@ -159,6 +179,11 @@
             var to = document.getElementById('inputTo').value;
             var supplierId = document.getElementById('selectSupplier').value;
             var tujuanId = document.getElementById('selectTujuan').value;
+
+            if (!from || !to) {
+                alert('Isi Dari Tanggal dan Sampai Tanggal terlebih dahulu.');
+                return;
+            }
 
             var url = '{{ route('purchase-order.export-ptsum-confirm') }}?cv_id=' + cvId +
                 '&from=' + from + '&to=' + to;

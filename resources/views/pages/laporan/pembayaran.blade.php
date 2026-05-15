@@ -111,22 +111,9 @@
                         <div class="col-12">
                             <div class="text-muted" style="font-size:11px;">Total Tagihan OA Lansir</div>
                             <div class="fw-bold text-info fs-5">Rp {{ number_format($lansirPoTotalOa, 0, ',', '.') }}</div>
-                            <div class="text-muted" style="font-size:11px;">dari {{ $lansirPos->count() }} PO</div>
+                            <!-- <div class="text-muted" style="font-size:11px;">dari {{ $lansirPos->count() }} PO</div> -->
                         </div>
-                        <div class="col-6">
-                            <div class="text-muted" style="font-size:11px;">Bayar Mobil</div>
-                            <div class="fw-bold text-success">{{ $lansirPoSudahBayarMobil }}
-                                <span class="text-muted fw-normal" style="font-size:11px;">/
-                                    {{ $lansirPos->count() }}</span>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="text-muted" style="font-size:11px;">Bayar Tim</div>
-                            <div class="fw-bold text-success">{{ $lansirPoSudahBayarTim }}
-                                <span class="text-muted fw-normal" style="font-size:11px;">/
-                                    {{ $lansirPos->count() }}</span>
-                            </div>
-                        </div>
+                        
                     </div>
                 </div>
                 <div class="card-footer bg-transparent py-2 text-end">

@@ -2,10 +2,18 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log as FacadesLog;
 
+/**
+ * Integrasi API Idtrack (ringkas alur dokumentasi):
+ *
+ * Step 3 — GET /api/device?apikey=[TOKEN] → daftar device / DeviceID per mobil ({@see getDevices}, {@see getAllDevicesFlattened})
+ * Step 4 — GET /api/marker?apikey=[TOKEN] → POI / IDMarker ({@see getMarkers})
+ * Step 5 — POST /api/spj?apikey=[TOKEN] → set SPJ per mobil ({@see setSPJ})
+ * Step 6 — GET /api/devicetracking?apikey=[TOKEN] pantau posisi; saat tiba di tujuan Idtrack POST ke UrlCallback ({@see getDeviceTracking}, route idtrack.spj-callback)
+ */
 class IdtrackService
 {
     protected string $baseUrl;
@@ -34,7 +42,25 @@ class IdtrackService
         });
     }
 
-    // List semua kendaraan beserta posisi & status
+    /**
+     * Step 3 — Daftar device (DeviceID per mobil).
+     * GET /api/device?apikey=[TOKEN]
+     */
+    public function getDevices(): array
+    {
+        $token = $this->getToken();
+
+        $response = Http::get("{$this->baseUrl}/api/device", [
+            'apikey' => $token,
+        ]);
+
+        return $response->json() ?? [];
+    }
+
+    /**
+     * Step 6 — List kendaraan + posisi/status (struktur nested per user).
+     * GET /api/devicetracking?apikey=[TOKEN]
+     */
     public function getDeviceTracking(): array
     {
         $token = $this->getToken();
@@ -46,7 +72,10 @@ class IdtrackService
         return $response->json() ?? [];
     }
 
-    // List semua POI/Marker
+    /**
+     * Step 4 — List POI / marker.
+     * GET /api/marker?apikey=[TOKEN]
+     */
     public function getMarkers(): array
     {
         $token = $this->getToken();
@@ -59,12 +88,14 @@ class IdtrackService
     }
 
     /**
-     * Set SPJ ke device — Idtrack akan callback saat kendaraan tiba di destination marker.
+     * Step 5 — Buat SPJ untuk satu mobil (ulangi per DeviceID berbeda).
+     *
+     * @return array{successful: bool, status: int, data: array}
      */
     public function setSPJ(
-        int    $deviceId,
-        int    $pickupMarkerId,
-        int    $destinationMarkerId,
+        int $deviceId,
+        int $pickupMarkerId,
+        int $destinationMarkerId,
         string $pickupDate,
         string $driver,
         string $nomorSurat,
@@ -73,16 +104,20 @@ class IdtrackService
         $token = $this->getToken();
 
         $response = Http::post("{$this->baseUrl}/api/spj?apikey={$token}", [
-            'DeviceID'             => $deviceId,
-            'PickupMarkerID'       => $pickupMarkerId,
-            'DestinationMarkerID'  => $destinationMarkerId,
-            'PickupDate'           => $pickupDate,
-            'Driver'               => $driver,
-            'NomorSurat'           => $nomorSurat,
-            'UrlCallback'          => $callbackUrl,
+            'DeviceID' => $deviceId,
+            'PickupMarkerID' => $pickupMarkerId,
+            'DestinationMarkerID' => $destinationMarkerId,
+            'PickupDate' => $pickupDate,
+            'Driver' => $driver,
+            'NomorSurat' => $nomorSurat,
+            'UrlCallback' => $callbackUrl,
         ]);
 
-        return $response->json() ?? [];
+        return [
+            'successful' => $response->successful(),
+            'status' => $response->status(),
+            'data' => $response->json() ?? [],
+        ];
     }
 
     // Posisi 1 kendaraan berdasarkan DeviceID
@@ -97,17 +132,68 @@ class IdtrackService
         return $response->json() ?? [];
     }
 
-    public function findDeviceByNopol(string $nopol)
+    /**
+     * Satukan bentuk respons Step 3 dan Step 6 menjadi koleksi baris device
+     * (minimal berisi DeviceID + Nopol untuk pencarian & dropdown).
+     */
+    public function getAllDevicesFlattened(): Collection
+    {
+        $fromDevice = $this->normalizeDevicesPayload($this->getDevices());
+        if ($fromDevice->isNotEmpty()) {
+            return $fromDevice;
+        }
+
+        return $this->normalizeDevicesPayload($this->getDeviceTracking());
+    }
+
+    /**
+     * Cari satu device berdasarkan nomor polisi (mencoba Step 3 lalu fallback Step 6).
+     *
+     * @return array<string, mixed>|null
+     */
+    public function findDeviceByNopol(string $nopol): ?array
     {
         $normalized = strtoupper(preg_replace('/\s+/', '', $nopol));
-        $devices = $this->getDeviceTracking();
 
-        // Flatten dulu semua devices dari semua user
-        $allDevices = collect($devices)->flatMap(fn($user) => $user['Devices'] ?? []);
+        return $this->getAllDevicesFlattened()->first(function ($d) use ($normalized) {
+            $deviceNopol = strtoupper(preg_replace('/\s+/', '', (string) ($d['Nopol'] ?? $d['nopol'] ?? '')));
 
-        return $allDevices->first(function ($d) use ($normalized) {
-            $deviceNopol = strtoupper(preg_replace('/\s+/', '', $d['Nopol'] ?? ''));
             return $deviceNopol === $normalized;
         });
+    }
+
+    /**
+     * @param  mixed  $raw  JSON decode dari /api/device atau /api/devicetracking
+     */
+    private function normalizeDevicesPayload(mixed $raw): Collection
+    {
+        if (! is_array($raw) || $raw === []) {
+            return collect();
+        }
+
+        // Array numerik baris device: [ { "DeviceID": …, "Nopol": … }, … ]
+        if (array_is_list($raw) && isset($raw[0]) && is_array($raw[0]) && $this->rowHasDeviceId($raw[0])) {
+            return collect($raw);
+        }
+
+        // /api/devicetracking: [ { "Devices": [ … ] }, … ]
+        if (array_is_list($raw) && isset($raw[0]['Devices'])) {
+            return collect($raw)->flatMap(fn ($group) => $group['Devices'] ?? []);
+        }
+
+        if (isset($raw['Devices']) && is_array($raw['Devices'])) {
+            return collect($raw['Devices']);
+        }
+
+        if (isset($raw['Data']) && is_array($raw['Data'])) {
+            return $this->normalizeDevicesPayload($raw['Data']);
+        }
+
+        return collect();
+    }
+
+    private function rowHasDeviceId(array $row): bool
+    {
+        return isset($row['DeviceID']) || isset($row['device_id']);
     }
 }

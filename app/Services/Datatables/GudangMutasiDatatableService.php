@@ -20,7 +20,10 @@ class GudangMutasiDatatableService
         }
 
         if ($request->filled('tipe')) {
-            $query->where('tipe', $request->tipe);
+            $t = strtolower(trim((string) $request->input('tipe')));
+            if (in_array($t, ['masuk', 'keluar'], true)) {
+                $query->where('tipe', $t);
+            }
         }
 
         if ($request->filled('dari_tanggal')) {

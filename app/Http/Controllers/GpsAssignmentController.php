@@ -3,12 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\GpsAssignment;
-use App\Models\GudangLansirMobil;
 use App\Models\PoKendaraan;
 use App\Models\PoLansirMobil;
 use App\Services\GpsAssignmentService;
+use App\Services\IdtrackMarkerCoordinateResolver;
 use App\Services\IdtrackService;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -18,6 +19,7 @@ class GpsAssignmentController extends Controller
     public function __construct(
         private GpsAssignmentService $service,
         private IdtrackService $idtrack,
+        private IdtrackMarkerCoordinateResolver $markerResolver,
     ) {}
 
     public function trackingMap(): View
@@ -32,7 +34,13 @@ class GpsAssignmentController extends Controller
     public function allPositions(): JsonResponse
     {
         $activeAssignments = GpsAssignment::active()
-            ->with('assignable')
+            ->with([
+                'assignable' => function (MorphTo $morphTo) {
+                    $morphTo->morphWith([
+                        PoKendaraan::class => ['idtrackMarkerVisits', 'po'],
+                    ]);
+                },
+            ])
             ->get();
 
         if ($activeAssignments->isEmpty()) {
@@ -40,14 +48,13 @@ class GpsAssignmentController extends Controller
         }
 
         try {
-            $devices = $this->idtrack->getDeviceTracking();
-            Log::info($devices, ['context' => 'GPS Tracker Devices']);
+            $allDevices = $this->idtrack->getAllDevicesFlattened();
+            Log::info('GPS Tracker devices (flattened)', ['count' => $allDevices->count()]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Gagal terhubung ke GPS tracker.'], 500);
         }
 
-        $allDevices = collect($devices)->flatMap(fn ($user) => $user['Devices'] ?? []);
-        $deviceMap = $allDevices->keyBy('DeviceID');
+        $deviceMap = $allDevices->keyBy(fn ($d) => (int) ($d['DeviceID'] ?? $d['device_id'] ?? 0));
 
         $positions = [];
 
@@ -58,8 +65,10 @@ class GpsAssignmentController extends Controller
                 continue;
             }
 
+            $deviceId = (int) ($device['DeviceID'] ?? $device['device_id'] ?? 0);
+
             try {
-                $pos = $this->idtrack->getDevicePosition($device['DeviceID']);
+                $pos = $this->idtrack->getDevicePosition($deviceId);
             } catch (\Exception $e) {
                 $pos = [];
             }
@@ -72,6 +81,10 @@ class GpsAssignmentController extends Controller
             }
 
             $assignable = $assignment->assignable;
+            if (! $assignable) {
+                continue;
+            }
+
             $label = 'GPS Device';
             $noPo = null;
             $nopol = $device['Nopol'] ?? $assignment->device_name;
@@ -81,23 +94,37 @@ class GpsAssignmentController extends Controller
                 $label = 'Kendaraan PO: '.$assignable->no_polisi;
                 $noPo = $assignable->po?->no_po;
                 $nopol = $assignable->no_polisi;
-            } elseif ($assignable instanceof GudangLansirMobil) {
+            } elseif ($assignable instanceof PoLansirMobil) {
                 $label = 'Mobil Lansir: '.$assignable->no_polisi;
                 $nopol = $assignable->no_polisi;
             }
 
+            $visitedMarkers = [];
+            $poKendaraanId = null;
+            if ($assignable instanceof PoKendaraan) {
+                $poKendaraanId = $assignable->id;
+                $visitedMarkers = $this->visitedMarkersPayloadForKendaraan($assignable);
+            }
+
             $positions[] = [
-                'device_id' => $device['DeviceID'],
+                'device_id' => $deviceId,
                 'device_name' => $nopol,
                 'label' => $label,
                 'no_po' => $noPo,
                 'type' => $assignable instanceof PoKendaraan ? 'kendaraan' : 'lansir',
                 'assignable_id' => $assignable->id,
+                'po_kendaraan_id' => $poKendaraanId,
                 'lat' => $lat,
                 'lng' => $lng,
                 'speed' => $pos['Speed'] ?? null,
                 'address' => $pos['Address'] ?? null,
                 'last_update' => $pos['GPSTime'] ?? null,
+                'gps_time' => $pos['GPSTime'] ?? null,
+                'DriverName' => $pos['DriverName'] ?? null,
+                'statusEng' => $pos['StatusEng'] ?? null,
+                'phone' => $pos['Phone'] ?? null,
+                'imei' => $pos['Imei'] ?? null,
+                'visited_markers' => $visitedMarkers,
             ];
         }
 
@@ -106,7 +133,10 @@ class GpsAssignmentController extends Controller
 
     public function positionByNopol(Request $request): JsonResponse
     {
-        $request->validate(['nopol' => 'required|string']);
+        $request->validate([
+            'nopol' => 'required|string',
+            'po_kendaraan_id' => 'nullable|integer|exists:po_kendaraan,id',
+        ]);
 
         try {
             $device = $this->idtrack->findDeviceByNopol($request->nopol);
@@ -118,18 +148,36 @@ class GpsAssignmentController extends Controller
                 ], 404);
             }
 
-            $position = $this->idtrack->getDevicePosition($device['DeviceID']);
+            $deviceId = (int) ($device['DeviceID'] ?? $device['device_id'] ?? 0);
+            $position = $this->idtrack->getDevicePosition($deviceId);
+
+            $visitedMarkers = [];
+            if ($request->filled('po_kendaraan_id')) {
+                $kendaraan = PoKendaraan::with('idtrackMarkerVisits')->find($request->integer('po_kendaraan_id'));
+                if ($kendaraan) {
+                    $normalizedK = strtoupper(preg_replace('/\s+/', '', (string) $kendaraan->no_polisi));
+                    $normalizedReq = strtoupper(preg_replace('/\s+/', '', (string) $request->nopol));
+                    if ($normalizedK === $normalizedReq) {
+                        $visitedMarkers = $this->visitedMarkersPayloadForKendaraan($kendaraan);
+                    }
+                }
+            }
 
             return response()->json([
                 'success' => true,
-                'device_id' => $device['DeviceID'],
+                'device_id' => $deviceId,
                 'nopol' => $device['Nopol'],
                 'position' => $position,
+                'DriverName' => $position['DriverName'] ?? null,
+                'statusEng' => $position['StatusEng'] ?? null,
+                'phone' => $position['Phone'] ?? null,
+                'imei' => $position['Imei'] ?? null,
                 'lat' => $position['Latitude'] ?? null,
                 'lng' => $position['Longitude'] ?? null,
                 'speed' => $position['Speed'] ?? null,
                 'address' => $position['Address'] ?? null,
                 'gps_time' => $position['GPSTime'] ?? null,
+                'visited_markers' => $visitedMarkers,
             ]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Gagal mengambil data GPS.'], 500);
@@ -224,5 +272,39 @@ class GpsAssignmentController extends Controller
         $history = $kendaraan->gpsAssignments()->latest('assigned_at')->get();
 
         return response()->json(['success' => true, 'history' => $history]);
+    }
+
+    /**
+     * Marker Idtrack yang sudah dikunjungi (untuk peta PO / tracking).
+     *
+     * @return array<int, array{idtrack_marker_id: int, lat: float, lng: float, arrived_at: ?string, name: ?string}>
+     */
+    private function visitedMarkersPayloadForKendaraan(PoKendaraan $kendaraan): array
+    {
+        $visitedMarkers = [];
+        foreach ($kendaraan->idtrackMarkerVisits as $v) {
+            $lat = $v->lat;
+            $lng = $v->lng;
+            $name = $v->marker_name;
+            if ($lat === null || $lng === null) {
+                $c = $this->markerResolver->resolve((int) $v->idtrack_marker_id);
+                if ($c !== null) {
+                    $lat = $lat ?? $c['lat'];
+                    $lng = $lng ?? $c['lng'];
+                    $name = $name ?? $c['name'];
+                }
+            }
+            if ($lat !== null && $lng !== null) {
+                $visitedMarkers[] = [
+                    'idtrack_marker_id' => $v->idtrack_marker_id,
+                    'lat' => (float) $lat,
+                    'lng' => (float) $lng,
+                    'arrived_at' => $v->arrived_at?->toIso8601String(),
+                    'name' => $name,
+                ];
+            }
+        }
+
+        return $visitedMarkers;
     }
 }

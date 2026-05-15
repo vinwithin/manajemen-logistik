@@ -93,6 +93,34 @@
                                 </div>
                             </div>
 
+                            <div class="col-12">
+                                <div class="card border-info mb-3">
+                                    <div class="card-header bg-info bg-opacity-10 py-2">
+                                        <h6 class="mb-0 small"><i class="fa fa-map-marker text-info"></i> Marker Idtrack
+                                            (POI, opsional)</h6>
+                                    </div>
+                                    <div class="card-body py-2">
+                                        <div class="d-flex gap-2 flex-wrap align-items-start">
+                                            <select name="idtrack_marker_id" id="selectMarker"
+                                                class="form-select form-select-sm" style="min-width: 220px;">
+                                                <option value="">-- Pilih Marker --</option>
+                                                @if (old('idtrack_marker_id'))
+                                                    <option value="{{ old('idtrack_marker_id') }}" selected>
+                                                        Marker #{{ old('idtrack_marker_id') }} (tersimpan)
+                                                    </option>
+                                                @endif
+                                            </select>
+                                            <button type="button" class="btn btn-sm btn-outline-info text-nowrap"
+                                                id="btnLoadMarkers">
+                                                <i class="fa fa-refresh"></i> Muat dari Idtrack
+                                            </button>
+                                        </div>
+                                        <small class="text-muted d-block mt-2">Koordinat & peta bisa diisi lewat menu
+                                            Edit setelah penerima dibuat.</small>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="col-md-6">
                                 <div class="form-check mb-3">
                                     <input type="checkbox" name="is_aktif" class="form-check-input" id="is_aktif"
@@ -113,4 +141,30 @@
             </div>
         </div>
     </div>
+
+    @push('js')
+        <script>
+            document.getElementById('btnLoadMarkers').addEventListener('click', function() {
+                var btn = this;
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+                $.getJSON('{{ route('idtrack.markers') }}', function(res) {
+                    if (!res.success) return;
+                    var sel = document.getElementById('selectMarker');
+                    var savedId = {{ old('idtrack_marker_id') ? (int) old('idtrack_marker_id') : 'null' }};
+                    sel.innerHTML = '<option value="">-- Pilih Marker --</option>';
+                    res.markers.forEach(function(m) {
+                        var opt = document.createElement('option');
+                        opt.value = m.IDMarker;
+                        opt.text = m.Name + (m.Address ? ' — ' + m.Address : '');
+                        if (m.IDMarker == savedId) opt.selected = true;
+                        sel.appendChild(opt);
+                    });
+                }).always(function() {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa fa-refresh"></i> Muat dari Idtrack';
+                });
+            });
+        </script>
+    @endpush
 @endsection
