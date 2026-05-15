@@ -22,6 +22,7 @@ use App\Http\Controllers\RekapOaController;
 use App\Http\Controllers\RekapPoController;
 use App\Http\Controllers\RekapRugiLabaController;
 use App\Http\Controllers\RoleController;
+use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -37,7 +38,7 @@ Route::post('/switch-cv', [DashboardController::class, 'switchCv'])
 // Idtrack SPJ Callback — tanpa auth (dipanggil oleh server Idtrack)
 Route::post('/idtrack/spj-callback', [IdtrackController::class, 'spjCallback'])
     ->name('idtrack.spj-callback')
-    ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+    ->withoutMiddleware([VerifyCsrfToken::class]);
 
 Route::middleware('auth')->group(function () {
 

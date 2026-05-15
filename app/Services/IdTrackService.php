@@ -6,14 +6,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
-/**
- * Integrasi API Idtrack (ringkas alur dokumentasi):
- *
- * Step 3 — GET /api/device?apikey=[TOKEN] → daftar device / DeviceID per mobil ({@see getDevices}, {@see getAllDevicesFlattened})
- * Step 4 — GET /api/marker?apikey=[TOKEN] → POI / IDMarker ({@see getMarkers})
- * Step 5 — POST /api/spj?apikey=[TOKEN] → set SPJ per mobil ({@see setSPJ})
- * Step 6 — GET /api/devicetracking?apikey=[TOKEN] pantau posisi; saat tiba di tujuan Idtrack POST ke UrlCallback ({@see getDeviceTracking}, route idtrack.spj-callback)
- */
+
 class IdtrackService
 {
     protected string $baseUrl;

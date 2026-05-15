@@ -110,7 +110,6 @@
                                             $formFields = [
                                                 'gaji' => 'GAJI',
                                                 'atk' => 'ATK',
-                                                'pembayaran_supplier_lintas' => 'PEMBAYARAN SUPLIER LINTAS',
                                                 'pembayaran_mobil_lokal' => 'PEMBAYARAN MOBIL LOKAL (tambahan)',
                                                 'sharing_fee' => 'SHARING FEE',
                                                 'sharing_profit' => 'SHARING PROFIT',

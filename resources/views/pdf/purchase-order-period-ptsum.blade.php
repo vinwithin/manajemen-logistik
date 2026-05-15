@@ -346,23 +346,23 @@
 
     {{-- Header dengan Logo --}}
     <div style="position: relative; margin-bottom: 15px;">
-        @if ($cvLogo && file_exists(public_path('storage/' . $cvLogo)))
+        @if ($cvLogo && Storage::disk('public')->exists($cvLogo))
             <div style="position: absolute; left: -25px; top: -45px;">
                 <img src="{{ public_path('storage/' . $cvLogo) }}"
                     style="max-width: 100px; height: 50px; object-fit: contain; display: block; margin: 0; padding: 0;"
                     alt="Logo CV">
             </div>
-            <div style="position: absolute; left: -52px; top: 8px;">
-                <div style="font-weight: bold; font-size: 10px; margin-top: 2px; margin-bottom: 0;">{{ $cvNama }}
-                </div>
-                <div
-                    style="font-size: 9px; padding-top: 0; margin-top: 0; color:rgb(123, 123, 239); font-style: italic;">
-                    {{ $cvAlamat }}</div>
-            </div>
-            <div style="position: absolute; right: -25px; top: -25px; font-size:9px; color:#555;">
-                No. {{ $noKwitansi }}
-            </div>
         @endif
+
+        <div style="position: absolute; left: -52px; top: 8px;">
+            <div style="font-weight: bold; font-size: 10px; margin-top: 2px; margin-bottom: 0;">{{ $cvNama }}
+            </div>
+            <div style="font-size: 9px; padding-top: 0; margin-top: 0; color:rgb(123, 123, 239); font-style: italic;">
+                {{ $cvAlamat }}</div>
+        </div>
+        <div style="position: absolute; right: -25px; top: -25px; font-size:9px; color:#555;">
+            No. {{ $noKwitansi }}
+        </div>
 
         <div class="doc-title">REKAPITULASI PENGIRIMAN PAKAN</div>
         <div class="doc-title">PT. SURYA UNGGAS MANDIRI</div>
@@ -539,7 +539,8 @@
                         <img src="{{ public_path('storage/' . $cvLogo) }}"
                             style="max-width: 80px; max-height: 50px; object-fit: contain; display: block; margin: 0; padding: 0;"
                             alt="Logo CV">
-                        <div class="kwit-company-name" style="margin-top: 2px; margin-left:0;">{{ $cvNama }}</div>
+                        <div class="kwit-company-name" style="margin-top: 2px; margin-left:0;">{{ $cvNama }}
+                        </div>
                         <div class="kwit-company-sub" style="margin-left:0;">{{ $cvAlamat }}</div>
                     </td>
                     <td style="text-align:right; font-size:8px; color:#555; vertical-align:top; white-space: nowrap;">
