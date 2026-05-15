@@ -360,7 +360,7 @@
             <div style="font-size: 9px; padding-top: 0; margin-top: 0; color:rgb(123, 123, 239); font-style: italic;">
                 {{ $cvAlamat }}</div>
         </div>
-        <div style="position: absolute; right: -25px; top: -25px; font-size:9px; color:#555;">
+        <div style="position: absolute; right: -25px; top: -25px; font-size:9px; color:#555; font-weight:bold;">
             No. {{ $noKwitansi }}
         </div>
 
@@ -449,7 +449,7 @@
                                     {{ $no++ }}</td>
                                 <td rowspan="{{ $penerimaCount }}" style="vertical-align:middle;">
                                     {{ $po->tanggal_po->translatedFormat('d F Y') }}</td>
-                                <td class="td-center" style="vertical-align:middle; font-size:8px;">
+                                <td class="td-center" style="vertical-align:middle;">
                                     {{ $kodePakanStr !== '' ? $kodePakanStr : '—' }}</td>
                                 <td rowspan="{{ $penerimaCount }}" style="vertical-align:middle;">
                                     {{ $kendaraan->no_surat_jalan ?? '-' }}</td>
@@ -457,7 +457,7 @@
                                     {{ $kendaraan->no_polisi }}</td>
                                 @php $isFirstPenerima = false; @endphp
                             @else
-                                <td class="td-center" style="font-size:8px;">
+                                <td class="td-center">
                                     {{ $kodePakanStr !== '' ? $kodePakanStr : '—' }}</td>
                             @endif
                             <td class="td-center">{{ Str::upper($penerima->nama_penerima ?? '-') }}</td>
@@ -543,7 +543,7 @@
                         </div>
                         <div class="kwit-company-sub" style="margin-left:0;">{{ $cvAlamat }}</div>
                     </td>
-                    <td style="text-align:right; font-size:8px; color:#555; vertical-align:top; white-space: nowrap;">
+                    <td style="text-align:right; font-size:8px; color:#555; vertical-align:top; white-space: nowrap; font-weight:bold;">
                         No :&nbsp;&nbsp; {{ $noKwitansi }}
                     </td>
                 </tr>

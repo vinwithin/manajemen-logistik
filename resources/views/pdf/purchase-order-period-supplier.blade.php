@@ -289,7 +289,7 @@
                                     {{ $no++ }}</td>
                                 <td rowspan="{{ $penerimaCount }}" style="vertical-align:middle;">
                                     {{ $po->tanggal_po->translatedFormat('d F Y') }}</td>
-                                <td class="td-center" style="vertical-align:middle; font-size:8px;">
+                                <td class="td-center" style="vertical-align:middle;">
                                     {{ $kodePakanStr !== '' ? $kodePakanStr : '—' }}</td>
                                 <td rowspan="{{ $penerimaCount }}" style="vertical-align:middle;">
                                     {{ $kendaraan->no_surat_jalan ?? '-' }}</td>
@@ -297,7 +297,7 @@
                                     {{ $kendaraan->no_polisi }}</td>
                                 @php $isFirstPenerima = false; @endphp
                             @else
-                                <td class="td-center" style="font-size:8px;">
+                                <td class="td-center">
                                     {{ $kodePakanStr !== '' ? $kodePakanStr : '—' }}</td>
                             @endif
                             <td class="td-center">{{ Str::upper($penerima->nama_penerima ?? '-') }}</td>
