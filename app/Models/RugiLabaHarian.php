@@ -35,7 +35,7 @@ class RugiLabaHarian extends Model
             'gaji' => 'Gaji',
             'biaya_sewa' => 'Biaya Sewa',
             'atk' => 'ATK',
-            'pembayaran_supplier_lintas' => 'Pembayaran Supplier Lintas',
+            // 'pembayaran_supplier_lintas' => 'Pembayaran Supplier Lintas',
             'pembayaran_mobil_lokal' => 'Pembayaran Mobil Lokal',
             'sharing_fee' => 'Sharing Fee',
             'sharing_profit' => 'Sharing Profit',

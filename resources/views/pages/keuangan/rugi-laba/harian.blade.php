@@ -80,9 +80,10 @@
                         <div class="mb-3">
                             <label class="form-label small fw-semibold">Nominal (Rp) <span
                                     class="text-danger">*</span></label>
-                            <input type="number" name="nominal"
+                            <input type="text" id="nominal_display"
                                 class="form-control form-control-sm @error('nominal') is-invalid @enderror"
-                                value="{{ old('nominal', 0) }}" min="0" step="1" required>
+                                placeholder="0" required>
+                            <input type="hidden" name="nominal" id="nominal" value="{{ old('nominal', 0) }}">
                             @error('nominal')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -180,7 +181,7 @@
                                                 <button type="button"
                                                     class="btn btn-xs btn-outline-danger btn-hapus-harian"
                                                     data-id="{{ $entry->id }}" title="Hapus">
-                                                    <i class="fa fa-times"></i>
+                                                    Hapus
                                                 </button>
                                             </td>
                                         </tr>
@@ -201,6 +202,47 @@
     </div>
 
     <script>
+        // Format angka menjadi rupiah
+        function formatRupiah(angka) {
+            var number_string = angka.toString().replace(/[^,\d]/g, '');
+            var split = number_string.split(',');
+            var sisa = split[0].length % 3;
+            var rupiah = split[0].substr(0, sisa);
+            var ribuan = split[0].substr(sisa).match(/\d{3}/gi);
+
+            if (ribuan) {
+                separator = sisa ? '.' : '';
+                rupiah += separator + ribuan.join('.');
+            }
+
+            rupiah = split[1] != undefined ? rupiah + ',' + split[1] : rupiah;
+            return rupiah;
+        }
+
+        // Parse rupiah menjadi angka
+        function parseRupiah(rupiah) {
+            return parseInt(rupiah.toString().replace(/\./g, '')) || 0;
+        }
+
+        // Inisialisasi input nominal
+        $(document).ready(function() {
+            var $display = $('#nominal_display');
+            var $hidden = $('#nominal');
+
+            // Set nilai awal
+            if ($hidden.val() > 0) {
+                $display.val(formatRupiah($hidden.val()));
+            }
+
+            // Event ketika mengetik
+            $display.on('input', function() {
+                var value = $(this).val();
+                var angka = parseRupiah(value);
+                $hidden.val(angka);
+                $(this).val(formatRupiah(angka));
+            });
+        });
+
         $(document).on('click', '.btn-hapus-harian', function() {
             var id = $(this).data('id');
             var $row = $(this).closest('tr');

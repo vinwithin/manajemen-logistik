@@ -74,27 +74,29 @@
                     placeholder="Sampai">
             </div>
         </div>
-        <div class="card-body">
-            <table class="table table-striped table-bordered" id="table">
-                <thead>
-                    <tr>
-                        <th>No</th>
-                        <th>Tipe</th>
-                        <th>No. PO</th>
-                        <th>CV</th>
-                        <th>No. Polisi</th>
-                        <th>Tujuan</th>
-                        <th>Supplier</th>
-                        <th>Tagihan</th>
-                        <th>Dibayar</th>
-                        <th>Sisa</th>
-                        <th>Tgl Bayar</th>
-                        <th>Metode</th>
-                        <th>Status</th>
-                        <th>Bukti</th>
-                    </tr>
-                </thead>
-            </table>
+        <div class="card-body p-2">
+            <div class="table-responsive">
+                <table class="table table-striped table-bordered table-sm" id="table">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;">No</th>
+                            <th style="width: 120px;">Tipe</th>
+                            <th style="width: 100px;">No. PO</th>
+                            <th style="width: 120px;">CV</th>
+                            <th style="width: 100px;">No. Polisi</th>
+                            <th style="width: 100px;">Tujuan</th>
+                            <th style="width: 120px;">Supplier</th>
+                            <th style="width: 100px;">Tagihan</th>
+                            <th style="width: 100px;">Dibayar</th>
+                            <th style="width: 100px;">Sisa</th>
+                            <th style="width: 90px;">Tgl Bayar</th>
+                            <th style="width: 80px;">Metode</th>
+                            <th style="width: 90px;">Status</th>
+                            <th style="width: 70px;">Bukti</th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
         </div>
     </div>
 
@@ -107,11 +109,13 @@
 
         $(document).ready(function() {
             dt = $('#table').DataTable({
-                bAutoWidth: false,
+                bAutoWidth: true,
                 iDisplayLength: 15,
                 processing: true,
                 serverSide: true,
                 bDestroy: true,
+                scrollX: true,
+                scrollCollapse: true,
                 ajax: {
                     url: '/keuangan/pembayaran',
                     data: function(d) {
@@ -125,8 +129,7 @@
                 columns: [{
                         data: 'DT_RowIndex',
                         orderable: false,
-                        searchable: false,
-                        width: '50px'
+                        searchable: false
                     },
                     {
                         data: 'tipe',
@@ -201,8 +204,25 @@
                 ],
                 order: [
                     [10, 'desc']
-                ], // Order by tanggal_bayar desc
-                responsive: !0
+                ],
+                responsive: true,
+                language: {
+                    emptyTable: "Tidak ada data",
+                    info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ entri",
+                    infoEmpty: "Menampilkan 0 sampai 0 dari 0 entri",
+                    infoFiltered: "(difilter dari _MAX_ total entri)",
+                    lengthMenu: "Tampilkan _MENU_ entri",
+                    loadingRecords: "Memuat...",
+                    processing: "Memproses...",
+                    search: "Cari:",
+                    zeroRecords: "Tidak ada data yang ditemukan",
+                    paginate: {
+                        first: "Pertama",
+                        last: "Terakhir",
+                        next: "Selanjutnya",
+                        previous: "Sebelumnya"
+                    }
+                }
             });
 
             $('#filterTipe, #filterSupplier, #filterStatus, #filterFrom, #filterTo').on('change', function() {

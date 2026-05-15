@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\OaPayment;
 use App\Models\Supplier;
+use App\Models\PoPenerima;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 
@@ -51,34 +52,38 @@ class PembayaranSupplierController extends Controller
                     return "<span class='badge bg-{$color}'>{$label}</span>";
                 })
                 ->addColumn('no_po', function ($q) {
-                    // Untuk tipe 'dp_supplier', ambil dari kendaraan.po
-                    // Untuk tipe 'oa', ambil dari penerima.kendaraan.po
-                    if ($q->tipe_pembayaran === 'dp_supplier' && $q->kendaraan) {
-                        return $q->kendaraan->po->no_po ?? '-';
+                    // Coba dari kendaraan terlebih dahulu (untuk dp_supplier)
+                    if ($q->kendaraan && $q->kendaraan->po) {
+                        return $q->kendaraan->po->no_po;
                     }
-
-                    return $q->penerima?->kendaraan?->po->no_po ?? '-';
+                    // Lalu coba dari penerima (untuk oa)
+                    if ($q->penerima && $q->penerima->kendaraan && $q->penerima->kendaraan->po) {
+                        return $q->penerima->kendaraan->po->no_po;
+                    }
+                    return '<span class="text-muted small">—</span>';
                 })
                 ->addColumn('cv_name', function ($q) {
-                    if ($q->tipe_pembayaran === 'dp_supplier' && $q->kendaraan) {
-                        return $q->kendaraan->po->cv?->nama_cv ?? '-';
+                    if ($q->kendaraan && $q->kendaraan->po && $q->kendaraan->po->cv) {
+                        return $q->kendaraan->po->cv->nama_cv;
                     }
-
-                    return $q->penerima?->kendaraan?->po->cv?->nama_cv ?? '-';
+                    if ($q->penerima && $q->penerima->kendaraan && $q->penerima->kendaraan->po && $q->penerima->kendaraan->po->cv) {
+                        return $q->penerima->kendaraan->po->cv->nama_cv;
+                    }
+                    return '<span class="text-muted small">—</span>';
                 })
                 ->addColumn('no_polisi', function ($q) {
-                    if ($q->tipe_pembayaran === 'dp_supplier' && $q->kendaraan) {
-                        return $q->kendaraan->no_polisi ?? '-';
+                    if ($q->kendaraan && $q->kendaraan->no_polisi) {
+                        return $q->kendaraan->no_polisi;
                     }
-
-                    return $q->penerima?->kendaraan?->no_polisi ?? '-';
+                    if ($q->penerima && $q->penerima->kendaraan && $q->penerima->kendaraan->no_polisi) {
+                        return $q->penerima->kendaraan->no_polisi;
+                    }
+                    return '<span class="text-muted small">—</span>';
                 })
                 ->addColumn('tujuan', function ($q) {
-                    // Tujuan hanya ada untuk tipe 'oa' (pembayaran ke penerima)
-                    if ($q->tipe_pembayaran === 'oa') {
-                        return $q->penerima?->tujuan?->nama ?? '-';
+                    if ($q->kendaraan && $q->kendaraan->tujuan) {
+                        return $q->kendaraan->tujuan->nama;
                     }
-
                     return '<span class="text-muted">—</span>';
                 })
                 ->addColumn('supplier_nama', fn ($q) => $q->supplier?->nama ?? '-')
@@ -106,7 +111,7 @@ class PembayaranSupplierController extends Controller
                             </a>";
                 })
                 ->addIndexColumn()
-                ->rawColumns(['tipe', 'status_badge', 'bukti', 'tujuan'])
+                ->rawColumns(['tipe', 'status_badge', 'bukti', 'tujuan', 'no_po', 'cv_name', 'no_polisi'])
                 ->make(true);
         }
 
@@ -120,11 +125,35 @@ class PembayaranSupplierController extends Controller
                     ->orWhereHas('kendaraan.po', fn ($q) => $q->where('cv_id', $activeCvId));
             });
         });
+       
+         $poPenerimas = PoPenerima::with(['pakans', 'oaPayment', 'kendaraan.oaPayment', 'kendaraan.po'])
+            ->whereIn('status', ['selesai', 'batal'])
+            ->whereHas('kendaraan.po', function ($q) use ($activeCvId) {
+                if ($activeCvId) {
+                    $q->where('cv_id', $activeCvId);
+                }
+            })
+            ->get();
 
+         $kendaraanIds = $poPenerimas->pluck('po_kendaraan_id')->unique()->filter()->values();
+        $penerimaIds = $poPenerimas->pluck('id')->unique()->values();
+         $oaPaymentRows = OaPayment::query()
+            ->whereIn('tipe_pembayaran', ['oa', 'dp_supplier'])
+            ->where(function ($q) use ($kendaraanIds, $penerimaIds) {
+                $q->whereIn('po_kendaraan_id', $kendaraanIds)
+                    ->orWhereIn('po_penerima_id', $penerimaIds);
+            })
+            ->get()
+            ->unique('id');
+            
+        $oaTotalTagihan = (float) $poPenerimas->sum('total_oa');
+        $oaTotalBayar = (float) $oaPaymentRows->sum('jumlah_bayar');
+        $oaTotalSisa = max(0, $oaTotalTagihan - $oaTotalBayar);
         $summary = [
-            'total_tagihan' => (clone $base)->sum('jumlah_tagihan'),
+            'total_tagihan' => $oaTotalTagihan,
+            // 'total_tagihan' => (clone $base)->sum('jumlah_tagihan'),
             'total_bayar' => (clone $base)->sum('jumlah_bayar'),
-            'total_sisa' => (clone $base)->selectRaw('SUM(jumlah_tagihan - jumlah_bayar) as sisa')->value('sisa') ?? 0,
+            'total_sisa' => $oaTotalSisa,
             'count_pending' => (clone $base)->where('status', 'pending')->count(),
             'count_partial' => (clone $base)->where('status', 'partial')->count(),
             'count_lunas' => (clone $base)->where('status', 'lunas')->count(),

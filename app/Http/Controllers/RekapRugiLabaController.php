@@ -262,7 +262,8 @@ class RekapRugiLabaController extends Controller
         $pembelian = array_fill_keys($types, 0);
         $penjualan = array_fill_keys($types, 0);
 
-        $pakans = DB::table('po_penerima_pakan')
+        // Data dari PO
+        $pakansPo = DB::table('po_penerima_pakan')
             ->select('po_penerima_pakan.jumlah_kg', 'po_penerima_pakan.ongkos_oa', 'po_penerima_pakan.harga_pt_sum', 'tujuan.type as tujuan_type')
             ->join('po_penerima', 'po_penerima.id', '=', 'po_penerima_pakan.po_penerima_id')
             ->join('po_kendaraan', 'po_kendaraan.id', '=', 'po_penerima.po_kendaraan_id')
@@ -273,8 +274,22 @@ class RekapRugiLabaController extends Controller
             ->whereDate('purchase_orders.tanggal_po', '<=', $sampai)
             ->get();
 
+        // Data dari Gudang Lansir
+        $pakansGudang = DB::table('gudang_lansir_pakan')
+            ->select('gudang_lansir_pakan.jumlah_kg', 'gudang_lansir_pakan.ongkos_oa', 'gudang_lansir_pakan.harga_pt_sum')
+            ->join('gudang_lansir_penerima', 'gudang_lansir_penerima.id', '=', 'gudang_lansir_pakan.penerima_id')
+            ->join('gudang_lansir_kendaraan', 'gudang_lansir_kendaraan.id', '=', 'gudang_lansir_penerima.kendaraan_id')
+            ->join('gudang_lansir_header', 'gudang_lansir_header.id', '=', 'gudang_lansir_kendaraan.lansir_header_id')
+            ->where('gudang_lansir_header.cv_id', $cvId)
+            ->whereDate('gudang_lansir_header.tanggal_lansir', '>=', $dari)
+            ->whereDate('gudang_lansir_header.tanggal_lansir', '<=', $sampai)
+            ->get();
+
+        // Gabungkan dan proses semua data
+        $pakans = $pakansPo->merge($pakansGudang);
+
         foreach ($pakans as $p) {
-            $type = in_array($p->tujuan_type, $types) ? $p->tujuan_type : 'direct';
+            $type = in_array($p->tujuan_type ?? 'direct', $types) ? ($p->tujuan_type ?? 'direct') : 'direct';
             $pembelian[$type] += (float) $p->jumlah_kg * (float) ($p->ongkos_oa ?? 0);
             $penjualan[$type] += (float) $p->jumlah_kg * (float) ($p->harga_pt_sum ?? 0);
         }
@@ -284,6 +299,7 @@ class RekapRugiLabaController extends Controller
             ->join('gudang_lansir_penerima', 'gudang_lansir_penerima.id', '=', 'gudang_lansir_tim.penerima_id')
             ->join('gudang_lansir_kendaraan', 'gudang_lansir_kendaraan.id', '=', 'gudang_lansir_penerima.kendaraan_id')
             ->join('gudang_lansir_header', 'gudang_lansir_header.id', '=', 'gudang_lansir_kendaraan.lansir_header_id')
+            ->where('gudang_lansir_header.cv_id', $cvId)
             ->whereDate('gudang_lansir_header.tanggal_lansir', '>=', $dari)
             ->whereDate('gudang_lansir_header.tanggal_lansir', '<=', $sampai)
             ->sum(DB::raw('gudang_lansir_tim.jumlah_kg * COALESCE(gudang_lansir_tim.upah_per_kg, 0)'));
@@ -303,6 +319,7 @@ class RekapRugiLabaController extends Controller
             ->join('gudang_lansir_penerima', 'gudang_lansir_penerima.id', '=', 'gudang_lansir_pakan.penerima_id')
             ->join('gudang_lansir_kendaraan', 'gudang_lansir_kendaraan.id', '=', 'gudang_lansir_penerima.kendaraan_id')
             ->join('gudang_lansir_header', 'gudang_lansir_header.id', '=', 'gudang_lansir_kendaraan.lansir_header_id')
+            ->where('gudang_lansir_header.cv_id', $cvId)
             ->whereDate('gudang_lansir_header.tanggal_lansir', '>=', $dari)
             ->whereDate('gudang_lansir_header.tanggal_lansir', '<=', $sampai)
             ->sum(DB::raw('gudang_lansir_pakan.jumlah_kg * COALESCE(gudang_lansir_pakan.ongkos_oa, 0)'));
