@@ -4,16 +4,30 @@
     <div class="card mb-3">
         <div class="card-body d-flex justify-content-between align-items-center py-3">
             <div>
-                <h5 class="mb-1 fw-bold">Rekap Lansir — {{ $po->no_po }}</h5>
+                <h5 class="mb-1 fw-bold">
+                    Rekap Lansir — 
+                    @if($tipe === 'po')
+                        {{ $header->no_po }}
+                    @else
+                        {{ $header->no_lansir }}
+                    @endif
+                </h5>
                 <span class="text-muted small">
-                    {{ $po->cv?->nama_cv ?? '-' }} &nbsp;·&nbsp; {{ $po->tanggal_po->format('d M Y') }}
+                    {{ $header->cv?->nama_cv ?? '-' }} &nbsp;·&nbsp; 
+                    @if($tipe === 'po')
+                        {{ $header->tanggal_po->format('d M Y') }}
+                    @else
+                        {{ $header->tanggal_lansir->format('d M Y') }}
+                    @endif
                 </span>
             </div>
             <div class="d-flex gap-2">
                 @can('rekap-lansir.view')
-                    <a href="{{ route('rekap-lansir.export', encrypt($po->id)) }}" class="btn btn-sm btn-success">
-                        <i class="fa fa-file-excel-o"></i> Export Excel
-                    </a>
+                    @if($tipe === 'po')
+                        <a href="{{ route('rekap-lansir.export', encrypt($header->id)) }}" class="btn btn-sm btn-success">
+                            <i class="fa fa-file-excel-o"></i> Export Excel
+                        </a>
+                    @endif
                 @endcan
                 <a href="{{ route('rekap-lansir.index') }}" class="btn btn-sm btn-secondary">
                     <i class="fa fa-arrow-left"></i> Kembali
@@ -58,29 +72,48 @@
                                 </thead>
                                 <tbody>
                                     @foreach ($rekapMobil as $lansir)
-                                        @if ($lansir->mobils->isEmpty())
-                                            <tr>
-                                                <td colspan="4" class="text-muted text-center small">
-                                                    {{ $lansir->penerima->nama_penerima }} — belum ada mobil
-                                                </td>
-                                            </tr>
-                                        @else
-                                            @foreach ($lansir->mobils as $mobil)
+                                        @if($tipe === 'po')
+                                            @if ($lansir->mobils->isEmpty())
                                                 <tr>
-                                                    <td>{{ $mobil->no_polisi }}</td>
+                                                    <td colspan="4" class="text-muted text-center small">
+                                                        {{ $lansir->penerima->nama_penerima }} — belum ada mobil
+                                                    </td>
+                                                </tr>
+                                            @else
+                                                @foreach ($lansir->mobils as $mobil)
+                                                    <tr>
+                                                        <td>{{ $mobil->no_polisi }}</td>
+                                                        <td class="text-end">
+                                                            {{ number_format($mobil->berat ?? 0, 0, ',', '.') }}</td>
+                                                        <td class="text-end">
+                                                            {{ number_format($mobil->ongkos ?? 0, 0, ',', '.') }}</td>
+                                                        <td class="text-end">
+                                                            {{ number_format(($mobil->berat ?? 0) * ($mobil->ongkos ?? 0), 0, ',', '.') }}
+                                                        </td>
+                                                    </tr>
+                                                @endforeach
+                                            @endif
+                                        @else
+                                            @foreach ($lansir->pakans as $pakan)
+                                                <tr>
+                                                    <td>{{ $lansir->kendaraan->no_polisi ?? '-' }}</td>
                                                     <td class="text-end">
-                                                        {{ number_format($mobil->berat ?? 0, 0, ',', '.') }}</td>
+                                                        {{ number_format($pakan->jumlah_kg ?? 0, 0, ',', '.') }}</td>
                                                     <td class="text-end">
-                                                        {{ number_format($mobil->ongkos ?? 0, 0, ',', '.') }}</td>
+                                                        {{ number_format($pakan->ongkos_oa ?? 0, 0, ',', '.') }}</td>
                                                     <td class="text-end">
-                                                        {{ number_format(($mobil->berat ?? 0) * ($mobil->ongkos ?? 0), 0, ',', '.') }}
+                                                        {{ number_format(($pakan->jumlah_kg ?? 0) * ($pakan->ongkos_oa ?? 0), 0, ',', '.') }}
                                                     </td>
                                                 </tr>
                                             @endforeach
                                         @endif
                                         <tr class="table-secondary">
                                             <td colspan="3" class="fw-semibold small">
-                                                {{ $lansir->penerima->nama_penerima }}
+                                                @if($tipe === 'po')
+                                                    {{ $lansir->penerima->nama_penerima }}
+                                                @else
+                                                    {{ $lansir->penerima->nama_penerima ?? $lansir->penerima->poPenerima?->nama_penerima ?? '-' }}
+                                                @endif
                                                 <span
                                                     class="text-muted">({{ $lansir->tanggal_lansir?->format('d/m/Y') ?? '-' }})</span>
                                             </td>
@@ -114,7 +147,7 @@
                     @else
                         <span class="badge bg-secondary fs-6"><i class="fa fa-clock-o"></i> Belum Bayar</span>
                         @can('rekap-lansir.bayar')
-                            <button class="btn btn-sm btn-primary ms-2 btn-tandai-bayar" data-tipe="mobil"
+                            <button class="btn btn-sm btn-primary ms-2 btn-tandai-bayar" data-tipe="mobil" data-tipe-lansir="{{ $tipe }}"
                                 data-bs-toggle="modal" data-bs-target="#modalBayar">
                                 <i class="fa fa-money"></i> Tandai Bayar
                             </button>
@@ -146,29 +179,47 @@
                                 </thead>
                                 <tbody>
                                     @foreach ($rekapTim as $lansir)
-                                        @php $totalBerat = $lansir->total_berat; @endphp
-                                        @if ($lansir->tims->isEmpty())
-                                            <tr>
-                                                <td colspan="4" class="text-muted text-center small">
-                                                    {{ $lansir->penerima->nama_penerima }} — belum ada tim
-                                                </td>
-                                            </tr>
+                                        @if($tipe === 'po')
+                                            @php $totalBerat = $lansir->total_berat; @endphp
+                                            @if ($lansir->tims->isEmpty())
+                                                <tr>
+                                                    <td colspan="4" class="text-muted text-center small">
+                                                        {{ $lansir->penerima->nama_penerima }} — belum ada tim
+                                                    </td>
+                                                </tr>
+                                            @else
+                                                @foreach ($lansir->tims as $tim)
+                                                    <tr>
+                                                        <td>{{ $tim->nama_tim }}</td>
+                                                        <td class="text-end">{{ number_format($totalBerat, 0, ',', '.') }}</td>
+                                                        <td class="text-end">{{ number_format($tim->upah ?? 0, 0, ',', '.') }}
+                                                        </td>
+                                                        <td class="text-end">
+                                                            {{ number_format($totalBerat * ($tim->upah ?? 0), 0, ',', '.') }}
+                                                        </td>
+                                                    </tr>
+                                                @endforeach
+                                            @endif
                                         @else
                                             @foreach ($lansir->tims as $tim)
                                                 <tr>
                                                     <td>{{ $tim->nama_tim }}</td>
-                                                    <td class="text-end">{{ number_format($totalBerat, 0, ',', '.') }}</td>
-                                                    <td class="text-end">{{ number_format($tim->upah ?? 0, 0, ',', '.') }}
+                                                    <td class="text-end">{{ number_format($lansir->total_berat, 0, ',', '.') }}</td>
+                                                    <td class="text-end">{{ number_format($tim->upah_per_kg ?? 0, 0, ',', '.') }}
                                                     </td>
                                                     <td class="text-end">
-                                                        {{ number_format($totalBerat * ($tim->upah ?? 0), 0, ',', '.') }}
+                                                        {{ number_format($lansir->total_berat * ($tim->upah_per_kg ?? 0), 0, ',', '.') }}
                                                     </td>
                                                 </tr>
                                             @endforeach
                                         @endif
                                         <tr class="table-secondary">
                                             <td colspan="3" class="fw-semibold small">
-                                                {{ $lansir->penerima->nama_penerima }}
+                                                @if($tipe === 'po')
+                                                    {{ $lansir->penerima->nama_penerima }}
+                                                @else
+                                                    {{ $lansir->penerima->nama_penerima ?? $lansir->penerima->poPenerima?->nama_penerima ?? '-' }}
+                                                @endif
                                                 <span
                                                     class="text-muted">({{ $lansir->tanggal_lansir?->format('d/m/Y') ?? '-' }})</span>
                                             </td>
@@ -202,7 +253,7 @@
                     @else
                         <span class="badge bg-secondary fs-6"><i class="fa fa-clock-o"></i> Belum Bayar</span>
                         @can('rekap-lansir.bayar')
-                            <button class="btn btn-sm btn-primary ms-2 btn-tandai-bayar" data-tipe="tim" data-bs-toggle="modal"
+                            <button class="btn btn-sm btn-primary ms-2 btn-tandai-bayar" data-tipe="tim" data-tipe-lansir="{{ $tipe }}" data-bs-toggle="modal"
                                 data-bs-target="#modalBayar">
                                 <i class="fa fa-money"></i> Tandai Bayar
                             </button>
@@ -221,9 +272,10 @@
                     <h6 class="modal-title">Tandai Pembayaran — <span id="modalBayarTipe"></span></h6>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <form method="POST" action="{{ route('rekap-lansir.bayar', encrypt($po->id)) }}">
+                <form method="POST" action="{{ route('rekap-lansir.bayar', encrypt($tipe === 'po' ? $header->id : $header->id)) }}">
                     @csrf
                     <input type="hidden" name="tipe" id="inputTipe">
+                    <input type="hidden" name="tipe_lansir" id="inputTipeLansir">
                     <div class="modal-body">
                         @if ($errors->any())
                             <div class="alert alert-danger py-2">
@@ -267,7 +319,9 @@
         document.querySelectorAll('.btn-tandai-bayar').forEach(function(btn) {
             btn.addEventListener('click', function() {
                 var tipe = this.dataset.tipe;
+                var tipeLansir = this.dataset.tipeLansir;
                 document.getElementById('inputTipe').value = tipe;
+                document.getElementById('inputTipeLansir').value = tipeLansir;
                 document.getElementById('modalBayarTipe').textContent = tipe === 'mobil' ? 'Mobil Lansir' :
                     'Tim Bongkar';
             });
@@ -278,6 +332,7 @@
             document.addEventListener('DOMContentLoaded', function() {
                 var modal = new bootstrap.Modal(document.getElementById('modalBayar'));
                 document.getElementById('inputTipe').value = '{{ old('tipe') }}';
+                document.getElementById('inputTipeLansir').value = '{{ old('tipe_lansir') }}';
                 document.getElementById('modalBayarTipe').textContent =
                     '{{ old('tipe') === 'mobil' ? 'Mobil Lansir' : 'Tim Bongkar' }}';
                 modal.show();

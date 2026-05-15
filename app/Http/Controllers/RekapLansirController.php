@@ -80,74 +80,152 @@ class RekapLansirController extends Controller
         try {
             $decryptedId = decrypt($id);
 
+            $data = null;
+            $tipe = null;
+            $rekapMobil = collect();
+            $rekapTim = collect();
+            $grandTotalMobil = 0;
+            $grandTotalTim = 0;
+            $paymentMobil = null;
+            $paymentTim = null;
+            $header = null;
+
             // Cek apakah ini PO Lansir atau Gudang Lansir berdasarkan prefix
             if (str_starts_with($decryptedId, 'po_')) {
                 // PO Lansir
                 $lansirId = (int) str_replace('po_', '', $decryptedId);
                 $lansir = PoPenerimaLansir::with(['penerima.kendaraan.po.cv'])->findOrFail($lansirId);
-                $po = $lansir->penerima->kendaraan->po;
+                $header = $lansir->penerima->kendaraan->po;
                 $tipe = 'po';
 
             } elseif (str_starts_with($decryptedId, 'gudang_')) {
                 // Gudang Lansir
                 $gudangLansirId = (int) str_replace('gudang_', '', $decryptedId);
-                $gudangLansir = GudangLansirHeader::with(['cv'])->findOrFail($gudangLansirId);
+                $header = GudangLansirHeader::with(['cv', 'kendaraans.penerimas.pakans', 'kendaraans.penerimas.tims'])->findOrFail($gudangLansirId);
                 $tipe = 'gudang';
-
-                // Untuk gudang lansir, kita perlu membuat struktur data yang berbeda
-                return $this->showGudangLansir($gudangLansir);
 
             } else {
                 // Fallback untuk backward compatibility (jika ada ID lama tanpa prefix)
-                $po = PurchaseOrder::with('cv')->findOrFail($decryptedId);
+                $header = PurchaseOrder::with('cv')->findOrFail($decryptedId);
                 $tipe = 'po';
             }
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Data lansir tidak ditemukan: '.$e->getMessage());
         }
 
-        // Untuk PO Lansir
-        $rekapMobil = $this->service->getRekapMobil($po);
-        $rekapTim = $this->service->getRekapTim($po);
-        $grandTotalMobil = $this->service->getGrandTotalMobil($po);
-        $grandTotalTim = $this->service->getGrandTotalTim($po);
+        if ($tipe === 'po') {
+            // Untuk PO Lansir
+            $rekapMobil = $this->service->getRekapMobil($header);
+            $rekapTim = $this->service->getRekapTim($header);
+            $grandTotalMobil = $this->service->getGrandTotalMobil($header);
+            $grandTotalTim = $this->service->getGrandTotalTim($header);
 
-        $paymentMobil = LansirPayment::where('po_id', $po->id)
-            ->where('tipe', LansirPayment::TIPE_MOBIL)->first();
-        $paymentTim = LansirPayment::where('po_id', $po->id)
-            ->where('tipe', LansirPayment::TIPE_TIM)->first();
+            $paymentMobil = LansirPayment::where('po_id', $header->id)
+                ->where('tipe', LansirPayment::TIPE_MOBIL)->first();
+            $paymentTim = LansirPayment::where('po_id', $header->id)
+                ->where('tipe', LansirPayment::TIPE_TIM)->first();
+        } else {
+            // Untuk Gudang Lansir
+            [$rekapMobil, $rekapTim, $grandTotalMobil, $grandTotalTim] = $this->prepareGudangLansirData($header);
+            
+            $paymentMobil = LansirPayment::where('gudang_lansir_header_id', $header->id)
+                ->where('tipe', LansirPayment::TIPE_MOBIL)->first();
+            $paymentTim = LansirPayment::where('gudang_lansir_header_id', $header->id)
+                ->where('tipe', LansirPayment::TIPE_TIM)->first();
+        }
 
         return view('pages.keuangan.rekap-lansir.show', compact(
-            'po', 'rekapMobil', 'rekapTim',
+            'header', 'tipe',
+            'rekapMobil', 'rekapTim',
             'grandTotalMobil', 'grandTotalTim',
-            'paymentMobil', 'paymentTim', 'tipe'
+            'paymentMobil', 'paymentTim'
         ));
     }
 
-    private function showGudangLansir(GudangLansirHeader $gudangLansir): RedirectResponse
+    private function prepareGudangLansirData(GudangLansirHeader $gudangLansir): array
     {
-        // Untuk gudang lansir, redirect ke halaman gudang lansir show
-        return redirect()->route('gudang.lansir.show', encrypt($gudangLansir->id));
+        $rekapMobil = collect();
+        $rekapTim = collect();
+        $grandTotalMobil = 0;
+        $grandTotalTim = 0;
+
+        foreach ($gudangLansir->kendaraans as $kendaraan) {
+            foreach ($kendaraan->penerimas as $penerima) {
+                // Data untuk mobil (gunakan data pakan)
+                $totalOngkos = 0;
+                foreach ($penerima->pakans as $pakan) {
+                    $totalOngkos += $pakan->jumlah_kg * $pakan->ongkos_oa;
+                }
+
+                $rekapMobil->push((object)[
+                    'kendaraan' => $kendaraan,
+                    'penerima' => $penerima,
+                    'pakans' => $penerima->pakans,
+                    'total_ongkos' => $totalOngkos,
+                    'tanggal_lansir' => $gudangLansir->tanggal_lansir,
+                ]);
+
+                $grandTotalMobil += $totalOngkos;
+
+                // Data untuk tim
+                $totalUpah = 0;
+                foreach ($penerima->tims as $tim) {
+                    $totalUpah += $tim->total_upah;
+                }
+
+                $rekapTim->push((object)[
+                    'kendaraan' => $kendaraan,
+                    'penerima' => $penerima,
+                    'tims' => $penerima->tims,
+                    'total_berat' => $penerima->total_kg,
+                    'total_upah' => $totalUpah,
+                    'tanggal_lansir' => $gudangLansir->tanggal_lansir,
+                ]);
+
+                $grandTotalTim += $totalUpah;
+            }
+        }
+
+        return [$rekapMobil, $rekapTim, $grandTotalMobil, $grandTotalTim];
     }
 
     public function bayar(Request $request, string $id): RedirectResponse
     {
         $request->validate([
             'tipe' => 'required|in:mobil,tim',
+            'tipe_lansir' => 'required|in:po,gudang',
             'tanggal_bayar' => 'required|date',
             'catatan' => 'nullable|string|max:500',
         ]);
 
         try {
-            $po = PurchaseOrder::findOrFail(decrypt($id));
+            $decryptedId = decrypt($id);
+            $data = null;
+            $tipeLansir = $request->tipe_lansir;
+            
+            if ($tipeLansir === 'po') {
+                $data = PurchaseOrder::findOrFail($decryptedId);
+            } else {
+                $data = GudangLansirHeader::findOrFail($decryptedId);
+            }
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'PO tidak ditemukan.');
+            return redirect()->back()->with('error', 'Data lansir tidak ditemukan.');
         }
 
         try {
-            DB::transaction(function () use ($request, $po) {
+            DB::transaction(function () use ($request, $data, $tipeLansir) {
+                $attributes = ['tipe' => $request->tipe];
+                
+                if ($tipeLansir === 'po') {
+                    $attributes['po_id'] = $data->id;
+                    $attributes['gudang_lansir_header_id'] = null;
+                } else {
+                    $attributes['gudang_lansir_header_id'] = $data->id;
+                    $attributes['po_id'] = null;
+                }
+                
                 LansirPayment::updateOrCreate(
-                    ['po_id' => $po->id, 'tipe' => $request->tipe],
+                    $attributes,
                     [
                         'status' => LansirPayment::STATUS_SUDAH,
                         'tanggal_bayar' => $request->tanggal_bayar,

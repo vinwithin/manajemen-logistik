@@ -36,15 +36,7 @@
                 <div class="text-muted small">Total DP Supplier</div>
             </div>
         </div>
-        <div class="col-6 col-md-2">
-            <div class="card text-center py-3">
-                <div class="fw-bold fs-5">
-                    <span class="text-info">{{ $summary['count_oa'] }}</span> /
-                    <span class="text-warning">{{ $summary['count_dp'] }}</span>
-                </div>
-                <div class="text-muted small">OA / DP</div>
-            </div>
-        </div>
+       
     </div>
 
     <div class="card">

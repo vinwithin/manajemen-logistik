@@ -39,7 +39,7 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
             'kendaraans.penerimas.tujuan',
             'kendaraans.penerimas.lansirs.mobils',
             'kendaraans.penerimas.lansirs.tims',
-        ])->orderBy('tanggal_po', 'asc')->orderBy('no_po', 'asc');
+        ])->where('status', '!=', 'batal')->orderBy('tanggal_po', 'asc')->orderBy('no_po', 'asc');
 
         if ($from) {
             $query->whereDate('tanggal_po', '>=', $from);

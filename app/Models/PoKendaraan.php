@@ -111,7 +111,12 @@ class PoKendaraan extends Model
     // Total PT SUM seluruh penerima di kendaraan ini
     public function getTotalPtSumAttribute(): float
     {
-        return (float) $this->penerimas->sum('total_pt_sum');
+        return $this->penerimas->sum(function ($penerima) {
+            return $penerima->pakans->sum(function ($pakan) {
+                return $pakan->jumlah_kg * ($pakan->harga_pt_sum ?? 0);
+            });
+        });
+        // return (float) $this->penerimas->sum('total_pt_sum');
     }
 
     // Total tagihan supplier (untuk perhitungan DP)
@@ -142,7 +147,7 @@ class PoKendaraan extends Model
             return 'Lunas';
         }
 
-        return 'DP '.number_format($this->dp_persen ?? 0, 0).'%';
+        return 'DP ' . number_format($this->dp_persen ?? 0, 0) . '%';
     }
 
     // Badge class untuk status pembayaran

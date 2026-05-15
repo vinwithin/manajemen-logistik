@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('lansir_payments', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('po_id');
+            $table->unsignedBigInteger('po_id')->nullable();
             $table->enum('tipe', ['mobil', 'tim']);
             $table->enum('status', ['belum_bayar', 'sudah_bayar'])->default('belum_bayar');
             $table->date('tanggal_bayar')->nullable();

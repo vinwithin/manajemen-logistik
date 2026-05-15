@@ -20,7 +20,7 @@ class RekapOaController extends Controller
             $to = $request->to;
 
             $query = PoKendaraan::with(['po.cv', 'supplier', 'penerimas', 'oaPaymentOnly'])
-                ->whereIn('status', ['selesai', 'batal'])
+                ->where('status', '!=', 'batal')
                 ->whereHas('po', function ($q) use ($activeCvId, $from, $to) {
                     if ($activeCvId) {
                         $q->where('cv_id', $activeCvId);

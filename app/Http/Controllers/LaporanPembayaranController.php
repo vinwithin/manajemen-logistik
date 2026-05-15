@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Cv;
 use App\Models\GudangLansirHeader;
 use App\Models\OaPayment;
+use App\Models\PoKendaraan;
 use App\Models\PoPenerima;
 use App\Models\PurchaseOrder;
 use App\Services\RekapLansirService;
@@ -35,29 +36,41 @@ class LaporanPembayaranController extends Controller
                 }
             })
             ->get();
+            
+        $poKendaraan = PoKendaraan::with([
+            'penerimas:id,po_kendaraan_id',
+            'penerimas.pakans:id,po_penerima_id,jumlah_kg,ongkos_oa',
+        ])
+            ->select('id', 'status', 'po_id')
+            ->where('status', '!=', 'batal')
+            ->whereHas('po', function ($q) use ($cvId, $dari, $sampai) {
+                $q->whereDate('tanggal_po', '>=', $dari)
+                    ->whereDate('tanggal_po', '<=', $sampai);
+                if ($cvId) {
+                    $q->where('cv_id', $cvId);
+                }
+            })
+            ->get();
 
-        $oaTotalTagihan = (float) $poPenerimas->sum('total_oa');
+
+
+        $oaTotalTagihan = $poKendaraan->sum(fn($po) => $po->total_tagihan_supplier);;
 
         // Pembayaran OA banyak dicatat per kendaraan (po_kendaraan_id, po_penerima_id null).
         // Agregasi bayar: semua baris oa_payments terkait kendaraan / penerima dalam filter (tanpa duplikasi id).
         $kendaraanIds = $poPenerimas->pluck('po_kendaraan_id')->unique()->filter()->values();
         $penerimaIds = $poPenerimas->pluck('id')->unique()->values();
 
-        $oaPaymentRows = OaPayment::query()
+        $oaPaymentRows = OaPayment::whereIn('po_kendaraan_id', $kendaraanIds)
             ->whereIn('tipe_pembayaran', ['oa', 'dp_supplier'])
-            ->where(function ($q) use ($kendaraanIds, $penerimaIds) {
-                $q->whereIn('po_kendaraan_id', $kendaraanIds)
-                    ->orWhereIn('po_penerima_id', $penerimaIds);
-            })
-            ->get()
-            ->unique('id');
+            ->select('id', 'jumlah_bayar', 'status')
+            ->get();
 
         $oaTotalBayar = (float) $oaPaymentRows->sum('jumlah_bayar');
-        $oaTotalSisa = max(0, $oaTotalTagihan - $oaTotalBayar);
-
+        $oaTotalSisa  = max(0, $oaTotalTagihan - $oaTotalBayar);
         // Tagihan OA per kendaraan (sama dengan jumlah_tagihan di pembayaran kendaraan)
         $tagihanPerKendaraan = $poPenerimas->groupBy('po_kendaraan_id')->map(
-            fn ($rows) => (float) $rows->sum('total_oa')
+            fn($rows) => (float) $rows->sum('total_oa')
         );
 
         $bayarPerKendaraan = OaPayment::query()
@@ -65,7 +78,7 @@ class LaporanPembayaranController extends Controller
             ->whereIn('tipe_pembayaran', ['oa', 'dp_supplier'])
             ->get()
             ->groupBy('po_kendaraan_id')
-            ->map(fn ($rows) => (float) $rows->sum('jumlah_bayar'));
+            ->map(fn($rows) => (float) $rows->sum('jumlah_bayar'));
 
         $oaLunas = $poPenerimas->filter(function (PoPenerima $p) use ($tagihanPerKendaraan, $bayarPerKendaraan) {
             if ($p->oaPayment && $p->oaPayment->status === 'lunas') {
@@ -102,10 +115,12 @@ class LaporanPembayaranController extends Controller
         $lansirPos = $lansirPoQuery->get();
 
         // Hitung total tagihan lansir dari PO (total ongkos mobil + total upah tim)
-        $lansirPoTotalOa = $lansirPos->sum(fn ($po) => $this->rekapLansirService->getGrandTotalMobil($po) + $this->rekapLansirService->getGrandTotalTim($po));
-        $lansirPoSudahBayarMobil = $lansirPos->sum(fn ($po) => $po->items->sum(fn ($item) => $item->lansirRecords->sum(fn ($lansir) => $lansir->mobils->count()))
+        $lansirPoTotalOa = $lansirPos->sum(fn($po) => $this->rekapLansirService->getGrandTotalMobil($po) + $this->rekapLansirService->getGrandTotalTim($po));
+        $lansirPoSudahBayarMobil = $lansirPos->sum(
+            fn($po) => $po->items->sum(fn($item) => $item->lansirRecords->sum(fn($lansir) => $lansir->mobils->count()))
         );
-        $lansirPoSudahBayarTim = $lansirPos->sum(fn ($po) => $po->items->sum(fn ($item) => $item->lansirRecords->sum(fn ($lansir) => $lansir->tims->count()))
+        $lansirPoSudahBayarTim = $lansirPos->sum(
+            fn($po) => $po->items->sum(fn($item) => $item->lansirRecords->sum(fn($lansir) => $lansir->tims->count()))
         );
 
         // ── 3. Lansir Gudang (informatif) ─────────────────────────────
@@ -124,13 +139,19 @@ class LaporanPembayaranController extends Controller
 
         $gudangHeaders = $gudangQuery->get();
 
-        $gudangTotalOa = $gudangHeaders->sum(fn ($h) => $h->kendaraans->sum(fn ($k) => $k->penerimas->sum(fn ($p) => $p->pakans->sum(fn ($pk) => $pk->jumlah_kg * ($pk->ongkos_oa ?? 0))
-        )
-        )
+        $gudangTotalOa = $gudangHeaders->sum(
+            fn($h) => $h->kendaraans->sum(
+                fn($k) => $k->penerimas->sum(
+                    fn($p) => $p->pakans->sum(fn($pk) => $pk->jumlah_kg * ($pk->ongkos_oa ?? 0))
+                )
+            )
         );
-        $gudangTotalAngkut = $gudangHeaders->sum(fn ($h) => $h->kendaraans->sum(fn ($k) => $k->penerimas->sum(fn ($p) => $p->tims->sum('total_upah')
-        )
-        )
+        $gudangTotalAngkut = $gudangHeaders->sum(
+            fn($h) => $h->kendaraans->sum(
+                fn($k) => $k->penerimas->sum(
+                    fn($p) => $p->tims->sum('total_upah')
+                )
+            )
         );
 
         // ── 4. Grafik: total tagihan per bulan (OA PO + Lansir Gudang) ─
@@ -143,7 +164,7 @@ class LaporanPembayaranController extends Controller
             ->selectRaw('MONTH(po.tanggal_po) as bulan, SUM(pk.jumlah_kg * pk.ongkos_oa) as total')
             ->whereYear('po.tanggal_po', $tahun)
             ->whereIn('p.status', ['selesai', 'batal'])
-            ->when($cvId, fn ($q) => $q->where('po.cv_id', $cvId))
+            ->when($cvId, fn($q) => $q->where('po.cv_id', $cvId))
             ->groupBy('bulan')
             ->pluck('total', 'bulan');
 
@@ -153,7 +174,7 @@ class LaporanPembayaranController extends Controller
             ->join('gudang_lansir_pakan as pk', 'pk.penerima_id', '=', 'p.id')
             ->selectRaw('MONTH(h.tanggal_lansir) as bulan, SUM(pk.jumlah_kg * pk.ongkos_oa) as total')
             ->whereYear('h.tanggal_lansir', $tahun)
-            ->when($cvId, fn ($q) => $q->where('h.cv_id', $cvId))
+            ->when($cvId, fn($q) => $q->where('h.cv_id', $cvId))
             ->groupBy('bulan')
             ->pluck('total', 'bulan');
 
@@ -172,18 +193,32 @@ class LaporanPembayaranController extends Controller
             ->groupBy('tahun')->orderBy('tahun', 'desc')->pluck('tahun');
 
         return view('pages.laporan.pembayaran', compact(
-            'dari', 'sampai', 'cvId', 'tahun',
+            'dari',
+            'sampai',
+            'cvId',
+            'tahun',
             // Summary OA
-            'oaTotalTagihan', 'oaTotalBayar', 'oaTotalSisa', 'oaLunas', 'oaBelum',
+            'oaTotalTagihan',
+            'oaTotalBayar',
+            'oaTotalSisa',
+            'oaLunas',
+            'oaBelum',
             // Summary Lansir PO
-            'lansirPoTotalOa', 'lansirPoSudahBayarMobil', 'lansirPoSudahBayarTim',
+            'lansirPoTotalOa',
+            'lansirPoSudahBayarMobil',
+            'lansirPoSudahBayarTim',
             'lansirPos',
             // Summary Lansir Gudang
-            'gudangTotalOa', 'gudangTotalAngkut', 'gudangHeaders',
+            'gudangTotalOa',
+            'gudangTotalAngkut',
+            'gudangHeaders',
             // Grafik
-            'chartLabels', 'chartOa', 'chartGudang',
+            'chartLabels',
+            'chartOa',
+            'chartGudang',
             // Filter
-            'cvList', 'tahunList'
+            'cvList',
+            'tahunList'
         ));
     }
 }

@@ -276,7 +276,7 @@ class RekapRugiLabaController extends Controller
 
         // Data dari Gudang Lansir
         $pakansGudang = DB::table('gudang_lansir_pakan')
-            ->select('gudang_lansir_pakan.jumlah_kg', 'gudang_lansir_pakan.ongkos_oa', 'gudang_lansir_pakan.harga_pt_sum')
+            ->select('gudang_lansir_pakan.jumlah_kg', 'gudang_lansir_pakan.ongkos_oa', 'gudang_lansir_pakan.harga_pt_sum', DB::raw("'direct' as tujuan_type"))
             ->join('gudang_lansir_penerima', 'gudang_lansir_penerima.id', '=', 'gudang_lansir_pakan.penerima_id')
             ->join('gudang_lansir_kendaraan', 'gudang_lansir_kendaraan.id', '=', 'gudang_lansir_penerima.kendaraan_id')
             ->join('gudang_lansir_header', 'gudang_lansir_header.id', '=', 'gudang_lansir_kendaraan.lansir_header_id')
@@ -285,12 +285,16 @@ class RekapRugiLabaController extends Controller
             ->whereDate('gudang_lansir_header.tanggal_lansir', '<=', $sampai)
             ->get();
 
-        // Gabungkan dan proses semua data
-        $pakans = $pakansPo->merge($pakansGudang);
-
-        foreach ($pakans as $p) {
+        // Pembelian: hanya dari PO
+        foreach ($pakansPo as $p) {
             $type = in_array($p->tujuan_type ?? 'direct', $types) ? ($p->tujuan_type ?? 'direct') : 'direct';
             $pembelian[$type] += (float) $p->jumlah_kg * (float) ($p->ongkos_oa ?? 0);
+        }
+
+        // Penjualan: dari PO dan Gudang
+        $pakans = $pakansPo->merge($pakansGudang);
+        foreach ($pakans as $p) {
+            $type = in_array($p->tujuan_type ?? 'direct', $types) ? ($p->tujuan_type ?? 'direct') : 'direct';
             $penjualan[$type] += (float) $p->jumlah_kg * (float) ($p->harga_pt_sum ?? 0);
         }
 

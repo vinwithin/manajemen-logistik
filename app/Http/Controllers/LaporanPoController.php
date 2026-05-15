@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Cv;
 use App\Models\PurchaseOrder;
 use App\Models\Supplier;
+use App\Models\GudangLansirHeader;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -35,23 +36,59 @@ class LaporanPoController extends Controller
 
         $pos = $baseQuery->get();
 
-        $totalPo       = $pos->count();
-        $totalKendaraan = $pos->sum(fn($po) => $po->kendaraans->count());
-        $totalVolume   = $pos->sum(fn($po) =>
+        // Data PO
+        $totalPoPo       = $pos->count();
+        $totalKendaraanPo = $pos->sum(fn($po) => $po->kendaraans->count());
+        $totalVolumePo   = $pos->sum(fn($po) =>
             $po->kendaraans->sum(fn($k) =>
                 $k->penerimas->sum('total_kg')
             )
         );
-        $totalPtSum    = $pos->sum(fn($po) =>
+        $totalPtSumPo    = $pos->sum(fn($po) =>
             $po->kendaraans->sum(fn($k) =>
                 $k->penerimas->sum('total_pt_sum')
             )
         );
-        $totalOa       = $pos->sum(fn($po) =>
+        $totalOaPo       = $pos->sum(fn($po) =>
             $po->kendaraans->sum(fn($k) =>
                 $k->penerimas->sum('total_oa')
             )
         );
+
+        // Data Gudang Lansir
+        $gudangQuery = GudangLansirHeader::with(['kendaraans.penerimas.pakans', 'kendaraans.penerimas.tims'])
+            ->whereBetween('tanggal_lansir', [$dari, $sampai]);
+
+        if ($cvId) {
+            $gudangQuery->where('cv_id', $cvId);
+        }
+
+        $gudangLansirs = $gudangQuery->get();
+
+        $totalPoGudang       = $gudangLansirs->count();
+        $totalKendaraanGudang = $gudangLansirs->sum(fn($gl) => $gl->kendaraans->count());
+        $totalVolumeGudang   = $gudangLansirs->sum(fn($gl) =>
+            $gl->kendaraans->sum(fn($k) =>
+                $k->penerimas->sum('total_kg')
+            )
+        );
+        $totalPtSumGudang    = $gudangLansirs->sum(fn($gl) =>
+            $gl->kendaraans->sum(fn($k) =>
+                $k->penerimas->sum(fn($p) => $p->pakans->sum(fn($pakan) => $pakan->jumlah_kg * $pakan->harga_pt_sum))
+            )
+        );
+        $totalOaGudang       = $gudangLansirs->sum(fn($gl) =>
+            $gl->kendaraans->sum(fn($k) =>
+                $k->penerimas->sum(fn($p) => $p->pakans->sum(fn($pakan) => $pakan->jumlah_kg * $pakan->ongkos_oa))
+            )
+        );
+
+        // Jumlahkan semua
+        $totalPo       = $totalPoPo + $totalPoGudang;
+        $totalKendaraan = $totalKendaraanPo + $totalKendaraanGudang;
+        $totalVolume   = $totalVolumePo + $totalVolumeGudang;
+        $totalPtSum    = $totalPtSumPo + $totalPtSumGudang;
+        $totalOa       = $totalOaPo + $totalOaGudang;
 
         // ── Data grafik: volume per bulan dalam tahun yang dipilih ────
         $chartData = PurchaseOrder::select(
