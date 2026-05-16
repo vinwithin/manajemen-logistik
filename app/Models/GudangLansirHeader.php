@@ -23,6 +23,12 @@ class GudangLansirHeader extends Model
         'tanggal_lansir' => 'date',
     ];
 
+    protected $appends = [
+        'total_kg',
+        'total_karung',
+        'jumlah_kendaraan',
+        'jumlah_penerima',
+    ];
     public function gudang(): BelongsTo
     {
         return $this->belongsTo(Tujuan::class, 'gudang_id');

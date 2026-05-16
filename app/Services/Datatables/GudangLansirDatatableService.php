@@ -3,13 +3,16 @@
 namespace App\Services\Datatables;
 
 use App\Models\GudangLansirHeader;
+use Illuminate\Support\Facades\Log;
 use Yajra\DataTables\DataTables;
 
 class GudangLansirDatatableService
 {
     public function getData($request)
     {
-        $query = GudangLansirHeader::with(['gudang', 'kendaraans.penerimas.pakans.kodePakan', 'kendaraans.penerimas.tujuan']);
+        $query = GudangLansirHeader::select('gudang_lansir_header.*')
+            ->with(['gudang', 'kendaraans.penerimas.pakans.kodePakan', 'kendaraans.penerimas.tujuan']);
+        Log::info($query->get());
 
         if ($request->filled('gudang_id')) {
             $query->where('gudang_id', $request->gudang_id);
@@ -24,13 +27,13 @@ class GudangLansirDatatableService
         }
 
         return DataTables::of($query)
-            ->addColumn('no_lansir', fn ($q) => $q->no_lansir)
-            ->addColumn('tanggal', fn ($q) => $q->tanggal_lansir?->format('d/m/Y') ?? '-')
-            ->addColumn('nama_gudang', fn ($q) => $q->gudang?->nama ?? '-')
-            ->addColumn('jumlah_kendaraan', fn ($q) => $q->jumlah_kendaraan.' mobil')
-            ->addColumn('jumlah_penerima', fn ($q) => $q->jumlah_penerima.' penerima')
-            ->addColumn('total_kg_fmt', fn ($q) => number_format($q->total_kg, 0, ',', '.').' kg')
-            ->addColumn('total_karung_fmt', fn ($q) => number_format($q->total_karung, 0, ',', '.').' karung')
+            ->addColumn('no_lansir', fn($q) => $q->no_lansir)
+            ->addColumn('tanggal', fn($q) => $q->tanggal_lansir?->format('d/m/Y') ?? '-')
+            ->addColumn('nama_gudang', fn($q) => $q->gudang?->nama ?? '-')
+            ->addColumn('jumlah_kendaraan', fn($q) => $q->jumlah_kendaraan . ' mobil')
+            ->addColumn('jumlah_penerima', fn($q) => $q->jumlah_penerima . ' penerima')
+            ->addColumn('total_kg_fmt', fn($q) => number_format($q->total_kg, 0, ',', '.') . ' kg')
+            ->addColumn('total_karung_fmt', fn($q) => number_format($q->total_karung, 0, ',', '.') . ' karung')
             ->addColumn('pakan_list', function ($q) {
                 $pakans = $q->kendaraans
                     ->flatMap->penerimas

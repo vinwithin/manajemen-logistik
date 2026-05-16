@@ -61,6 +61,7 @@ class PurchaseOrderExport implements FromArray, WithEvents, WithTitle
 
         $header1[] = 'Ongkos Angkut';
         $header1[] = 'Jumlah(Rp)';
+        $header1[] = 'CV';
         $header1[] = 'Keterangan';
 
         // ── LANSIR MOBIL COLUMNS ──────────────────────────────────────
@@ -75,6 +76,7 @@ class PurchaseOrderExport implements FromArray, WithEvents, WithTitle
         // ── TIM BONGKAR COLUMNS ───────────────────────────────────────
         $header1[] = ''; // Spacer
         $header1[] = 'TIM BONGKAR';
+        $header1[] = '';
         $header1[] = '';
         $header1[] = '';
         $header1[] = '';
@@ -93,6 +95,7 @@ class PurchaseOrderExport implements FromArray, WithEvents, WithTitle
 
         $header2[] = ''; // Ongkos Angkut
         $header2[] = ''; // Jumlah (Rp)
+        $header2[] = ''; // CV
         $header2[] = ''; // ket
 
         // ── LANSIR MOBIL SUB-HEADERS ──────────────────────────────────
@@ -166,6 +169,9 @@ class PurchaseOrderExport implements FromArray, WithEvents, WithTitle
                     // Jumlah (Rp)
                     $row[] = $totalOngkos > 0 ? $totalOngkos : '';
 
+                    // CV
+                    $row[] = $this->po->cv?->nama_cv ?? '';
+
                     $lansir = $penerima->lansirs->first();
 
                     // Keterangan: tipe tujuan penerima (kosong jika tidak ada)
@@ -237,6 +243,10 @@ class PurchaseOrderExport implements FromArray, WithEvents, WithTitle
 
                     $row[] = ($ongkosAngkut !== null && $ongkosAngkut !== '') ? $ongkosAngkut : '';
                     $row[] = $totalOaKendaraan > 0 ? $totalOaKendaraan : '';
+                    
+                    // CV
+                    $row[] = $this->po->cv?->nama_cv ?? '';
+                    
                     $row[] = 'Belum ada penerima';
 
                     $row[] = '';
@@ -264,7 +274,7 @@ class PurchaseOrderExport implements FromArray, WithEvents, WithTitle
                     $extraCount = max($extraMobils->count(), $extraTims->count());
 
                     for ($ei = 0; $ei < $extraCount; $ei++) {
-                        $extraRow = array_fill(0, $idCols + ($kpCount * 2) + 3, '');
+                        $extraRow = array_fill(0, $idCols + ($kpCount * 2) + 4, '');
 
                         // Mobil lansir extra
                         $mobil = $extraMobils->get($ei);
@@ -304,6 +314,7 @@ class PurchaseOrderExport implements FromArray, WithEvents, WithTitle
         }
         $totalRow[] = ''; // Ongkos Angkut
         $totalRow[] = ''; // Jumlah (Rp)
+        $totalRow[] = ''; // CV
         $totalRow[] = ''; // Keterangan
 
         // Lansir Mobil totals
@@ -363,20 +374,21 @@ class PurchaseOrderExport implements FromArray, WithEvents, WithTitle
                 $totalRowNum = $sheet->getHighestRow();
 
                 // ── Posisi kolom (1-based) ───────────────────────────
-                // 1..idCols = identitas | lalu karung, kg, OA, jumlah, ket, lansir, tim
+                // 1..idCols = identitas | lalu karung, kg, OA, jumlah, cv, ket, lansir, tim
                 $karungStartCol = $idCols + 1;
                 $karungEndCol = $idCols + $kodePakanCount;
                 $kgStartCol = $idCols + $kodePakanCount + 1;
                 $kgEndCol = $idCols + 2 * $kodePakanCount;
                 $oaCol = $idCols + 2 * $kodePakanCount + 1;
                 $jumlahCol = $idCols + 2 * $kodePakanCount + 2;
-                $ketCol = $idCols + 2 * $kodePakanCount + 3;
-                $spacer1Col = $idCols + 2 * $kodePakanCount + 4;
-                $lansirStartCol = $idCols + 2 * $kodePakanCount + 5;
-                $lansirEndCol = $idCols + 2 * $kodePakanCount + 10;
-                $spacer2Col = $idCols + 2 * $kodePakanCount + 11;
-                $timStartCol = $idCols + 2 * $kodePakanCount + 12;
-                $timEndCol = $idCols + 2 * $kodePakanCount + 16;
+                $cvCol = $idCols + 2 * $kodePakanCount + 3;
+                $ketCol = $idCols + 2 * $kodePakanCount + 4;
+                $spacer1Col = $idCols + 2 * $kodePakanCount + 5;
+                $lansirStartCol = $idCols + 2 * $kodePakanCount + 6;
+                $lansirEndCol = $idCols + 2 * $kodePakanCount + 11;
+                $spacer2Col = $idCols + 2 * $kodePakanCount + 12;
+                $timStartCol = $idCols + 2 * $kodePakanCount + 13;
+                $timEndCol = $idCols + 2 * $kodePakanCount + 17;
                 $totalCols = $timEndCol;
 
                 $lastCol = $this->getColumnLetter($totalCols);
@@ -389,6 +401,7 @@ class PurchaseOrderExport implements FromArray, WithEvents, WithTitle
                 $kgEndLetter = $this->getColumnLetter($kgEndCol);
                 $oaLetter = $this->getColumnLetter($oaCol);
                 $jumlahLetter = $this->getColumnLetter($jumlahCol);
+                $cvLetter = $this->getColumnLetter($cvCol);
                 $ketLetter = $this->getColumnLetter($ketCol);
                 $spacer1Letter = $this->getColumnLetter($spacer1Col);
                 $lansirStartLetter = $this->getColumnLetter($lansirStartCol);
@@ -436,6 +449,13 @@ class PurchaseOrderExport implements FromArray, WithEvents, WithTitle
                 // "Jumlah (Rp)": merge 2 baris
                 $sheet->mergeCells("{$jumlahLetter}{$hRow1}:{$jumlahLetter}{$hRow2}");
                 $sheet->getStyle("{$jumlahLetter}{$hRow1}:{$jumlahLetter}{$hRow2}")
+                    ->getAlignment()
+                    ->setHorizontal(Alignment::HORIZONTAL_CENTER)
+                    ->setVertical(Alignment::VERTICAL_CENTER);
+
+                // "CV": merge 2 baris
+                $sheet->mergeCells("{$cvLetter}{$hRow1}:{$cvLetter}{$hRow2}");
+                $sheet->getStyle("{$cvLetter}{$hRow1}:{$cvLetter}{$hRow2}")
                     ->getAlignment()
                     ->setHorizontal(Alignment::HORIZONTAL_CENTER)
                     ->setVertical(Alignment::VERTICAL_CENTER);
@@ -570,12 +590,12 @@ class PurchaseOrderExport implements FromArray, WithEvents, WithTitle
                                 $sheet->getStyle("{$tujuanColLetter}{$penerimaRow}:{$tujuanColLetter}{$penerimaEnd}")
                                     ->getAlignment()
                                     ->setVertical(Alignment::VERTICAL_CENTER)
-                                    ->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                                    ->setHorizontal(Alignment::HORIZONTAL_LEFT);
                                 $sheet->mergeCells("{$penerimaColLetter}{$penerimaRow}:{$penerimaColLetter}{$penerimaEnd}");
                                 $sheet->getStyle("{$penerimaColLetter}{$penerimaRow}:{$penerimaColLetter}{$penerimaEnd}")
                                     ->getAlignment()
                                     ->setVertical(Alignment::VERTICAL_CENTER)
-                                    ->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                                    ->setHorizontal(Alignment::HORIZONTAL_LEFT);
                             }
                             $penerimaRow += $penerimaRows;
                         }

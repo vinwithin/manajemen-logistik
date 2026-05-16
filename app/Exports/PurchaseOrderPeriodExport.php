@@ -33,7 +33,7 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
 
         $query = PurchaseOrder::with([
             'cv',
-            'kendaraans' => function($q) {
+            'kendaraans' => function ($q) {
                 $q->where('status', '!=', 'batal');
             },
             'kendaraans.supplier',
@@ -83,6 +83,7 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
         // Kolom tunggal (merge 2 baris di AfterSheet)
         $header1[] = 'Ongkos Angkut';
         $header1[] = 'Jumlah (Rp)';
+        $header1[] = 'CV';
         $header1[] = 'Keterangan';
 
         // ── LANSIR MOBIL COLUMNS ──────────────────────────────────────
@@ -120,6 +121,7 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
         // Kolom tunggal kosong (merge 2 baris)
         $header2[] = ''; // Ongkos Angkut
         $header2[] = ''; // Jumlah (Rp)
+        $header2[] = ''; // CV
         $header2[] = ''; // Keterangan
 
         // ── LANSIR MOBIL SUB-HEADERS ──────────────────────────────────
@@ -159,7 +161,7 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
 
                     $row = [
                         $no++,
-                        $po->tanggal_po->format('d/m/Y'),
+                        $po->tanggal_po->translatedFormat('d F Y'),
                         $po->no_po,
                         $kendaraan->no_polisi,
                         $kendaraan->no_surat_jalan ?? '-',
@@ -194,6 +196,9 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                         // Jumlah (Rp)
                         $row[] = $totalOngkos > 0 ? $totalOngkos : '';
 
+                        // CV
+                        $row[] = $po->cv?->nama_cv ?? '';
+
                         // Keterangan: tipe tujuan penerima (kosong jika tidak ada)
                         $lansir = $penerima->lansirs->first();
                         $row[] = $penerima->tujuan?->type ?? '';
@@ -202,7 +207,7 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                         if ($lansir && $lansir->mobils->count() > 0) {
                             $firstMobil = $lansir->mobils->first();
                             $row[] = ''; // Spacer
-                            $row[] = $lansir->tanggal_lansir->format('d/m/Y') ?? '';
+                            $row[] = $lansir->tanggal_lansir->translatedFormat('d F Y') ?? '';
                             $row[] = $firstMobil->no_polisi ?? '';
                             $row[] = $firstMobil->nama_sopir ?? '';
                             $row[] = $firstMobil->berat ?? '';
@@ -265,6 +270,10 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
 
                         $row[] = ($ongkosAngkut !== null && $ongkosAngkut !== '') ? $ongkosAngkut : '';
                         $row[] = $totalOaKendaraan > 0 ? $totalOaKendaraan : '';
+                        
+                        // CV
+                        $row[] = $po->cv?->nama_cv ?? '';
+                        
                         $row[] = 'Belum ada penerima';
 
                         $row[] = '';
@@ -291,7 +300,7 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                         $extraCount = max($extraMobils->count(), $extraTims->count());
 
                         for ($ei = 0; $ei < $extraCount; $ei++) {
-                            $extraRow = array_fill(0, $idCols + ($kpCount * 2) + 3, '');
+                            $extraRow = array_fill(0, $idCols + ($kpCount * 2) + 4, '');
 
                             // Mobil lansir extra
                             $mobil = $extraMobils->get($ei);
@@ -321,12 +330,13 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
         }
 
         // ── Baris TOTAL ───────────────────────────────────────────────
-        // Kolom identitas + n karung + n kg + oa + jumlah + keterangan
+        // Kolom identitas + n karung + n kg + oa + jumlah + cv + keterangan
         $totalRow = array_fill(0, $idCols, '');
         $totalRow[0] = 'TOTAL';
         for ($i = 0; $i < ($kpCount * 2) + 2; $i++) {
             $totalRow[] = ''; // diisi formula SUM di AfterSheet
         }
+        $totalRow[] = ''; // CV
         $totalRow[] = ''; // Keterangan
 
         // Lansir Mobil totals
@@ -352,14 +362,14 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
 
     public function title(): string
     {
-        $clean = fn ($s) => preg_replace('/[\/\\\?\*\[\]:]/', '-', $s);
+        $clean = fn($s) => preg_replace('/[\/\\\?\*\[\]:]/', '-', $s);
 
         if ($this->from && $this->to) {
-            return substr('PO '.$clean($this->from).' sd '.$clean($this->to), 0, 31);
+            return substr('PO ' . $clean($this->from) . ' sd ' . $clean($this->to), 0, 31);
         } elseif ($this->from) {
-            return substr('PO dari '.$clean($this->from), 0, 31);
+            return substr('PO dari ' . $clean($this->from), 0, 31);
         } elseif ($this->to) {
-            return substr('PO sampai '.$clean($this->to), 0, 31);
+            return substr('PO sampai ' . $clean($this->to), 0, 31);
         }
 
         return 'PO Semua Periode';
@@ -383,18 +393,18 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
 
                 $sheet->setCellValue('A1', 'Periode');
                 if ($from && $to) {
-                    $sheet->setCellValue('B1', date('d/m/Y', strtotime($from)).' - '.date('d/m/Y', strtotime($to)));
+                    $sheet->setCellValue('B1', date('d/m/Y', strtotime($from)) . ' - ' . date('d/m/Y', strtotime($to)));
                 } elseif ($from) {
-                    $sheet->setCellValue('B1', 'Dari '.date('d/m/Y', strtotime($from)));
+                    $sheet->setCellValue('B1', 'Dari ' . date('d/m/Y', strtotime($from)));
                 } elseif ($to) {
-                    $sheet->setCellValue('B1', 'Sampai '.date('d/m/Y', strtotime($to)));
+                    $sheet->setCellValue('B1', 'Sampai ' . date('d/m/Y', strtotime($to)));
                 } else {
                     $sheet->setCellValue('B1', 'Semua Periode');
                 }
                 $sheet->setCellValue('A2', 'Jumlah PO');
                 $sheet->setCellValue('B2', $poCount);
                 $sheet->setCellValue('A3', 'Tanggal Export');
-                $sheet->setCellValue('B3', now()->format('d/m/Y H:i'));
+                $sheet->setCellValue('B3', now()->translatedFormat('d F Y'));
                 $sheet->getStyle('A1:A3')->getFont()->setBold(true);
 
                 // ── Posisi baris ──────────────────────────────────────
@@ -410,13 +420,14 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                 $kgEndCol = $idCols + 2 * $kodePakanCount;
                 $oaCol = $idCols + 2 * $kodePakanCount + 1;
                 $jumlahCol = $idCols + 2 * $kodePakanCount + 2;
-                $ketCol = $idCols + 2 * $kodePakanCount + 3;
-                $spacer1Col = $idCols + 2 * $kodePakanCount + 4;
-                $lansirStartCol = $idCols + 2 * $kodePakanCount + 5;
-                $lansirEndCol = $idCols + 2 * $kodePakanCount + 11; // 16+2n
-                $spacer2Col = $idCols + 2 * $kodePakanCount + 12; // 17+2n
-                $timStartCol = $idCols + 2 * $kodePakanCount + 13; // 18+2n
-                $timEndCol = $idCols + 2 * $kodePakanCount + 16;
+                $cvCol = $idCols + 2 * $kodePakanCount + 3;
+                $ketCol = $idCols + 2 * $kodePakanCount + 4;
+                $spacer1Col = $idCols + 2 * $kodePakanCount + 5;
+                $lansirStartCol = $idCols + 2 * $kodePakanCount + 6;
+                $lansirEndCol = $idCols + 2 * $kodePakanCount + 12; // 17+2n
+                $spacer2Col = $idCols + 2 * $kodePakanCount + 13; // 18+2n
+                $timStartCol = $idCols + 2 * $kodePakanCount + 14; // 19+2n
+                $timEndCol = $idCols + 2 * $kodePakanCount + 17;
                 $totalCols = $timEndCol;
 
                 $lastCol = $this->getColumnLetter($totalCols);
@@ -429,6 +440,7 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                 $kgEndLetter = $this->getColumnLetter($kgEndCol);
                 $oaLetter = $this->getColumnLetter($oaCol);
                 $jumlahLetter = $this->getColumnLetter($jumlahCol);
+                $cvLetter = $this->getColumnLetter($cvCol);
                 $ketLetter = $this->getColumnLetter($ketCol);
                 $spacer1Letter = $this->getColumnLetter($spacer1Col);
                 $lansirStartLetter = $this->getColumnLetter($lansirStartCol);
@@ -478,6 +490,13 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                     ->setHorizontal(Alignment::HORIZONTAL_CENTER)
                     ->setVertical(Alignment::VERTICAL_CENTER);
 
+                // "CV" — merge 2 baris
+                $sheet->mergeCells("{$cvLetter}{$hRow1}:{$cvLetter}{$hRow2}");
+                $sheet->getStyle("{$cvLetter}{$hRow1}:{$cvLetter}{$hRow2}")
+                    ->getAlignment()
+                    ->setHorizontal(Alignment::HORIZONTAL_CENTER)
+                    ->setVertical(Alignment::VERTICAL_CENTER);
+
                 // "Keterangan" — merge 2 baris
                 $sheet->mergeCells("{$ketLetter}{$hRow1}:{$ketLetter}{$hRow2}");
                 $sheet->getStyle("{$ketLetter}{$hRow1}:{$ketLetter}{$hRow2}")
@@ -520,7 +539,7 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                     $col = $this->getColumnLetter($ci);
                     $sheet->setCellValue(
                         "{$col}{$totalRowNum}",
-                        "=SUM({$col}{$dataStartRow}:{$col}".($totalRowNum - 1).')'
+                        "=SUM({$col}{$dataStartRow}:{$col}" . ($totalRowNum - 1) . ')'
                     );
                 }
 
@@ -529,7 +548,7 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                     $col = $this->getColumnLetter($ci);
                     $sheet->setCellValue(
                         "{$col}{$totalRowNum}",
-                        "=SUM({$col}{$dataStartRow}:{$col}".($totalRowNum - 1).')'
+                        "=SUM({$col}{$dataStartRow}:{$col}" . ($totalRowNum - 1) . ')'
                     );
                 }
 
@@ -538,7 +557,7 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                     $col = $this->getColumnLetter($ci);
                     $sheet->setCellValue(
                         "{$col}{$totalRowNum}",
-                        "=SUM({$col}{$dataStartRow}:{$col}".($totalRowNum - 1).')'
+                        "=SUM({$col}{$dataStartRow}:{$col}" . ($totalRowNum - 1) . ')'
                     );
                 }
 
@@ -681,7 +700,7 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
         $letter = '';
         while ($index > 0) {
             $index--;
-            $letter = chr(65 + ($index % 26)).$letter;
+            $letter = chr(65 + ($index % 26)) . $letter;
             $index = intdiv($index, 26);
         }
 

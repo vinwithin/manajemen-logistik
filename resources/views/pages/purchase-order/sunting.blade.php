@@ -98,13 +98,13 @@
                                 <div class="row g-3">
                                     <div class="col-md-4">
                                         <label class="form-label">No. PO dari PT SUM</label>
-                                        <input type="text" class="form-control bg-light" value="{{ $po->no_po }}"
-                                            readonly>
+                                        <input type="text" class="form-control" value="{{ $po->no_po }}"
+                                            >
                                     </div>
                                     <div class="col-md-4">
                                         <label class="form-label">Tanggal PO</label>
-                                        <input type="text" class="form-control bg-light"
-                                            value="{{ $po->tanggal_po->format('d M Y') }}" readonly>
+                                        <input type="date" name="tanggal_po" class="form-control"
+                                           value="{{ \Carbon\Carbon::parse($po->tanggal_po)->format('Y-m-d') }}">
                                     </div>
                                     <div class="col-md-4">
                                         <label class="form-label">CV <span class="text-muted">(Opsional)</span></label>
