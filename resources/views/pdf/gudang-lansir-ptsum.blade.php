@@ -321,6 +321,12 @@
     @php
         $cv = $headers->first()?->cv;
         $cvLogo = $cv?->logo;
+        $cvLogoBase64 = null;
+        if ($cvLogo && Storage::disk('public')->exists($cvLogo)) {
+            $type = pathinfo($cvLogo, PATHINFO_EXTENSION);
+            $data = Storage::disk('public')->get($cvLogo);
+            $cvLogoBase64 = 'data:image/' . $type . ';base64,' . base64_encode($data);
+        }
         $cvNama = $cv?->nama_cv ?? '-';
         $cvAlamat = $cv?->alamat ?? '-';
         $cvNamaBank = $cv?->nama_bank ?? '-';
@@ -339,7 +345,7 @@
     <div style="position: relative; margin-bottom: 15px;">
         @if ($cvLogo && Storage::disk('public')->exists($cvLogo))
             <div style="position: absolute; left: -25px; top: -45px;">
-                <img src="{{ public_path('storage/' . $cvLogo) }}"
+                <img src="{{ $cvLogoBase64 }}"
                     style="max-width: 100px; height: 50px; object-fit: contain; display: block; margin: 0; padding: 0;"
                     alt="Logo CV">
             </div>

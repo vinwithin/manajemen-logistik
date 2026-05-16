@@ -332,6 +332,12 @@
     @php
         $cv = $pos->first()?->cv;
         $cvLogo = $cv?->logo;
+        $cvLogoBase64 = null;
+        if ($cvLogo && Storage::disk('public')->exists($cvLogo)) {
+            $type = pathinfo($cvLogo, PATHINFO_EXTENSION);
+            $data = Storage::disk('public')->get($cvLogo);
+            $cvLogoBase64 = 'data:image/' . $type . ';base64,' . base64_encode($data);
+        }
         // $cv sudah didefinisikan di atas
         $cvNama = $cv?->nama_cv ?? '-';
         $cvAlamat = $cv?->alamat ?? '-';
@@ -348,7 +354,7 @@
     <div style="position: relative; margin-bottom: 15px;">
         @if ($cvLogo && Storage::disk('public')->exists($cvLogo))
             <div style="position: absolute; left: -25px; top: -45px;">
-                <img src="{{ public_path('storage/' . $cvLogo) }}"
+                <img src="{{ $cvLogoBase64 }}"
                     style="max-width: 100px; height: 50px; object-fit: contain; display: block; margin: 0; padding: 0;"
                     alt="Logo CV">
             </div>
@@ -536,14 +542,15 @@
                 <tr>
                     <td
                         style="padding:0; margin:0; vertical-align:top; text-align:left; white-space: nowrap; width: 100%;">
-                        <img src="{{ public_path('storage/' . $cvLogo) }}"
+                        {{-- <img src="{{ public_path('storage/' . $cvLogo) }}"
                             style="max-width: 80px; max-height: 50px; object-fit: contain; display: block; margin: 0; padding: 0;"
-                            alt="Logo CV">
+                            alt="Logo CV"> --}}
                         <div class="kwit-company-name" style="margin-top: 2px; margin-left:0;">{{ $cvNama }}
                         </div>
                         <div class="kwit-company-sub" style="margin-left:0;">{{ $cvAlamat }}</div>
                     </td>
-                    <td style="text-align:right; font-size:8px; color:#555; vertical-align:top; white-space: nowrap; font-weight:bold;">
+                    <td
+                        style="text-align:right; font-size:8px; color:#555; vertical-align:top; white-space: nowrap; font-weight:bold;">
                         No :&nbsp;&nbsp; {{ $noKwitansi }}
                     </td>
                 </tr>
