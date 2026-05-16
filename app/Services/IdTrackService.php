@@ -5,7 +5,7 @@ namespace App\Services;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
-
+use Illuminate\Support\Facades\Log;
 
 class IdtrackService
 {
@@ -30,6 +30,9 @@ class IdtrackService
                 'Username' => $this->username,
                 'Password' => $this->password,
             ]);
+            Log::info($response->json('access_token'));
+
+
 
             return $response->json('access_token');
         });
@@ -171,7 +174,7 @@ class IdtrackService
 
         // /api/devicetracking: [ { "Devices": [ … ] }, … ]
         if (array_is_list($raw) && isset($raw[0]['Devices'])) {
-            return collect($raw)->flatMap(fn ($group) => $group['Devices'] ?? []);
+            return collect($raw)->flatMap(fn($group) => $group['Devices'] ?? []);
         }
 
         if (isset($raw['Devices']) && is_array($raw['Devices'])) {

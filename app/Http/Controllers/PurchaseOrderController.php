@@ -57,7 +57,7 @@ class PurchaseOrderController extends Controller
         $from = $request->from;
         $to = $request->to;
 
-        $filename = 'PO-Periode-'.now()->format('Ymd-His').'.xlsx';
+        $filename = 'PO-Periode-' . now()->format('Ymd-His') . '.xlsx';
 
         return Excel::download(new PurchaseOrderPeriodExport($from, $to, $cvId), $filename);
     }
@@ -68,11 +68,11 @@ class PurchaseOrderController extends Controller
             $po = PurchaseOrder::with(['cv', 'items.tujuan', 'items.supplier', 'items.penerimaList'])
                 ->findOrFail(decrypt($id));
 
-            $filename = 'PO-'.$po->no_po.'-'.now()->format('Ymd').'.xlsx';
+            $filename = 'PO-' . $po->no_po . '-' . now()->format('Ymd') . '.xlsx';
 
             return Excel::download(new ExportToPT($po), $filename);
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'Gagal export: '.$e->getMessage());
+            return redirect()->back()->with('error', 'Gagal export: ' . $e->getMessage());
         }
     }
 
@@ -86,11 +86,11 @@ class PurchaseOrderController extends Controller
                 'kendaraans.penerimas.tujuan',
             ])->findOrFail(decrypt($id));
 
-            $filename = 'PO-'.$po->no_po.'-'.now()->format('Ymd').'.xlsx';
+            $filename = 'PO-' . $po->no_po . '-' . now()->format('Ymd') . '.xlsx';
 
             return Excel::download(new PurchaseOrderExport($po), $filename);
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'Gagal export: '.$e->getMessage());
+            return redirect()->back()->with('error', 'Gagal export: ' . $e->getMessage());
         }
     }
 
@@ -114,11 +114,11 @@ class PurchaseOrderController extends Controller
                 ->setOption('margin-left', 10)
                 ->setOption('margin-right', 10);
 
-            $filename = 'PO-'.$po->no_po.'-'.now()->format('Ymd').'.pdf';
+            $filename = 'PO-' . $po->no_po . '-' . now()->format('Ymd') . '.pdf';
 
             return $pdf->download($filename);
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'Gagal export PDF: '.$e->getMessage());
+            return redirect()->back()->with('error', 'Gagal export PDF: ' . $e->getMessage());
         }
     }
 
@@ -142,11 +142,11 @@ class PurchaseOrderController extends Controller
                 ->setOption('margin-left', 10)
                 ->setOption('margin-right', 10);
 
-            $filename = 'PO-'.$po->no_po.'-Supplier-'.now()->format('Ymd').'.pdf';
+            $filename = 'PO-' . $po->no_po . '-Supplier-' . now()->format('Ymd') . '.pdf';
 
             return $pdf->download($filename);
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'Gagal export PDF Supplier: '.$e->getMessage());
+            return redirect()->back()->with('error', 'Gagal export PDF Supplier: ' . $e->getMessage());
         }
     }
 
@@ -170,11 +170,11 @@ class PurchaseOrderController extends Controller
                 ->setOption('margin-left', 10)
                 ->setOption('margin-right', 10);
 
-            $filename = 'PO-'.$po->no_po.'-PTSum-'.now()->format('Ymd').'.pdf';
+            $filename = 'PO-' . $po->no_po . '-PTSum-' . now()->format('Ymd') . '.pdf';
 
             return $pdf->download($filename);
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'Gagal export PDF PT Sum: '.$e->getMessage());
+            return redirect()->back()->with('error', 'Gagal export PDF PT Sum: ' . $e->getMessage());
         }
     }
 
@@ -217,11 +217,11 @@ class PurchaseOrderController extends Controller
                 ->setOption('margin-left', 10)
                 ->setOption('margin-right', 10);
 
-            $filename = 'PO-Periode-'.now()->format('Ymd-His').'.pdf';
+            $filename = 'PO-Periode-' . now()->format('Ymd-His') . '.pdf';
 
             return $pdf->download($filename);
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'Gagal export PDF: '.$e->getMessage());
+            return redirect()->back()->with('error', 'Gagal export PDF: ' . $e->getMessage());
         }
     }
 
@@ -244,10 +244,10 @@ class PurchaseOrderController extends Controller
                 $query->where('cv_id', $cvId);
             }
             if ($supplierId) {
-                $query->whereHas('kendaraans', fn ($q) => $q->where('supplier_id', $supplierId));
+                $query->whereHas('kendaraans', fn($q) => $q->where('supplier_id', $supplierId));
             }
             if ($tujuanId) {
-                $query->whereHas('kendaraans.penerimas', fn ($q) => $q->where('tujuan_id', $tujuanId));
+                $query->whereHas('kendaraans.penerimas', fn($q) => $q->where('tujuan_id', $tujuanId));
             }
             $poCount = $query->whereDate('tanggal_po', '>=', $from)
                 ->whereDate('tanggal_po', '<=', $to)
@@ -255,7 +255,15 @@ class PurchaseOrderController extends Controller
         }
 
         return view('pages.purchase-order.export-supplier-confirm', compact(
-            'cvList', 'supplierList', 'tujuans', 'cvId', 'supplierId', 'tujuanId', 'from', 'to', 'poCount'
+            'cvList',
+            'supplierList',
+            'tujuans',
+            'cvId',
+            'supplierId',
+            'tujuanId',
+            'from',
+            'to',
+            'poCount'
         ));
     }
 
@@ -284,10 +292,10 @@ class PurchaseOrderController extends Controller
                 $query->where('cv_id', $cvId);
             }
             if ($supplierId) {
-                $query->whereHas('kendaraans', fn ($q) => $q->where('supplier_id', $supplierId));
+                $query->whereHas('kendaraans', fn($q) => $q->where('supplier_id', $supplierId));
             }
             if ($tujuanId) {
-                $query->whereHas('kendaraans.penerimas', fn ($q) => $q->where('tujuan_id', $tujuanId));
+                $query->whereHas('kendaraans.penerimas', fn($q) => $q->where('tujuan_id', $tujuanId));
             }
 
             $pos = $query->get();
@@ -299,11 +307,11 @@ class PurchaseOrderController extends Controller
                 ->setOption('margin-left', 10)
                 ->setOption('margin-right', 10);
 
-            $filename = 'PO-Periode-Supplier-'.now()->format('Ymd-His').'.pdf';
+            $filename = 'PO-Periode-Supplier-' . now()->format('Ymd-His') . '.pdf';
 
             return $pdf->stream($filename);
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'Gagal export PDF Supplier: '.$e->getMessage());
+            return redirect()->back()->with('error', 'Gagal export PDF Supplier: ' . $e->getMessage());
         }
     }
 
@@ -330,12 +338,12 @@ class PurchaseOrderController extends Controller
 
             // Filter supplier
             if ($supplierId) {
-                $query->whereHas('kendaraans', fn ($q) => $q->where('supplier_id', $supplierId));
+                $query->whereHas('kendaraans', fn($q) => $q->where('supplier_id', $supplierId));
             }
 
             // Filter tujuan
             if ($tujuanId) {
-                $query->whereHas('kendaraans.penerimas', fn ($q) => $q->where('tujuan_id', $tujuanId));
+                $query->whereHas('kendaraans.penerimas', fn($q) => $q->where('tujuan_id', $tujuanId));
             }
 
             $poCount = $query->count();
@@ -449,12 +457,12 @@ class PurchaseOrderController extends Controller
 
             // Filter supplier
             if ($supplierId) {
-                $query->whereHas('kendaraans', fn ($q) => $q->where('supplier_id', $supplierId));
+                $query->whereHas('kendaraans', fn($q) => $q->where('supplier_id', $supplierId));
             }
 
             // Filter tujuan
             if ($tujuanId) {
-                $query->whereHas('kendaraans.penerimas', fn ($q) => $q->where('tujuan_id', $tujuanId));
+                $query->whereHas('kendaraans.penerimas', fn($q) => $q->where('tujuan_id', $tujuanId));
             }
 
             $pos = $query->get();
@@ -468,11 +476,11 @@ class PurchaseOrderController extends Controller
                 ->setOption('margin-right', 10);
 
             $cvNama = $pos->first()?->cv?->nama_cv ?? 'CV';
-            $filename = 'PO-Periode-PTSum-'.str_replace(' ', '-', $cvNama).'-'.now()->format('Ymd').'.pdf';
+            $filename = 'PO-Periode-PTSum-' . str_replace(' ', '-', $cvNama) . '-' . now()->format('Ymd') . '.pdf';
 
             return $pdf->stream($filename);
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'Gagal export PDF PT Sum: '.$e->getMessage());
+            return redirect()->back()->with('error', 'Gagal export PDF PT Sum: ' . $e->getMessage());
         }
     }
 
@@ -628,9 +636,9 @@ class PurchaseOrderController extends Controller
                     $tanggalBayar = $dpNominal > 0 ? ($dpTanggal ?? now()) : null;
                     $metodeBayar = $dpNominal > 0 ? ($dpMetode ?? 'transfer') : null;
 
-                    $keterangan = 'Pembayaran OA - Kendaraan '.$kendaraan->no_polisi.' (PO: '.$po->no_po.')';
+                    $keterangan = 'Pembayaran OA - Kendaraan ' . $kendaraan->no_polisi . ' (PO: ' . $po->no_po . ')';
                     if ($dpNominal > 0 && $dpKeterangan) {
-                        $keterangan .= ' | DP: '.$dpKeterangan;
+                        $keterangan .= ' | DP: ' . $dpKeterangan;
                     }
 
                     $status = 'pending';
@@ -674,7 +682,7 @@ class PurchaseOrderController extends Controller
             }
 
             return redirect()->back()
-                ->with('error', 'Gagal menyimpan PO: '.$e->getMessage())
+                ->with('error', 'Gagal menyimpan PO: ' . $e->getMessage())
                 ->withInput();
         } catch (Exception $e) {
             DB::rollBack();
@@ -684,7 +692,7 @@ class PurchaseOrderController extends Controller
             ]);
 
             return redirect()->back()
-                ->with('error', 'Gagal menyimpan PO: '.$e->getMessage())
+                ->with('error', 'Gagal menyimpan PO: ' . $e->getMessage())
                 ->withInput();
         }
     }
@@ -702,9 +710,9 @@ class PurchaseOrderController extends Controller
 
             // Kode pakan unik dalam PO untuk kolom pivot
             $kodePakanList = $po->kendaraans
-                ->flatMap(fn ($k) => $k->penerimas)
-                ->flatMap(fn ($p) => $p->pakans)
-                ->map(fn ($pk) => $pk->kodePakan)
+                ->flatMap(fn($k) => $k->penerimas)
+                ->flatMap(fn($p) => $p->pakans)
+                ->map(fn($pk) => $pk->kodePakan)
                 ->filter()
                 ->unique('id')
                 ->sortBy('kode')
@@ -873,11 +881,11 @@ class PurchaseOrderController extends Controller
                     ->withInput();
             }
 
-            return redirect()->back()->with('error', 'Gagal memperbarui: '.$e->getMessage());
+            return redirect()->back()->with('error', 'Gagal memperbarui: ' . $e->getMessage());
         } catch (Exception $e) {
             DB::rollBack();
 
-            return redirect()->back()->with('error', 'Gagal memperbarui: '.$e->getMessage());
+            return redirect()->back()->with('error', 'Gagal memperbarui: ' . $e->getMessage());
         }
     }
 
@@ -989,7 +997,7 @@ class PurchaseOrderController extends Controller
         } catch (Exception $e) {
             DB::rollBack();
 
-            return redirect()->back()->with('error', 'Gagal: '.$e->getMessage())->withInput();
+            return redirect()->back()->with('error', 'Gagal: ' . $e->getMessage())->withInput();
         }
     }
 
@@ -1042,7 +1050,7 @@ class PurchaseOrderController extends Controller
                 'idtrack_spj' => $idtrackSpj,
             ]);
         } catch (Exception $e) {
-            return response()->json(['success' => false, 'message' => 'Gagal: '.$e->getMessage()], 500);
+            return response()->json(['success' => false, 'message' => 'Gagal: ' . $e->getMessage()], 500);
         }
     }
 
@@ -1127,7 +1135,7 @@ class PurchaseOrderController extends Controller
         } catch (Exception $e) {
             DB::rollBack();
 
-            return response()->json(['success' => false, 'message' => 'Gagal: '.$e->getMessage()], 500);
+            return response()->json(['success' => false, 'message' => 'Gagal: ' . $e->getMessage()], 500);
         }
     }
 
@@ -1234,9 +1242,9 @@ class PurchaseOrderController extends Controller
             return response()->json(['success' => true, 'message' => 'Item ditandai selesai.']);
         } catch (Exception $e) {
             DB::rollBack();
-            Log::error('itemSelesai gagal: '.$e->getMessage(), ['item_id' => $itemId]);
+            Log::error('itemSelesai gagal: ' . $e->getMessage(), ['item_id' => $itemId]);
 
-            return response()->json(['success' => false, 'message' => 'Gagal: '.$e->getMessage()], 500);
+            return response()->json(['success' => false, 'message' => 'Gagal: ' . $e->getMessage()], 500);
         }
     }
 
@@ -1333,7 +1341,7 @@ class PurchaseOrderController extends Controller
         } catch (Exception $e) {
             DB::rollBack();
 
-            return redirect()->back()->with('error', 'Gagal: '.$e->getMessage())->withInput();
+            return redirect()->back()->with('error', 'Gagal: ' . $e->getMessage())->withInput();
         }
     }
 
@@ -1358,7 +1366,7 @@ class PurchaseOrderController extends Controller
             return redirect()->route('po-item.lansir-page', encrypt($item->id))
                 ->with('success', 'Lansir ditandai selesai.');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'Gagal: '.$e->getMessage());
+            return redirect()->back()->with('error', 'Gagal: ' . $e->getMessage());
         }
     }
 

@@ -33,6 +33,9 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
 
         $query = PurchaseOrder::with([
             'cv',
+            'kendaraans' => function($q) {
+                $q->where('status', '!=', 'batal');
+            },
             'kendaraans.supplier',
             'kendaraans.tujuan',
             'kendaraans.penerimas.pakans.kodePakan',
@@ -141,7 +144,7 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
         // ── Data: 1 baris per penerima ────────────────────────────────
         $no = 1;
         foreach ($this->pos as $po) {
-            foreach ($po->kendaraans->sortBy('no_polisi') as $kendaraan) {
+            foreach ($po->kendaraans->where('status', '!=', 'batal')->sortBy('no_polisi') as $kendaraan) {
 
                 foreach (
                     $kendaraan->penerimas->count() > 0
@@ -558,7 +561,7 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                 $penerimaColLetter = $lastIdentitasCol;
 
                 foreach ($pos as $po) {
-                    foreach ($po->kendaraans->sortBy('no_polisi') as $kendaraan) {
+                    foreach ($po->kendaraans->where('status', '!=', 'batal')->sortBy('no_polisi') as $kendaraan) {
                         // Hitung total baris per kendaraan
                         $totalRows = 0;
 

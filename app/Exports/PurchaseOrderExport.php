@@ -25,6 +25,9 @@ class PurchaseOrderExport implements FromArray, WithEvents, WithTitle
     {
         $this->po = $po->load([
             'cv',
+            'kendaraans' => function ($q) {
+                $q->where('status', '!=', 'batal');
+            },
             'kendaraans.tujuan',
             'kendaraans.penerimas.tujuan',
             'kendaraans.penerimas.pakans.kodePakan',
@@ -329,7 +332,7 @@ class PurchaseOrderExport implements FromArray, WithEvents, WithTitle
     {
         $clean = preg_replace('/[\/\\\?\*\[\]:]/', '-', $this->po->no_po);
 
-        return substr('PO '.$clean, 0, 31);
+        return substr('PO ' . $clean, 0, 31);
     }
 
     public function registerEvents(): array
@@ -479,7 +482,7 @@ class PurchaseOrderExport implements FromArray, WithEvents, WithTitle
                     $col = $this->getColumnLetter($ci);
                     $sheet->setCellValue(
                         "{$col}{$totalRowNum}",
-                        "=SUM({$col}{$dataStartRow}:{$col}".($totalRowNum - 1).')'
+                        "=SUM({$col}{$dataStartRow}:{$col}" . ($totalRowNum - 1) . ')'
                     );
                 }
 
@@ -488,7 +491,7 @@ class PurchaseOrderExport implements FromArray, WithEvents, WithTitle
                     $col = $this->getColumnLetter($ci);
                     $sheet->setCellValue(
                         "{$col}{$totalRowNum}",
-                        "=SUM({$col}{$dataStartRow}:{$col}".($totalRowNum - 1).')'
+                        "=SUM({$col}{$dataStartRow}:{$col}" . ($totalRowNum - 1) . ')'
                     );
                 }
 
@@ -497,7 +500,7 @@ class PurchaseOrderExport implements FromArray, WithEvents, WithTitle
                     $col = $this->getColumnLetter($ci);
                     $sheet->setCellValue(
                         "{$col}{$totalRowNum}",
-                        "=SUM({$col}{$dataStartRow}:{$col}".($totalRowNum - 1).')'
+                        "=SUM({$col}{$dataStartRow}:{$col}" . ($totalRowNum - 1) . ')'
                     );
                 }
 
@@ -636,7 +639,7 @@ class PurchaseOrderExport implements FromArray, WithEvents, WithTitle
         $letter = '';
         while ($index > 0) {
             $index--;
-            $letter = chr(65 + ($index % 26)).$letter;
+            $letter = chr(65 + ($index % 26)) . $letter;
             $index = intdiv($index, 26);
         }
 
