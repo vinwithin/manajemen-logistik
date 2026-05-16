@@ -48,6 +48,7 @@ class KartuStockMutasiExport implements FromArray, WithEvents, WithTitle
             'poPenerima.tujuan',
             'gudangLansirPakan.penerima.kendaraan.lansirHeader',
             'gudangLansirPakan.penerima.tujuan',
+            'gudangLansirPakan.penerima.poPenerima.tujuan',
         ])->orderBy('created_at', 'desc');
 
         if ($tujuanId) {
@@ -155,10 +156,11 @@ class KartuStockMutasiExport implements FromArray, WithEvents, WithTitle
         $rowSaldo[4] = 'Sisa Stok :';
 
         foreach ($this->kodePakanList as $i => $kp) {
-            $sisaCol = self::FIXED_COLS + ($i * self::COLS_PER_PAKAN) + 4;
+            $base = self::FIXED_COLS + ($i * self::COLS_PER_PAKAN);
+            $sisaCol = $base + 4;
 
             // Koleksi diurut created_at desc → saldo akhir periode = mutasi terbaru (= first())
-            $lastMutasi = $this->mutasis->where('kode_pakan_id', $kp->id)->first();
+            $lastMutasi = $this->mutasis->firstWhere('kode_pakan_id', $kp->id);
             $rowSaldo[$sisaCol] = $lastMutasi ? (float) $lastMutasi->saldo_kg_after : '';
         }
         $rows[] = $rowSaldo;
@@ -203,12 +205,16 @@ class KartuStockMutasiExport implements FromArray, WithEvents, WithTitle
             }
 
             // Isi nilai kolom pakan
-            $pakanIndex = $this->kodePakanList->search(
-                fn ($kp) => $kp->id === $m->kode_pakan_id
-            );
-            if ($pakanIndex === false) {
+            $pakanIndex = null;
+            foreach ($this->kodePakanList as $index => $kp) {
+                if ($kp->id === $m->kode_pakan_id) {
+                    $pakanIndex = $index;
+                    break;
+                }
+            }
+            
+            if ($pakanIndex === null) {
                 $rows[] = $dataRow;
-
                 continue;
             }
 
@@ -240,8 +246,8 @@ class KartuStockMutasiExport implements FromArray, WithEvents, WithTitle
 
         foreach ($this->kodePakanList as $i => $kp) {
             $base = self::FIXED_COLS + ($i * self::COLS_PER_PAKAN); // 0-based
-            $totalMasuk = $this->mutasis->where('kode_pakan_id', $kp->id)->where('tipe', 'masuk')->sum('jumlah_kg');
-            $totalKeluar = $this->mutasis->where('kode_pakan_id', $kp->id)->where('tipe', 'keluar')->sum('jumlah_kg');
+            $totalMasuk = $this->mutasis->filter(fn($m) => $m->kode_pakan_id == $kp->id && $m->tipe === 'masuk')->sum('jumlah_kg');
+            $totalKeluar = $this->mutasis->filter(fn($m) => $m->kode_pakan_id == $kp->id && $m->tipe === 'keluar')->sum('jumlah_kg');
             $rowTotalMasuk[$base] = (float) $totalMasuk;
             $rowTotalKeluar[$base] = (float) $totalKeluar;
             $rowSelisih[$base] = (float) ($totalMasuk - $totalKeluar);
