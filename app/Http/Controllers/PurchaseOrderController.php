@@ -1193,9 +1193,9 @@ class PurchaseOrderController extends Controller
 
             $po->delete();
 
-            return response()->json(['success' => true, 'message' => 'PO berhasil dihapus.']);
+            return redirect()->route('purchase-order.index')->with('success', 'PO berhasil dihapus.');
         } catch (Exception $e) {
-            return response()->json(['success' => false, 'message' => 'Gagal menghapus.'], 500);
+            return redirect()->back()->with('error', 'Gagal menghapus PO: ' . $e->getMessage());
         }
     }
 

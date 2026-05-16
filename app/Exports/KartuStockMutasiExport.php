@@ -207,7 +207,7 @@ class KartuStockMutasiExport implements FromArray, WithEvents, WithTitle
             // Isi nilai kolom pakan
             $pakanIndex = null;
             foreach ($this->kodePakanList as $index => $kp) {
-                if ($kp->id === $m->kode_pakan_id) {
+                if ($kp->id == $m->kode_pakan_id) {
                     $pakanIndex = $index;
                     break;
                 }
