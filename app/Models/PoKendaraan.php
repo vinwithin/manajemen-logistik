@@ -111,6 +111,9 @@ class PoKendaraan extends Model
     // Total PT SUM seluruh penerima di kendaraan ini
     public function getTotalPtSumAttribute(): float
     {
+        if ($this->status == 'batal') {
+            return 0.0;
+        }
         return $this->penerimas->sum(function ($penerima) {
             return $penerima->pakans->sum(function ($pakan) {
                 return $pakan->jumlah_kg * ($pakan->harga_pt_sum ?? 0);
@@ -123,6 +126,10 @@ class PoKendaraan extends Model
     // Total = SUM(jumlah_kg × ongkos_oa) dari semua pakan
     public function getTotalTagihanSupplierAttribute(): float
     {
+        if ($this->status == 'batal') {
+            return 0.0;
+        }
+
         return $this->penerimas->sum(function ($penerima) {
             return $penerima->pakans->sum(function ($pakan) {
                 return $pakan->jumlah_kg * ($pakan->ongkos_oa ?? 0);

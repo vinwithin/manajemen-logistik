@@ -54,11 +54,11 @@ class LaporanPembayaranController extends Controller
 
 
 
-        $oaTotalTagihan = $poKendaraan->sum(fn($po) => $po->total_tagihan_supplier);;
+        $oaTotalTagihan = $poKendaraan->sum(fn($po) => $po->total_tagihan_supplier);
 
         // Pembayaran OA banyak dicatat per kendaraan (po_kendaraan_id, po_penerima_id null).
         // Agregasi bayar: semua baris oa_payments terkait kendaraan / penerima dalam filter (tanpa duplikasi id).
-        $kendaraanIds = $poPenerimas->pluck('po_kendaraan_id')->unique()->filter()->values();
+        $kendaraanIds = $poKendaraan->pluck('id');
         $penerimaIds = $poPenerimas->pluck('id')->unique()->values();
 
         $oaPaymentRows = OaPayment::whereIn('po_kendaraan_id', $kendaraanIds)
