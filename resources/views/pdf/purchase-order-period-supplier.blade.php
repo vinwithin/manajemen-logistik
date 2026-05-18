@@ -233,6 +233,7 @@
                 <th style="width:30px;">Ongkos</th>
                 <th style="width:45px;">Total<br>Ongkos</th>
                 <th style="width:45px;">DP</th>
+                <th style="width:45px;">Sisa</th>
                 <th style="width:50px;">Supplier</th>
             </tr>
         </thead>
@@ -243,6 +244,7 @@
                 $grandTotalKarung = 0;
                 $grandTotalOngkos = 0;
                 $grandTotalDp = 0;
+                $grandTotalSisa = 0;
                 $rowIdx = 0;
             @endphp
 
@@ -254,6 +256,16 @@
                         // Hitung total DP untuk kendaraan ini
                         $totalDpKendaraan = (float) $kendaraan->oaPayments->where('tipe_pembayaran', 'dp_supplier')->sum('jumlah_bayar');
                         $grandTotalDp += $totalDpKendaraan;
+                        // Hitung total ongkos untuk seluruh kendaraan
+                        $totalOngkosKendaraan = 0;
+                        foreach ($kendaraan->penerimas as $p) {
+                            $totalOngkosKendaraan += (float) $p->pakans->sum(
+                                fn($pakan) => (float) $pakan->jumlah_kg * (float) ($pakan->ongkos_oa ?? 0),
+                            );
+                        }
+                        // Hitung sisa
+                        $sisaKendaraan = max(0, $totalOngkosKendaraan - $totalDpKendaraan);
+                        $grandTotalSisa += $sisaKendaraan;
                     @endphp
                     @foreach ($kendaraan->penerimas as $penerima)
                         @php
@@ -314,6 +326,9 @@
                                 <td rowspan="{{ $penerimaCount }}" style="vertical-align:middle; font-weight:bold;">
                                     {{ $totalDpKendaraan > 0 ? number_format($totalDpKendaraan, 0, ',', '.') : '-' }}
                                 </td>
+                                <td rowspan="{{ $penerimaCount }}" style="vertical-align:middle; font-weight:bold;">
+                                    {{ $sisaKendaraan > 0 ? number_format($sisaKendaraan, 0, ',', '.') : '-' }}
+                                </td>
                             @endif
 
                              <td rowspan="{{ $isFirstPenerima ? 1 : 1 }}" style="font-weight: bold;">
@@ -338,6 +353,7 @@
                 <td colspan="1"></td>
                 <td>{{ number_format($grandTotalOngkos, 0, ',', '.') }}</td>
                 <td>{{ $grandTotalDp > 0 ? number_format($grandTotalDp, 0, ',', '.') : '-' }}</td>
+                <td>{{ $grandTotalSisa > 0 ? number_format($grandTotalSisa, 0, ',', '.') : '-' }}</td>
                 <td></td>
             </tr>
         </tbody>
