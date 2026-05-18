@@ -130,6 +130,10 @@ class PoKendaraan extends Model
             return 0.0;
         }
 
+        if ($this->status == 'berangkat' && $this->penerimas->isEmpty()) {
+            return $this->jumlah_kg * ($this->ongkos_angkut ?? 0);
+        }
+
         return $this->penerimas->sum(function ($penerima) {
             return $penerima->pakans->sum(function ($pakan) {
                 return $pakan->jumlah_kg * ($pakan->ongkos_oa ?? 0);

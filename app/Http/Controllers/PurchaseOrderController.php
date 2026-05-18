@@ -1012,15 +1012,12 @@ class PurchaseOrderController extends Controller
             $po = $kendaraan->po;
 
             if (! $po->isLocked()) {
-                return response()->json(['success' => false, 'message' => 'PO harus dikunci terlebih dahulu.']);
+                return redirect()->back()->with('error', 'PO harus dikunci terlebih dahulu.');
             }
 
             $allowed = PoKendaraan::VALID_TRANSITIONS[$kendaraan->status] ?? [];
             if (! in_array($request->status, $allowed)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => "Transisi dari '{$kendaraan->status}' ke '{$request->status}' tidak diizinkan.",
-                ]);
+                return redirect()->back()->with('error', "Transisi dari '{$kendaraan->status}' ke '{$request->status}' tidak diizinkan.");
             }
 
             $kendaraan->update(['status' => $request->status]);
@@ -1044,13 +1041,9 @@ class PurchaseOrderController extends Controller
                 }
             }
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Status kendaraan diperbarui.',
-                'idtrack_spj' => $idtrackSpj,
-            ]);
+            return redirect()->back()->with('success', 'Status kendaraan diperbarui.');
         } catch (Exception $e) {
-            return response()->json(['success' => false, 'message' => 'Gagal: ' . $e->getMessage()], 500);
+            return redirect()->back()->with('error', 'Gagal: ' . $e->getMessage());
         }
     }
 
@@ -1073,15 +1066,12 @@ class PurchaseOrderController extends Controller
             $po = $penerima->kendaraan->po;
 
             if (! $po->isLocked()) {
-                return response()->json(['success' => false, 'message' => 'PO harus dikunci terlebih dahulu.']);
+                return redirect()->back()->with('error', 'PO harus dikunci terlebih dahulu.');
             }
 
             $allowed = PoPenerima::VALID_TRANSITIONS[$penerima->status] ?? [];
             if (! in_array($request->status, $allowed)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => "Transisi dari '{$penerima->status}' ke '{$request->status}' tidak diizinkan.",
-                ]);
+                return redirect()->back()->with('error', "Transisi dari '{$penerima->status}' ke '{$request->status}' tidak diizinkan.");
             }
 
             $updateData = ['status' => $request->status];
@@ -1102,10 +1092,7 @@ class PurchaseOrderController extends Controller
                         if (! $pakan->kode_pakan_id) {
                             DB::rollBack();
 
-                            return response()->json([
-                                'success' => false,
-                                'message' => 'Kode pakan belum diisi untuk salah satu item.',
-                            ]);
+                            return redirect()->back()->with('error', 'Kode pakan belum diisi untuk salah satu item.');
                         }
 
                         $this->gudangStokService->prosesStokMasukPoPenerima($penerima, $pakan);
@@ -1131,11 +1118,11 @@ class PurchaseOrderController extends Controller
 
             DB::commit();
 
-            return response()->json(['success' => true, 'message' => 'Status penerima diperbarui.']);
+            return redirect()->back()->with('success', 'Status penerima diperbarui.');
         } catch (Exception $e) {
             DB::rollBack();
 
-            return response()->json(['success' => false, 'message' => 'Gagal: ' . $e->getMessage()], 500);
+            return redirect()->back()->with('error', 'Gagal: ' . $e->getMessage());
         }
     }
 

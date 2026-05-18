@@ -120,7 +120,8 @@
                     @endif
 
                     <button type="button" class="btn btn-xs btn-outline-info btn-lihat-gps"
-                        data-kendaraan-id="{{ $kendaraan->id }}" data-nopol="{{ $kendaraan->no_polisi }}" title="Lihat Lokasi GPS">
+                        data-kendaraan-id="{{ $kendaraan->id }}" data-nopol="{{ $kendaraan->no_polisi }}"
+                        title="Lihat Lokasi GPS">
                         <i class="fa fa-map-marker"></i> Lokasi
                     </button>
                 </div>
@@ -439,38 +440,45 @@
                     <h6 class="modal-title">Tandai Tiba — <span id="selesaiNama"></span></h6>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
-                    <p class="text-muted small mb-3">Pakan sudah tiba di lokasi penerima. Setelah ini pilih
-                        <strong>Selesai</strong> (langsung) atau <strong>Lansir</strong> (proses lansir dulu).
-                    </p>
-                    <div class="alert alert-info py-2 mb-3" id="notifGudang" style="display:none;">
-                        <i class="fa fa-info-circle"></i> <strong>Tujuan Gudang:</strong> Pakan akan otomatis masuk ke stok
-                        gudang setelah ditandai tiba.
+                <form id="formSelesai" method="POST" enctype="multipart/form-data">
+                    @csrf
+                    <input type="hidden" name="status" value="tiba">
+                    <div class="modal-body">
+                        <p class="text-muted small mb-3">Pakan sudah tiba di lokasi penerima. Setelah ini pilih
+                            <strong>Selesai</strong> (langsung) atau <strong>Lansir</strong> (proses lansir dulu).
+                        </p>
+                        <div class="alert alert-info py-2 mb-3" id="notifGudang" style="display:none;">
+                            <i class="fa fa-info-circle"></i> <strong>Tujuan Gudang:</strong> Pakan akan otomatis masuk ke
+                            stok
+                            gudang setelah ditandai tiba.
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label form-label-sm">Nama Validator <span
+                                    class="text-danger">*</span></label>
+                            <input type="text" id="selesaiValidator" name="validasi_oleh" class="form-control form-control-sm"
+                                placeholder="Nama admin / petugas">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label form-label-sm">Tanggal Tiba <span
+                                    class="text-danger">*</span></label>
+                            <input type="date" id="selesaiTanggal" name="tanggal_tiba" class="form-control form-control-sm">
+                            <small class="text-muted">Hanya tanggal (boleh diisi mundur).</small>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label form-label-sm">Bukti Tiba <span class="text-danger">*</span></label>
+                            <input type="file" id="selesaiBukti" name="bukti_tiba" class="form-control form-control-sm"
+                                accept=".jpg,.jpeg,.png,.pdf">
+                            <small class="text-muted">JPG, PNG, PDF · Maks 5MB</small>
+                        </div>
+                        <div id="errSelesai" class="text-danger small mt-1" style="display:none"></div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label form-label-sm">Nama Validator <span class="text-danger">*</span></label>
-                        <input type="text" id="selesaiValidator" class="form-control form-control-sm"
-                            placeholder="Nama admin / petugas">
+                    <div class="modal-footer py-2">
+                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-info text-white btn-sm" id="btnKonfirmasiSelesai">
+                            <i class="fa fa-map-marker"></i> Konfirmasi Tiba
+                        </button>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label form-label-sm">Tanggal Tiba <span class="text-danger">*</span></label>
-                        <input type="date" id="selesaiTanggal" class="form-control form-control-sm">
-                        <small class="text-muted">Hanya tanggal (boleh diisi mundur).</small>
-                    </div>
-                    <div class="mb-2">
-                        <label class="form-label form-label-sm">Bukti Tiba <span class="text-danger">*</span></label>
-                        <input type="file" id="selesaiBukti" class="form-control form-control-sm"
-                            accept=".jpg,.jpeg,.png,.pdf">
-                        <small class="text-muted">JPG, PNG, PDF · Maks 5MB</small>
-                    </div>
-                    <div id="errSelesai" class="text-danger small mt-1" style="display:none"></div>
-                </div>
-                <div class="modal-footer py-2">
-                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
-                    <button type="button" class="btn btn-info text-white btn-sm" id="btnKonfirmasiSelesai">
-                        <i class="fa fa-map-marker"></i> Konfirmasi Tiba
-                    </button>
-                </div>
+                </form>
             </div>
         </div>
     </div>
@@ -487,7 +495,8 @@
             }
 
             // Tombol Berangkat / Batal — aksi di level KENDARAAN
-            $(document).on('click', '.btn-aksi-kendaraan', function() {
+            $(document).on('click', '.btn-aksi-kendaraan', function(e) {
+                e.preventDefault();
                 var id = $(this).data('id');
                 var polisi = $(this).data('polisi');
                 var target = $(this).data('target');
@@ -500,27 +509,23 @@
                         '<br><small class="text-muted">Semua penerima di kendaraan ini otomatis sedang diantar.</small>' :
                         ''),
                     function() {
-                        $.ajax({
-                            url: '/purchase-order/kendaraan/' + id + '/status',
-                            method: 'POST',
-                            data: {
-                                _token: '{{ csrf_token() }}',
-                                status: target
-                            },
-                            success: function(res) {
-                                if (res.success) {
-                                    alertify.success(res.message);
-                                    setTimeout(function() {
-                                        location.reload();
-                                    }, 700);
-                                } else {
-                                    alertify.error(res.message);
-                                }
-                            },
-                            error: function() {
-                                alertify.error('Gagal memperbarui status.');
-                            }
+                        // Create and submit a form
+                        var form = $('<form>', {
+                            'method': 'POST',
+                            'action': '/purchase-order/kendaraan/' + id + '/status'
                         });
+                        form.append($('<input>', {
+                            'type': 'hidden',
+                            'name': '_token',
+                            'value': '{{ csrf_token() }}'
+                        }));
+                        form.append($('<input>', {
+                            'type': 'hidden',
+                            'name': 'status',
+                            'value': target
+                        }));
+                        $('body').append(form);
+                        form.submit();
                     },
                     function() {}
                 ).set('labels', {
@@ -540,6 +545,7 @@
                 $('#selesaiTanggal').val(formatDateInput(new Date()));
                 $('#selesaiBukti').val('');
                 $('#errSelesai').hide().text('');
+                $('#formSelesai').attr('action', '/purchase-order/penerima/' + activePenerimaId + '/status');
 
                 // Tampilkan notifikasi jika tujuan adalah gudang
                 if (tujuanType === 'gudang') {
@@ -551,67 +557,9 @@
                 new bootstrap.Modal(document.getElementById('modalSelesai')).show();
             });
 
-            // Konfirmasi Tiba
-            $('#btnKonfirmasiSelesai').on('click', function() {
-                var validator = $('#selesaiValidator').val().trim();
-                var tanggal = $('#selesaiTanggal').val().trim();
-                var file = $('#selesaiBukti')[0].files[0];
-                $('#errSelesai').hide().text('');
-
-                if (!validator) {
-                    $('#errSelesai').text('Nama validator wajib diisi.').show();
-                    return;
-                }
-                if (!tanggal) {
-                    $('#errSelesai').text('Tanggal tiba wajib diisi.').show();
-                    return;
-                }
-                if (!file) {
-                    $('#errSelesai').text('Bukti tiba wajib diunggah.').show();
-                    return;
-                }
-
-                var fd = new FormData();
-                fd.append('_token', '{{ csrf_token() }}');
-                fd.append('status', 'tiba');
-                fd.append('validasi_oleh', validator);
-                fd.append('tanggal_tiba', tanggal);
-                fd.append('bukti_tiba', file);
-
-                $(this).prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i>');
-
-                $.ajax({
-                    url: '/purchase-order/penerima/' + activePenerimaId + '/status',
-                    method: 'POST',
-                    data: fd,
-                    processData: false,
-                    contentType: false,
-                    success: function(res) {
-                        if (res.success) {
-                            alertify.success(res.message);
-                            bootstrap.Modal.getInstance(document.getElementById('modalSelesai')).hide();
-                            setTimeout(function() {
-                                location.reload();
-                            }, 700);
-                        } else {
-                            $('#errSelesai').text(res.message).show();
-                        }
-                    },
-                    error: function(xhr) {
-                        var msg = xhr.responseJSON?.errors ?
-                            Object.values(xhr.responseJSON.errors).flat().join(' ') :
-                            (xhr.responseJSON?.message || 'Gagal menyimpan.');
-                        $('#errSelesai').text(msg).show();
-                    },
-                    complete: function() {
-                        $('#btnKonfirmasiSelesai').prop('disabled', false).html(
-                            '<i class="fa fa-map-marker"></i> Konfirmasi Tiba');
-                    }
-                });
-            });
-
             // Tombol Selesai langsung (dari status tiba, tanpa modal)
-            $(document).on('click', '.btn-aksi-penerima', function() {
+            $(document).on('click', '.btn-aksi-penerima', function(e) {
+                e.preventDefault();
                 var id = $(this).data('id');
                 var nama = $(this).data('nama');
                 var target = $(this).data('target');
@@ -621,27 +569,23 @@
                     'Selesai — ' + nama,
                     'Tandai penerima <strong>' + nama + '</strong> sebagai <strong>Selesai</strong>?',
                     function() {
-                        $.ajax({
-                            url: '/purchase-order/penerima/' + id + '/status',
-                            method: 'POST',
-                            data: {
-                                _token: '{{ csrf_token() }}',
-                                status: 'selesai'
-                            },
-                            success: function(res) {
-                                if (res.success) {
-                                    alertify.success(res.message);
-                                    setTimeout(function() {
-                                        location.reload();
-                                    }, 700);
-                                } else {
-                                    alertify.error(res.message);
-                                }
-                            },
-                            error: function() {
-                                alertify.error('Gagal memperbarui status.');
-                            }
+                        // Create and submit a form for selesai
+                        var form = $('<form>', {
+                            'method': 'POST',
+                            'action': '/purchase-order/penerima/' + id + '/status'
                         });
+                        form.append($('<input>', {
+                            'type': 'hidden',
+                            'name': '_token',
+                            'value': '{{ csrf_token() }}'
+                        }));
+                        form.append($('<input>', {
+                            'type': 'hidden',
+                            'name': 'status',
+                            'value': 'selesai'
+                        }));
+                        $('body').append(form);
+                        form.submit();
                     },
                     function() {}
                 ).set('labels', {
@@ -669,7 +613,8 @@
                                     id="gpsSpeed">—</strong></div>
                             <div class="col-auto"><i class="fa fa-clock-o text-muted"></i> Update: <strong
                                     id="gpsTime">—</strong></div>
-                            <div class="col-12 col-md"><i class="fa fa-map-pin text-muted"></i> <span id="gpsAddress">—</span>
+                            <div class="col-12 col-md"><i class="fa fa-map-pin text-muted"></i> <span
+                                    id="gpsAddress">—</span>
                             </div>
                         </div>
                         <div class="row g-2 small mt-1 pt-1 border-top">
@@ -677,7 +622,8 @@
                                     id="gpsDriverName">—</strong></div>
                             <div class="col-6 col-md-3"><i class="fa fa-info-circle text-secondary"></i> Status: <strong
                                     id="gpsStatusEng">—</strong></div>
-                            <div class="col-6 col-md-3"><i class="fa fa-phone text-secondary"></i> <span id="gpsPhone">—</span></div>
+                            <div class="col-6 col-md-3"><i class="fa fa-phone text-secondary"></i> <span
+                                    id="gpsPhone">—</span></div>
                             <div class="col-6 col-md-3 text-break"><i class="fa fa-mobile text-secondary"></i> IMEI: <span
                                     id="gpsImei">—</span></div>
                         </div>
@@ -692,7 +638,8 @@
                         </div>
                     </div>
                     <div id="gpsLegend" class="px-3 py-1 border-bottom small d-none bg-white text-muted">
-                        <span class="text-danger me-3"><i class="fa fa-flag"></i> Merah: sudah tiba di marker (Idtrack)</span>
+                        <span class="text-danger me-3"><i class="fa fa-flag"></i> Merah: sudah tiba di marker
+                            (Idtrack)</span>
                         <span class="text-primary"><i class="fa fa-truck"></i> Biru: posisi kendaraan sekarang</span>
                     </div>
                     <div id="gpsMapWrap" style="height:380px; display:none;">
@@ -833,7 +780,8 @@
                                     icon: visitIcon
                                 })
                                 .addTo(gpsMap)
-                                .bindPopup('<strong class="text-danger">' + label + '</strong><br><span class="small text-muted">Tiba: ' +
+                                .bindPopup('<strong class="text-danger">' + label +
+                                    '</strong><br><span class="small text-muted">Tiba: ' +
                                     (when || '—') + '</span>');
                             gpsVisitMarkers.push(vm);
                         });
@@ -864,7 +812,8 @@
                             ${res.gps_time ? '<span class="text-muted small">Update: ' + res.gps_time + '</span>' : ''}`;
 
                         if (gpsMarker) {
-                            gpsMarker.setLatLng([res.lat, res.lng]).setIcon(truckIcon).setPopupContent(popupContent);
+                            gpsMarker.setLatLng([res.lat, res.lng]).setIcon(truckIcon).setPopupContent(
+                            popupContent);
                         } else {
                             gpsMarker = L.marker([res.lat, res.lng], {
                                     icon: truckIcon
