@@ -319,7 +319,7 @@ class PurchaseOrderController extends Controller
 
             $filename = 'PO-Periode-Supplier-' . now()->format('Ymd-His') . '.pdf';
 
-            return $pdf->download($filename);
+            return $pdf->stream($filename);
         } catch (Exception $e) {
             return redirect()->back()->with('error', 'Gagal export PDF Supplier: ' . $e->getMessage());
         }
