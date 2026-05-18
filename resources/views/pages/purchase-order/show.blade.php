@@ -109,7 +109,7 @@
                         <button type="button" class="btn btn-xs btn-outline-danger btn-unassign-gps"
                             data-kendaraan-id="{{ $kendaraan->id }}" data-nopol="{{ $kendaraan->no_polisi }}"
                             title="Lepas GPS">
-                            <i class="fa fa-times"></i>
+                            Un Assign GPS
                         </button>
                     @else
                         <button type="button" class="btn btn-xs btn-outline-warning btn-auto-assign-gps"
