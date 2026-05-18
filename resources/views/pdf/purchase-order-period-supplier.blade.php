@@ -316,8 +316,7 @@
                                 </td>
                             @endif
 
-                            {{-- Supplier --}}
-                            <td rowspan="{{ $penerimaCount }}" style="vertical-align:middle; font-weight: bold;">
+                             <td rowspan="{{ $isFirstPenerima ? 1 : 1 }}" style="font-weight: bold;">
                                 {{ $kendaraan->supplier?->nama ?? '-' }}
                             </td>
                         </tr>
