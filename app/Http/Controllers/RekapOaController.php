@@ -19,7 +19,7 @@ class RekapOaController extends Controller
             $from = $request->from;
             $to = $request->to;
 
-            $query = PoKendaraan::with(['po.cv', 'supplier', 'penerimas', 'oaPaymentOnly'])
+            $query = PoKendaraan::with(['po.cv', 'supplier', 'penerimas', 'oaPayments', 'oaPaymentOnly'])
                 ->where('status', '!=', 'batal')
                 ->whereHas('po', function ($q) use ($activeCvId, $from, $to) {
                     if ($activeCvId) {
@@ -62,7 +62,7 @@ class RekapOaController extends Controller
 
                     return "<span class='badge bg-{$color}'>{$label}</span>";
                 })
-                ->addColumn('sisa', fn ($q) => max(0, $q->total_oa - ($q->oaPaymentOnly?->jumlah_bayar ?? 0)))
+                ->addColumn('sisa', fn ($q) => max(0, $q->total_oa - $q->total_bayar))
                 ->addColumn('action', function ($q) {
                     $url = route('keuangan.oa.bayar', encrypt($q->id));
                     $status = $q->oaPaymentOnly?->status ?? 'pending';

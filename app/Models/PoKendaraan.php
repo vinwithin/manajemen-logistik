@@ -76,6 +76,19 @@ class PoKendaraan extends Model
             ->whereIn('tipe_pembayaran', ['oa', 'dp_supplier']);
     }
 
+    // Semua pembayaran OA untuk kendaraan ini (DP + OA)
+    public function oaPayments()
+    {
+        return $this->hasMany(OaPayment::class, 'po_kendaraan_id')
+            ->whereIn('tipe_pembayaran', ['oa', 'dp_supplier']);
+    }
+
+    // Total pembayaran (DP + OA)
+    public function getTotalBayarAttribute(): float
+    {
+        return (float) $this->oaPayments->sum('jumlah_bayar');
+    }
+
     // Pembayaran OA murni (bukan DP) — digunakan untuk status di rekap OA
     public function oaPaymentOnly()
     {

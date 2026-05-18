@@ -89,7 +89,7 @@ class PembayaranSupplierController extends Controller
                     return '<span class="text-muted">—</span>';
                 })
                 ->addColumn('supplier_nama', fn($q) => $q->supplier?->nama ?? '-')
-                ->addColumn('sisa', fn($q) => max(0, $q->jumlah_tagihan - $q->jumlah_bayar))
+                ->addColumn('sisa', fn($q) => max(0, $q->sisa_tagihan))
                 ->editColumn('tanggal_bayar', fn($q) => $q->tanggal_bayar ? $q->tanggal_bayar->format('d/m/Y') : '-')
                 ->editColumn('metode_bayar', fn($q) => $q->metode_bayar ? ucfirst($q->metode_bayar) : '-')
                 ->addColumn('status_badge', function ($q) {

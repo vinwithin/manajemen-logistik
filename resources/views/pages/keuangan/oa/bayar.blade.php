@@ -126,7 +126,7 @@
                                         <span class="input-group-text">Rp</span>
                                         <input type="number" name="jumlah_bayar"
                                             class="form-control @error('jumlah_bayar') is-invalid @enderror"
-                                            value="{{ old('jumlah_bayar', $kendaraan->oaPaymentOnly?->sisa_tagihan ?? $tagihan) }}"
+                                            value="{{ old('jumlah_bayar', $kendaraan->total_oa - $kendaraan->total_bayar) }}"
                                             step="1" min="1">
                                         @error('jumlah_bayar')
                                             <div class="invalid-feedback">{{ $message }}</div>
