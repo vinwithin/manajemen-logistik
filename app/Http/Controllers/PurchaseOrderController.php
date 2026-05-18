@@ -53,6 +53,15 @@ class PurchaseOrderController extends Controller
 
     public function export(Request $request)
     {
+        $request->validate([
+            'from' => 'required|date',
+            'to' => 'required|date|after_or_equal:from',
+        ], [
+            'from.required' => 'Tanggal awal periode wajib diisi.',
+            'to.required' => 'Tanggal akhir periode wajib diisi.',
+            'to.after_or_equal' => 'Tanggal akhir harus sama atau setelah tanggal awal.',
+        ]);
+
         $cvId = $request->cv_id ?? session('active_cv');
         $from = $request->from;
         $to = $request->to;

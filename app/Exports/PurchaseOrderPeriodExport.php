@@ -19,14 +19,14 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
 
     protected array $kodePakanList;
 
-    protected ?string $from;
+    protected string $from;
 
-    protected ?string $to;
+    protected string $to;
 
     // NO | TANGGAL | No PO | KENDARAAN | No. DO | Tujuan | PENERIMA = 7 kolom (A-G)
     protected int $identitasCols = 7;
 
-    public function __construct(?string $from = null, ?string $to = null, ?int $cvId = null)
+    public function __construct(string $from, string $to, ?int $cvId = null)
     {
         $this->from = $from;
         $this->to = $to;
@@ -364,15 +364,7 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
     {
         $clean = fn($s) => preg_replace('/[\/\\\?\*\[\]:]/', '-', $s);
 
-        if ($this->from && $this->to) {
-            return substr('PO ' . $clean($this->from) . ' sd ' . $clean($this->to), 0, 31);
-        } elseif ($this->from) {
-            return substr('PO dari ' . $clean($this->from), 0, 31);
-        } elseif ($this->to) {
-            return substr('PO sampai ' . $clean($this->to), 0, 31);
-        }
-
-        return 'PO Semua Periode';
+        return substr('PO ' . $clean($this->from) . ' sd ' . $clean($this->to), 0, 31);
     }
 
     public function registerEvents(): array
@@ -392,15 +384,7 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                 $sheet->insertNewRowBefore(1, 3);
 
                 $sheet->setCellValue('A1', 'Periode');
-                if ($from && $to) {
-                    $sheet->setCellValue('B1', date('d/m/Y', strtotime($from)) . ' - ' . date('d/m/Y', strtotime($to)));
-                } elseif ($from) {
-                    $sheet->setCellValue('B1', 'Dari ' . date('d/m/Y', strtotime($from)));
-                } elseif ($to) {
-                    $sheet->setCellValue('B1', 'Sampai ' . date('d/m/Y', strtotime($to)));
-                } else {
-                    $sheet->setCellValue('B1', 'Semua Periode');
-                }
+                $sheet->setCellValue('B1', date('d/m/Y', strtotime($from)) . ' - ' . date('d/m/Y', strtotime($to)));
                 $sheet->setCellValue('A2', 'Jumlah PO');
                 $sheet->setCellValue('B2', $poCount);
                 $sheet->setCellValue('A3', 'Tanggal Export');

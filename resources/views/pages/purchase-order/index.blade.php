@@ -132,6 +132,24 @@
         $('#exportFrom, #exportTo').on('change', updateExportUrl);
         updateExportUrl();
 
+        // Validasi sebelum export Excel
+        $('#btnExport').on('click', function(e) {
+            var from = $('#exportFrom').val();
+            var to = $('#exportTo').val();
+
+            if (!from || !to) {
+                e.preventDefault();
+                alertify.error('Silakan isi rentang tanggal (Dari dan Sampai) sebelum export!');
+                return false;
+            }
+
+            if (new Date(to) < new Date(from)) {
+                e.preventDefault();
+                alertify.error('Tanggal Sampai harus sama atau setelah Tanggal Dari!');
+                return false;
+            }
+        });
+
         function confirmDelete(id) {
             alertify.confirm("Konfirmasi!", "Hapus PO ini?", function() {
                 $('#del-po-' + id).submit();
