@@ -290,6 +290,7 @@ class PurchaseOrderController extends Controller
             $query = PurchaseOrder::with([
                 'cv',
                 'kendaraans.supplier',
+                'kendaraans.oaPayments',
                 'kendaraans.penerimas.pakans.kodePakan',
                 'kendaraans.penerimas.tujuan',
             ])->orderBy('tanggal_po', 'asc')->orderBy('no_po', 'asc');
@@ -318,7 +319,7 @@ class PurchaseOrderController extends Controller
 
             $filename = 'PO-Periode-Supplier-' . now()->format('Ymd-His') . '.pdf';
 
-            return $pdf->stream($filename);
+            return $pdf->download($filename);
         } catch (Exception $e) {
             return redirect()->back()->with('error', 'Gagal export PDF Supplier: ' . $e->getMessage());
         }
@@ -487,7 +488,7 @@ class PurchaseOrderController extends Controller
             $cvNama = $pos->first()?->cv?->nama_cv ?? 'CV';
             $filename = 'PO-Periode-PTSum-' . str_replace(' ', '-', $cvNama) . '-' . now()->format('Ymd') . '.pdf';
 
-            return $pdf->stream($filename);
+            return $pdf->download($filename);
         } catch (Exception $e) {
             return redirect()->back()->with('error', 'Gagal export PDF PT Sum: ' . $e->getMessage());
         }

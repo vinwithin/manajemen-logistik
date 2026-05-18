@@ -245,6 +245,7 @@
                 <th style="width:30px;">Bag</th>
                 <th style="width:30px;">Ongkos</th>
                 <th style="width:45px;">Total<br>Ongkos</th>
+                <th style="width:45px;">DP</th>
                 <th style="width:50px;">Supplier</th>
             </tr>
         </thead>
@@ -254,6 +255,7 @@
                 $grandTotalKg = 0;
                 $grandTotalKarung = 0;
                 $grandTotalOngkos = 0;
+                $grandTotalDp = 0;
                 $rowIdx = 0;
             @endphp
 
@@ -262,6 +264,9 @@
                     @php
                         $penerimaCount = $kendaraan->penerimas->count();
                         $isFirstPenerima = true;
+                        // Hitung total DP untuk kendaraan ini
+                        $totalDpKendaraan = (float) $kendaraan->oaPayments->where('tipe_pembayaran', 'dp_supplier')->sum('jumlah_bayar');
+                        $grandTotalDp += $totalDpKendaraan;
                     @endphp
                     @foreach ($kendaraan->penerimas as $penerima)
                         @php
@@ -317,8 +322,15 @@
                                 {{ $totalOngkosPenerima > 0 ? number_format($totalOngkosPenerima, 0, ',', '.') : '-' }}
                             </td>
 
+                            {{-- DP --}}
+                            @if ($loop->first)
+                                <td rowspan="{{ $penerimaCount }}" style="vertical-align:middle; font-weight:bold;">
+                                    {{ $totalDpKendaraan > 0 ? number_format($totalDpKendaraan, 0, ',', '.') : '-' }}
+                                </td>
+                            @endif
+
                             {{-- Supplier --}}
-                            <td rowspan="{{ $isFirstPenerima ? 1 : 1 }}" style="font-weight: bold;">
+                            <td rowspan="{{ $penerimaCount }}" style="vertical-align:middle; font-weight: bold;">
                                 {{ $kendaraan->supplier?->nama ?? '-' }}
                             </td>
                         </tr>
@@ -339,6 +351,7 @@
                 <td>{{ $grandTotalKarung > 0 ? number_format($grandTotalKarung, 0, ',', '.') : '-' }}</td>
                 <td colspan="1"></td>
                 <td>{{ number_format($grandTotalOngkos, 0, ',', '.') }}</td>
+                <td>{{ $grandTotalDp > 0 ? number_format($grandTotalDp, 0, ',', '.') : '-' }}</td>
                 <td></td>
             </tr>
         </tbody>
