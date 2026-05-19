@@ -12,7 +12,7 @@ class Cv extends Model
 
     protected $fillable = ['nama_cv', 'code', 'is_aktif', 'alamat', 'nama_bank', 'no_rekening', 'atas_nama_rekening', 'nama_pimpinan', 'no_dokumen_prefix', 'logo'];
 
-    const BATAS_OMZET = 48_000_000; // Rp 48 juta per tahun
+    const BATAS_OMZET = 48_000_000_000; // Rp 48 juta per tahun
 
     public function purchaseOrders()
     {
@@ -54,7 +54,7 @@ class Cv extends Model
             ->selectRaw('purchase_orders.cv_id, SUM(po_penerima_pakan.jumlah_kg * COALESCE(po_penerima_pakan.harga_pt_sum, 0)) as omzet')
             ->groupBy('purchase_orders.cv_id')
             ->pluck('omzet', 'cv_id');
-
+        dd($omzets);
         return static::where('is_aktif', true)
             ->get()
             ->map(function ($cv) use ($omzets) {
