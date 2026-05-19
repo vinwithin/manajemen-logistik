@@ -54,7 +54,6 @@ class Cv extends Model
             ->selectRaw('purchase_orders.cv_id, SUM(po_penerima_pakan.jumlah_kg * COALESCE(po_penerima_pakan.harga_pt_sum, 0)) as omzet')
             ->groupBy('purchase_orders.cv_id')
             ->pluck('omzet', 'cv_id');
-        dd($omzets);
         return static::where('is_aktif', true)
             ->get()
             ->map(function ($cv) use ($omzets) {
