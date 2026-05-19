@@ -12,7 +12,7 @@ class PoPenerima extends Model
     protected $table = 'po_penerima';
 
     protected $fillable = [
-        'po_kendaraan_id', 'penerima_id', 'nama_penerima', 'tujuan_id', 'status',
+        'po_kendaraan_id', 'penerima_id', 'nama_penerima', 'no_do', 'tujuan_id', 'status',
         'bukti_tiba', 'validasi_oleh', 'tiba_at',
     ];
 

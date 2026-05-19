@@ -458,7 +458,7 @@
                                 <td class="td-center" style="vertical-align:middle;">
                                     {{ $kodePakanStr !== '' ? $kodePakanStr : '—' }}</td>
                                 <td rowspan="{{ $penerimaCount }}" style="vertical-align:middle;">
-                                    {{ $kendaraan->no_surat_jalan ?? '-' }}</td>
+                                    {{ $penerima->no_do ?? '-' }}</td>
                                 <td rowspan="{{ $penerimaCount }}" style="vertical-align:middle;">
                                     {{ $kendaraan->no_polisi }}</td>
                                 @php $isFirstPenerima = false; @endphp

@@ -164,7 +164,7 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                         $po->tanggal_po->translatedFormat('d F Y'),
                         $po->no_po,
                         $kendaraan->no_polisi,
-                        $kendaraan->no_surat_jalan ?? '-',
+                        $penerima?->no_do ?? '-',
                         $namaTujuan,
                         $penerima?->nama_penerima ?? '',
                     ];

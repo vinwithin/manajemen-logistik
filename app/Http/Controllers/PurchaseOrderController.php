@@ -145,7 +145,7 @@ class PurchaseOrderController extends Controller
             $kodePakanList = KodePakan::orderBy('kode')->get();
 
             $pdf = Pdf::loadView('pdf.purchase-order-supplier', compact('po', 'kodePakanList'))
-                ->setPaper('a4', 'landscape')
+                ->setPaper('legal', 'landscape')
                 ->setOption('margin-top', 10)
                 ->setOption('margin-bottom', 10)
                 ->setOption('margin-left', 10)
@@ -173,7 +173,7 @@ class PurchaseOrderController extends Controller
             $kodePakanList = KodePakan::orderBy('kode')->get();
 
             $pdf = Pdf::loadView('pdf.purchase-order-ptsum', compact('po', 'kodePakanList'))
-                ->setPaper('a4', 'landscape')
+                ->setPaper('legal', 'landscape')
                 ->setOption('margin-top', 10)
                 ->setOption('margin-bottom', 10)
                 ->setOption('margin-left', 10)
@@ -289,6 +289,9 @@ class PurchaseOrderController extends Controller
 
             $query = PurchaseOrder::with([
                 'cv',
+                'kendaraans' => function ($q) {
+                    $q->where('status', '!=', 'batal');
+                },
                 'kendaraans.supplier',
                 'kendaraans.oaPayments',
                 'kendaraans.penerimas.pakans.kodePakan',
@@ -453,6 +456,9 @@ class PurchaseOrderController extends Controller
 
             $query = PurchaseOrder::with([
                 'cv',
+                'kendaraans' => function ($q) {
+                    $q->where('status', '!=', 'batal');
+                },
                 'kendaraans.supplier',
                 'kendaraans.penerimas.pakans.kodePakan',
                 'kendaraans.penerimas.tujuan',
@@ -538,7 +544,6 @@ class PurchaseOrderController extends Controller
             'kendaraan' => 'required|array|min:1',
             'kendaraan.*.no_polisi' => 'required|string|max:20',
             'kendaraan.*.nama_sopir' => 'nullable|string|max:255',
-            'kendaraan.*.no_surat_jalan' => 'nullable|string|max:100',
             'kendaraan.*.supplier_id' => 'nullable|exists:suppliers,id',
             'kendaraan.*.jenis_kendaraan' => 'nullable|string|max:100',
             'kendaraan.*.tujuan_id' => 'required|exists:tujuan,id',
@@ -557,6 +562,7 @@ class PurchaseOrderController extends Controller
             'kendaraan.*.penerima.*.penerima_id' => 'nullable|exists:penerima,id',
             'kendaraan.*.penerima.*.nama_penerima' => 'nullable|string|max:255',
             'kendaraan.*.penerima.*.tujuan_id' => 'nullable|exists:tujuan,id',
+            'kendaraan.*.penerima.*.no_surat_jalan' => 'nullable|string|max:100',
             'kendaraan.*.penerima.*.pakans' => 'nullable|array|min:0',
             'kendaraan.*.penerima.*.pakans.*.kode_pakan_id' => 'nullable|exists:kode_pakan,id',
             'kendaraan.*.penerima.*.pakans.*.jumlah_kg' => 'nullable|numeric|min:0.01',
@@ -581,7 +587,6 @@ class PurchaseOrderController extends Controller
                     'po_id' => $po->id,
                     'no_polisi' => strtoupper(trim($kendaraanData['no_polisi'])),
                     'nama_sopir' => $kendaraanData['nama_sopir'] ?? null,
-                    'no_surat_jalan' => $kendaraanData['no_surat_jalan'] ?? null,
                     'supplier_id' => $kendaraanData['supplier_id'] ?? null,
                     'jenis_kendaraan' => $kendaraanData['jenis_kendaraan'] ?? null,
                     'tujuan_id' => $kendaraanData['tujuan_id'] ?? null,
@@ -611,6 +616,7 @@ class PurchaseOrderController extends Controller
                         'penerima_id' => $penerimaData['penerima_id'] ?? null,
                         'nama_penerima' => $penerimaData['nama_penerima'],
                         'tujuan_id' => $penerimaData['tujuan_id'] ?? null,
+                        'no_do' => $penerimaData['no_surat_jalan'] ?? null,
                         'status' => 'pending',
                     ]);
 
@@ -740,7 +746,6 @@ class PurchaseOrderController extends Controller
             $po = PurchaseOrder::with([
                 'cv',
                 'kendaraans.supplier',
-                'kendaraans.dpPayment',
                 'kendaraans.penerimas.pakans.kodePakan',
                 'kendaraans.penerimas.tujuan',
             ])->findOrFail(decrypt($id));
@@ -769,23 +774,18 @@ class PurchaseOrderController extends Controller
             'kendaraan.*.id' => 'nullable|exists:po_kendaraan,id',
             'kendaraan.*.no_polisi' => 'required|string|max:20',
             'kendaraan.*.nama_sopir' => 'nullable|string|max:255',
-            'kendaraan.*.no_surat_jalan' => 'nullable|string|max:100',
             'kendaraan.*.supplier_id' => 'nullable|exists:suppliers,id',
             'kendaraan.*.jenis_kendaraan' => 'nullable|string|max:100',
             'kendaraan.*.tujuan_id' => 'required|exists:tujuan,id',
             'kendaraan.*.jumlah_kg' => 'nullable|numeric|min:0',
             'kendaraan.*.ongkos_angkut' => 'nullable|numeric|min:0',
             'kendaraan.*.status' => 'nullable|in:pending,berangkat,selesai,batal',
-            'kendaraan.*.dp_nominal' => 'nullable|numeric|min:0',
-            'kendaraan.*.dp_persen' => 'nullable|numeric|min:0|max:100',
-            'kendaraan.*.dp_tanggal' => 'nullable|date',
-            'kendaraan.*.dp_metode' => 'nullable|in:transfer,tunai,giro',
-            'kendaraan.*.dp_keterangan' => 'nullable|string',
             'kendaraan.*.penerima' => 'nullable|array',
             'kendaraan.*.penerima.*.id' => 'nullable|exists:po_penerima,id',
             'kendaraan.*.penerima.*.penerima_id' => 'nullable|exists:penerima,id',
             'kendaraan.*.penerima.*.nama_penerima' => 'nullable|string|max:255',
             'kendaraan.*.penerima.*.tujuan_id' => 'nullable|exists:tujuan,id',
+            'kendaraan.*.penerima.*.no_surat_jalan' => 'nullable|string|max:100',
             'kendaraan.*.penerima.*.status' => 'nullable|in:pending,berangkat,tiba,selesai,batal',
             'kendaraan.*.penerima.*.pakans' => 'nullable|array',
             'kendaraan.*.penerima.*.pakans.*.kode_pakan_id' => 'nullable|exists:kode_pakan,id',
@@ -819,7 +819,6 @@ class PurchaseOrderController extends Controller
                 $kendaraan->fill([
                     'no_polisi' => strtoupper(trim($kendaraanData['no_polisi'])),
                     'nama_sopir' => $kendaraanData['nama_sopir'] ?? null,
-                    'no_surat_jalan' => $kendaraanData['no_surat_jalan'] ?? null,
                     'supplier_id' => $kendaraanData['supplier_id'] ?? null,
                     'jenis_kendaraan' => $kendaraanData['jenis_kendaraan'] ?? null,
                     'tujuan_id' => $kendaraanData['tujuan_id'] ?? null,
@@ -829,11 +828,6 @@ class PurchaseOrderController extends Controller
                         ? (int) ceil($kendaraanData['jumlah_kg'] / 50)
                         : null,
                     'status' => $kendaraanData['status'] ?? 'pending',
-                    'dp_nominal' => $kendaraanData['dp_nominal'] ?? 0,
-                    'dp_persen' => $kendaraanData['dp_persen'] ?? null,
-                    'dp_tanggal' => $kendaraanData['dp_tanggal'] ?? null,
-                    'dp_metode' => $kendaraanData['dp_metode'] ?? null,
-                    'dp_keterangan' => $kendaraanData['dp_keterangan'] ?? null,
                 ]);
                 $kendaraan->save();
                 $savedKendaraanIds[] = $kendaraan->id;
@@ -857,6 +851,7 @@ class PurchaseOrderController extends Controller
                         'penerima_id' => $penerimaData['penerima_id'] ?? null,
                         'nama_penerima' => $penerimaData['nama_penerima'],
                         'tujuan_id' => $penerimaData['tujuan_id'] ?? null,
+                        'no_do' => $penerimaData['no_surat_jalan'] ?? null,
                         'status' => $penerimaData['status'] === 'pending' && $statusKendaraan === 'berangkat' ? 'berangkat' : $penerimaData['status'],
                     ]);
                     $penerima->save();
@@ -875,53 +870,6 @@ class PurchaseOrderController extends Controller
                             'harga_pt_sum' => $pakanData['harga_pt_sum'] ?? 0,
                         ]);
                     }
-                }
-
-                // Hitung total tagihan OA untuk kendaraan
-                $totalTagihanKendaraan = 0;
-                foreach ($kendaraan->penerimas as $p) {
-                    foreach ($p->pakans as $pakan) {
-                        $totalTagihanKendaraan += ($pakan->jumlah_kg ?? 0) * ($pakan->ongkos_oa ?? 0);
-                    }
-                }
-
-                // Update atau buat OaPayment untuk DP
-                if ($totalTagihanKendaraan > 0) {
-                    $dpNominal = (! empty($kendaraanData['dp_nominal']) && $kendaraanData['dp_nominal'] > 0)
-                        ? $kendaraanData['dp_nominal']
-                        : 0;
-                    $dpTanggal = $kendaraanData['dp_tanggal'] ?? null;
-                    $dpMetode = $kendaraanData['dp_metode'] ?? null;
-                    $dpKeterangan = $kendaraanData['dp_keterangan'] ?? null;
-
-                    $jumlahBayar = $dpNominal;
-                    $tanggalBayar = $dpNominal > 0 ? ($dpTanggal ?? now()) : null;
-                    $metodeBayar = $dpNominal > 0 ? ($dpMetode ?? 'transfer') : null;
-
-                    $keterangan = 'Pembayaran OA - Kendaraan ' . $kendaraan->no_polisi . ' (PO: ' . $po->no_po . ')';
-                    if ($dpNominal > 0 && $dpKeterangan) {
-                        $keterangan .= ' | DP: ' . $dpKeterangan;
-                    }
-
-                    $status = 'pending';
-                    if ($dpNominal > 0) {
-                        $status = $dpNominal >= $totalTagihanKendaraan ? 'lunas' : 'partial';
-                    }
-
-                    // Update atau buat OaPayment
-                    $kendaraan->dpPayment()->updateOrCreate(
-                        ['tipe_pembayaran' => 'dp_supplier'],
-                        [
-                            'po_penerima_id' => null,
-                            'supplier_id' => $kendaraan->supplier_id,
-                            'jumlah_tagihan' => $totalTagihanKendaraan,
-                            'jumlah_bayar' => $jumlahBayar,
-                            'tanggal_bayar' => $tanggalBayar,
-                            'metode_bayar' => $metodeBayar,
-                            'keterangan' => $keterangan,
-                            'status' => $status,
-                        ]
-                    );
                 }
             }
 
@@ -995,6 +943,7 @@ class PurchaseOrderController extends Controller
         $request->validate([
             'validasi_oleh' => 'required|string|max:255',
             'tanggal_lansir' => 'required|date',
+            'no_do' => 'nullable|string|max:100',
             'mobils' => 'required|array|min:1',
             'mobils.*.no_polisi' => 'required|string|max:20',
             'mobils.*.nama_sopir' => 'nullable|string|max:255',
@@ -1026,6 +975,7 @@ class PurchaseOrderController extends Controller
                 'po_penerima_id' => $penerima->id,
                 'validasi_oleh' => $request->validasi_oleh,
                 'tanggal_lansir' => $request->tanggal_lansir,
+                'no_do' => $request->no_do,
                 'selesai_at' => now(),
             ]);
 

@@ -19,6 +19,7 @@ class GudangLansirPenerima extends Model
         'bukti_tiba',
         'tiba_at',
         'validasi_oleh',
+        'no_do',
     ];
 
     protected $casts = [

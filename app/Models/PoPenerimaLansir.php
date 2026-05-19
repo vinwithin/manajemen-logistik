@@ -10,7 +10,7 @@ class PoPenerimaLansir extends Model
 {
     protected $table = 'po_penerima_lansir';
 
-    protected $fillable = ['po_penerima_id', 'validasi_oleh', 'tanggal_lansir', 'selesai_at'];
+    protected $fillable = ['po_penerima_id', 'no_do', 'validasi_oleh', 'tanggal_lansir', 'selesai_at'];
 
     protected $casts = [
         'selesai_at'     => 'datetime',

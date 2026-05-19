@@ -223,9 +223,9 @@
             <tr class="head-group">
                 <th style="width:5px;">No</th>
                 <th style="width:35px;">Tanggal</th>
+                <th style="width:42px;">No. Mobil</th>
                 <th style="width:38px;">Kode Pakan</th>
                 <th style="width:28px;">No. DO</th>
-                <th style="width:42px;">No. Mobil</th>
                 <th style="width:65px;">Tujuan</th>
                 <th style="width:65px;">Cost Center</th>
                 <th style="width:42px;">Jumlah<br>(Kg)</th>
@@ -256,14 +256,16 @@
                         // Hitung total DP untuk kendaraan ini
                         $totalDpKendaraan = (float) $kendaraan->oaPayments->where('tipe_pembayaran', 'dp_supplier')->sum('jumlah_bayar');
                         $grandTotalDp += $totalDpKendaraan;
-                        // Hitung total ongkos untuk seluruh kendaraan
+                        
+                        // Hitung total ongkos untuk SELURUH penerima di kendaraan ini
                         $totalOngkosKendaraan = 0;
                         foreach ($kendaraan->penerimas as $p) {
                             $totalOngkosKendaraan += (float) $p->pakans->sum(
-                                fn($pakan) => (float) $pakan->jumlah_kg * (float) ($pakan->ongkos_oa ?? 0),
+                                fn($pak) => (float) $pak->jumlah_kg * (float) ($pak->ongkos_oa ?? 0),
                             );
                         }
-                        // Hitung sisa
+                        
+                        // Hitung sisa tagihan
                         $sisaKendaraan = max(0, $totalOngkosKendaraan - $totalDpKendaraan);
                         $grandTotalSisa += $sisaKendaraan;
                     @endphp
@@ -293,17 +295,14 @@
                                     {{ $no++ }}</td>
                                 <td rowspan="{{ $penerimaCount }}" style="vertical-align:middle;">
                                     {{ $po->tanggal_po->translatedFormat('d F Y') }}</td>
-                                <td class="td-center" style="vertical-align:middle;">
-                                    {{ $kodePakanStr !== '' ? $kodePakanStr : '—' }}</td>
-                                <td rowspan="{{ $penerimaCount }}" style="vertical-align:middle;">
-                                    {{ $kendaraan->no_surat_jalan ?? '-' }}</td>
                                 <td rowspan="{{ $penerimaCount }}" style="vertical-align:middle;">
                                     {{ $kendaraan->no_polisi }}</td>
                                 @php $isFirstPenerima = false; @endphp
-                            @else
-                                <td class="td-center">
-                                    {{ $kodePakanStr !== '' ? $kodePakanStr : '—' }}</td>
                             @endif
+                            <td class="td-center" style="vertical-align:middle;">
+                                {{ $kodePakanStr !== '' ? $kodePakanStr : '—' }}</td>
+                            <td rowspan="{{ $penerimaCount }}" style="vertical-align:middle;">
+                                {{ $penerima->no_do ?? '-' }}</td>
                             <td class="td-center">{{ Str::upper($penerima->nama_penerima ?? '-') }}</td>
                             <td class="td-center">{{ Str::upper($penerima->tujuan?->nama ?? '-') }}</td>
 

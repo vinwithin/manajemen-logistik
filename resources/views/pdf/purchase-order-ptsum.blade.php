@@ -6,7 +6,7 @@
     <title>PO {{ $po->no_po }} - PT Sum</title>
     <style>
         * {
-            margin: 18px;
+            margin: 35px 35px 0 35px;
             padding: 0;
             box-sizing: border-box;
         }
@@ -18,16 +18,46 @@
             color: #000;
         }
 
+        /* ===== JUDUL ===== */
         .doc-title {
             text-align: center;
-            font-size: 12px;
+            font-size: 16px;
             font-weight: normal;
-            text-transform: uppercase;
             margin: 0;
         }
 
-        table.rekap {
+        .doc-subtitle {
+            text-align: center;
+            font-size: 9px;
+            margin-bottom: 8px;
+        }
+
+
+        /* ===== INFO HEADER ===== */
+        .info-box {
             width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 8px;
+            border: 1px solid #000;
+        }
+
+        .info-box td {
+            padding: 3px 6px;
+            font-size: 8px;
+            border: 1px solid #aaa;
+        }
+
+        .info-box td.info-label {
+            font-weight: bold;
+            width: 80px;
+        }
+
+        .info-box td.info-value {}
+
+        /* ===== TABEL UTAMA ===== */
+        table.rekap {
+            margin-bottom: 0;
+            width: 95%;
             border-collapse: collapse;
             border: 1px solid #000;
         }
@@ -36,31 +66,34 @@
             text-align: center;
         }
 
+        /* Header baris 1: group */
         table.rekap thead tr.head-group th {
             color: white;
             font-weight: bold;
             background: rgb(123, 123, 239);
-            font-size: 7.5px;
+            font-size: 11px;
             text-align: center;
             padding: 5px 2px;
             border: 1px solid #000;
             vertical-align: middle;
         }
 
+        /* Header baris 2: sub kode pakan */
         table.rekap thead tr.head-sub th {
             color: white;
             font-weight: bold;
-            font-size: 7px;
+            font-size: 11px;
             text-align: center;
             background: rgb(123, 123, 239);
             padding: 3px 2px;
             border: 1px solid #000;
         }
 
+        /* Data rows */
         table.rekap tbody td {
             padding: 3px 3px;
             border: 1px solid #000;
-            font-size: 7.5px;
+            font-size: 11px;
             text-align: center;
             vertical-align: middle;
         }
@@ -74,8 +107,12 @@
             color: #000;
         }
 
+
+
+        /* Nilai pakan */
         td.td-karung-val {
             color: #000;
+
         }
 
         td.td-kg-val {
@@ -88,10 +125,17 @@
         }
 
         td.td-harga {
-            font-weight: bold;
             color: #000;
         }
 
+        /* Label satuan */
+        .unit-label {
+            font-size: 6px;
+            color: #999;
+            display: block;
+        }
+
+        /* Baris TOTAL */
         tr.row-total td {
             color: #000;
             font-weight: bold;
@@ -100,10 +144,11 @@
             border: 1px solid #000;
         }
 
+        /* ===== SIGNATURE ===== */
         .sign-table {
-            width: 100%;
+            width: 90%;
             border-collapse: collapse;
-            margin-top: 25px;
+            margin-top: 0;
         }
 
         .sign-table td {
@@ -114,7 +159,7 @@
         }
 
         .sign-label {
-            font-size: 10px;
+            font-size: 11px;
             font-weight: normal;
             display: block;
             margin-bottom: 50px;
@@ -128,6 +173,7 @@
             font-size: 7.5px;
         }
 
+        /* ===== PAGE BREAK ===== */
         .page-break {
             page-break-after: always;
         }
@@ -135,30 +181,42 @@
         /* ===== KWITANSI ===== */
         .kwitansi-wrap {
             font-family: 'Times New Roman', Times, serif;
+            width: 70%;
             font-size: 10px;
+            margin: 0;
+            padding: 0;
         }
 
         .kwit-header-table {
-            width: 100%;
+            width: 90%;
             border-collapse: collapse;
-            margin-bottom: 6px;
+            margin-bottom: 10px;
         }
 
         .kwit-header-table td {
             vertical-align: middle;
         }
 
+
         .kwit-company-name {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
+            text-align: left;
             color: rgb(123, 123, 239);
             letter-spacing: 1px;
         }
 
         .kwit-company-sub {
-            font-size: 8px;
+            font-size: 10px;
+            margin-top: 0;
             color: rgb(123, 123, 239);
             font-style: italic;
+        }
+
+        .kwit-divider {
+            border: none;
+            border-top: 2.5px solid #000;
+            margin: 6px 0 0 0;
         }
 
         .kwit-title-bar {
@@ -191,6 +249,7 @@
         .kwit-body-table td.kwit-label {
             font-weight: bold;
             width: 155px;
+            font-size: 12px;
             white-space: nowrap;
             color: #000;
         }
@@ -200,7 +259,13 @@
         }
 
         .kwit-body-table td.kwit-value {
-            border-bottom: 1px solid #aaa;
+            font-size: 12px;
+
+        }
+
+        .kwit-amount-box {
+            margin-top: 4px;
+            display: inline-block;
         }
 
         .kwit-amount {
@@ -213,6 +278,19 @@
             font-style: italic;
             font-size: 12px;
             color: #444;
+        }
+
+        .kwit-payment-box {
+            padding: 8px 12px;
+            margin-top: 16px;
+            font-size: 9px;
+        }
+
+        .kwit-payment-box .pay-title {
+            font-weight: bold;
+            font-size: 9px;
+            color: #000;
+            margin-bottom: 3px;
         }
 
         .kwit-sign-table {
@@ -246,45 +324,80 @@
 
     {{-- ==================== HALAMAN 1: REKAPITULASI ==================== --}}
 
-    <div class="doc-title">REKAPITULASI PENGIRIMAN PAKAN</div>
-    <div class="doc-title">PT. SURYA UNGGAS MANDIRI</div>
-    <div class="doc-title">UNIT JAMBI</div>
-    <div class="doc-title">No. PO : {{ $po->no_po }} &nbsp;&mdash;&nbsp;
-        {{ $po->tanggal_po->translatedFormat('d F Y') }}
-        @if ($po->cv)
-            &nbsp;&mdash;&nbsp; {{ $po->cv->nama_cv }}
+    @php
+        $cv = $po->cv;
+        $cvLogo = $cv?->logo;
+        $cvLogoBase64 = null;
+        if ($cvLogo && Storage::disk('public')->exists($cvLogo)) {
+            $type = pathinfo($cvLogo, PATHINFO_EXTENSION);
+            $data = Storage::disk('public')->get($cvLogo);
+            $cvLogoBase64 = 'data:image/' . $type . ';base64,' . base64_encode($data);
+        }
+        $cvNama = $cv?->nama_cv ?? '-';
+        $cvAlamat = $cv?->alamat ?? '-';
+        $cvNamaBank = $cv?->nama_bank ?? '-';
+        $cvNoRek = $cv?->no_rekening ?? '-';
+        $cvAtasNama = $cv?->atas_nama_rekening ?? $cvNama;
+        $cvPimpinan = $cv?->nama_pimpinan ?? '';
+        $cvPrefix = $cv?->no_dokumen_prefix ?? '';
+        $noKwitansi = $cvPrefix ? $cvPrefix . '/' . $po->tanggal_po->format('III/Y') : $po->no_po;
+        $logoInisial = strtoupper(substr(preg_replace('/^CV\.?\s*/i', '', $cvNama), 0, 2));
+    @endphp
+
+    {{-- Header dengan Logo --}}
+    <div style="position: relative; margin-bottom: 15px;">
+        @if ($cvLogo && Storage::disk('public')->exists($cvLogo))
+            <div style="position: absolute; left: -25px; top: -45px;">
+                <img src="{{ $cvLogoBase64 }}"
+                    style="max-width: 100px; height: 50px; object-fit: contain; display: block; margin: 0; padding: 0;"
+                    alt="Logo CV">
+            </div>
         @endif
+
+        <div style="position: absolute; left: -52px; top: 8px;">
+            <div style="font-weight: bold; font-size: 10px; margin-top: 2px; margin-bottom: 0;">{{ $cvNama }}
+            </div>
+            <div style="font-size: 9px; padding-top: 0; margin-top: 0; color:rgb(123, 123, 239); font-style: italic;">
+                {{ $cvAlamat }}</div>
+        </div>
+        <div style="position: absolute; right: -25px; top: -25px; font-size:9px; color:#555; font-weight:bold;">
+            No. {{ $noKwitansi }}
+        </div>
+
+        <div class="doc-title">REKAPITULASI PENGIRIMAN PAKAN</div>
+        <div class="doc-title">PT. SURYA UNGGAS MANDIRI</div>
+        <div class="doc-title">UNIT JAMBI</div>
+        <div class="doc-title">No. PO : {{ $po->no_po }} &nbsp;&mdash;&nbsp;
+            {{ $po->tanggal_po->translatedFormat('d F Y') }}
+            @if ($po->cv)
+                &nbsp;&mdash;&nbsp; {{ $po->cv->nama_cv }}
+            @endif
+        </div>
     </div>
 
-    @php $kpCount = count($kodePakanList); @endphp
-
+    {{-- Tabel Utama --}}
     <table class="rekap">
         <thead>
             <tr class="head-group">
-                <th rowspan="2" style="width:18px;">NO</th>
-                <th rowspan="2" style="width:52px;">KENDARAAN</th>
-                <th rowspan="2" style="width:48px;">No. DO</th>
-                <th colspan="{{ $kpCount }}">JUMLAH (BAG)</th>
-                <th colspan="{{ $kpCount }}">JUMLAH (KG)</th>
-                <th rowspan="2" style="width:80px;">Tujuan</th>
-                <th rowspan="2" style="width:38px;">ONGKOS(Rp/kg)</th>
-                <th rowspan="2" style="width:55px;">TOTAL<br>HARGA (Rp)</th>
-            </tr>
-            <tr class="head-sub">
-                @foreach ($kodePakanList as $kp)
-                    <th style="width:25px;">{{ $kp->kode }}</th>
-                @endforeach
-                @foreach ($kodePakanList as $kp)
-                    <th style="width:25px;">{{ $kp->kode }}</th>
-                @endforeach
+                <th style="width:5px;">No</th>
+                <th style="width:35px;">Tanggal</th>
+                <th style="width:38px;">Kode Pakan</th>
+                <th style="width:28px;">No. DO</th>
+                <th style="width:42px;">No. Mobil</th>
+                <th style="width:65px;">Tujuan</th>
+                <th style="width:65px;">Cost Center</th>
+
+                <th style="width:42px;">Jumlah<br>(Kg)</th>
+                <th style="width:30px;">Bag</th>
+                <th style="width:30px;">Ongkos</th>
+                <th style="width:45px;">Total<br>Ongkos </th>
             </tr>
         </thead>
         <tbody>
             @php
                 $no = 1;
-                $subtotalsKarung = array_fill(0, $kpCount, 0);
-                $subtotalsKg = array_fill(0, $kpCount, 0);
                 $grandTotalKg = 0;
+                $grandTotalKarung = 0;
                 $grandTotalHarga = 0;
                 $rowIdx = 0;
             @endphp
@@ -296,78 +409,82 @@
                 @endphp
                 @foreach ($kendaraan->penerimas as $penerima)
                     @php
-                        $totalKgPenerima = 0;
-                        $totalHargaPenerima = 0;
-                        $hargaPtSum = 0;
+                        $totalKgPenerima = (float) $penerima->pakans->sum('jumlah_kg');
+                        $totalKarungPenerima = (int) $penerima->pakans->sum(
+                            fn($p) => (int) ($p->jumlah_karung ?? 0),
+                        );
+                        $totalHargaPenerima = (float) $penerima->pakans->sum(
+                            fn($p) => (float) $p->jumlah_kg * (float) ($p->harga_pt_sum ?? 0),
+                        );
+                        $hargaPtSum = $totalKgPenerima > 0 ? $totalHargaPenerima / $totalKgPenerima : 0;
+                        $kodePakanStr = $penerima->pakans
+                            ->map(fn($p) => $p->kodePakan?->kode)
+                            ->filter()
+                            ->unique()
+                            ->values()
+                            ->implode(', ');
                         $rowClass = $rowIdx % 2 === 0 ? 'row-even' : 'row-odd';
                         $rowIdx++;
                     @endphp
+
                     <tr class="{{ $rowClass }} isi">
                         @if ($isFirstPenerima)
                             <td class="td-no" rowspan="{{ $penerimaCount }}" style="vertical-align:middle;">
                                 {{ $no++ }}</td>
                             <td rowspan="{{ $penerimaCount }}" style="vertical-align:middle;">
-                                {{ $kendaraan->no_polisi }}</td>
+                                {{ $po->tanggal_po->translatedFormat('d F Y') }}</td>
+                            <td class="td-center" style="vertical-align:middle;">
+                                {{ $kodePakanStr !== '' ? $kodePakanStr : '—' }}</td>
                             <td rowspan="{{ $penerimaCount }}" style="vertical-align:middle;">
-                                {{ $kendaraan->no_surat_jalan ?? '-' }}</td>
+                                {{ $penerima->no_do ?? '-' }}</td>
+                            <td rowspan="{{ $penerimaCount }}" style="vertical-align:middle;">
+                                {{ $kendaraan->no_polisi }}</td>
                             @php $isFirstPenerima = false; @endphp
+                        @else
+                            <td class="td-center">
+                                {{ $kodePakanStr !== '' ? $kodePakanStr : '—' }}</td>
                         @endif
+                        <td class="td-center">{{ Str::upper($penerima->nama_penerima ?? '-') }}</td>
+                        <td class="td-center">{{ Str::upper($penerima->tujuan?->nama ?? '-') }}</td>
 
-                        @foreach ($kodePakanList as $i => $kp)
-                            @php
-                                $pakan = $penerima->pakans->firstWhere('kode_pakan_id', $kp->id);
-                                if ($pakan) {
-                                    $subtotalsKarung[$i] += $pakan->jumlah_karung;
-                                }
-                            @endphp
-                            <td class="td-karung-val">
-                                {{ $pakan && $pakan->jumlah_karung ? $pakan->jumlah_karung : '' }}</td>
-                        @endforeach
+                        <td class="td-kg-val">
+                            {{ $totalKgPenerima > 0 ? number_format($totalKgPenerima, 0, ',', '.') : '' }}</td>
+                        <td class="td-karung-val">
+                            {{ $totalKarungPenerima > 0 ? number_format($totalKarungPenerima, 0, ',', '.') : '' }}
+                        </td>
 
-                        @foreach ($kodePakanList as $i => $kp)
-                            @php
-                                $pakan = $penerima->pakans->firstWhere('kode_pakan_id', $kp->id);
-                                if ($pakan && $pakan->jumlah_kg) {
-                                    $subtotalsKg[$i] += $pakan->jumlah_kg;
-                                    $totalKgPenerima += $pakan->jumlah_kg;
-                                    $totalHargaPenerima += $pakan->jumlah_kg * ($pakan->harga_pt_sum ?? 0);
-                                    if (!$hargaPtSum && $pakan->harga_pt_sum) {
-                                        $hargaPtSum = $pakan->harga_pt_sum;
-                                    }
-                                }
-                            @endphp
-                            <td class="td-kg-val">
-                                {{ $pakan && $pakan->jumlah_kg ? number_format($pakan->jumlah_kg, 0, ',', '.') : '' }}
-                            </td>
-                        @endforeach
 
-                        <td class="td-center">{{ $penerima->tujuan?->nama ?? '-' }}</td>
+                        {{-- Harga PT SUM per kg (rata-rata tertimbang kg) --}}
                         <td>{{ $hargaPtSum > 0 ? number_format($hargaPtSum, 0, ',', '.') : '-' }}</td>
+
+                        {{-- Total Harga --}}
                         <td class="td-harga">
-                            {{ $totalHargaPenerima > 0 ? number_format($totalHargaPenerima, 0, ',', '.') : '-' }}</td>
+                            {{ $totalHargaPenerima > 0 ? number_format($totalHargaPenerima, 0, ',', '.') : '-' }}
+                        </td>
+
+
                     </tr>
+
                     @php
                         $grandTotalKg += $totalKgPenerima;
+                        $grandTotalKarung += $totalKarungPenerima;
                         $grandTotalHarga += $totalHargaPenerima;
                     @endphp
                 @endforeach
             @endforeach
 
+            {{-- GRAND TOTAL --}}
             <tr class="row-total">
-                <td colspan="3" style="text-align:left; padding-left:8px; letter-spacing:1px;">TOTAL</td>
-                @foreach ($subtotalsKarung as $s)
-                    <td>{{ $s > 0 ? number_format($s, 0, ',', '.') : '-' }}</td>
-                @endforeach
-                @foreach ($subtotalsKg as $s)
-                    <td>{{ $s > 0 ? number_format($s, 0, ',', '.') : '-' }}</td>
-                @endforeach
-                <td></td>
-                <td></td>
+                <td colspan="7" style="text-align:center; padding-left:8px; letter-spacing:1px;">TOTAL</td>
+                <td>{{ $grandTotalKg > 0 ? number_format($grandTotalKg, 0, ',', '.') : '-' }}</td>
+                <td>{{ $grandTotalKarung > 0 ? number_format($grandTotalKarung, 0, ',', '.') : '-' }}</td>
+                <td colspan="1"></td>
                 <td>{{ number_format($grandTotalHarga, 0, ',', '.') }}</td>
             </tr>
         </tbody>
     </table>
 
+    {{-- Tanda Tangan --}}
     <table class="sign-table">
         <tr>
             <td>
@@ -376,12 +493,13 @@
                     class="sign-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
             </td>
             <td>
-                <span class="sign-label">Diketahui Oleh, <br>Branch Manager</span>
+                <span class="sign-label">Diketahui Oleh, <br> Branch Manager</span>
                 <span
                     class="sign-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
             </td>
             <td>
-                <span class="sign-label">{{ $po->tanggal_po->translatedFormat('d F Y') }}</span>
+                <span class="sign-label">Jambi, {{ now()->translatedFormat('d F Y') }}</span>
+
                 <span
                     class="sign-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
             </td>
@@ -390,47 +508,33 @@
 
     <div class="page-break"></div>
 
-    {{-- ==================== HALAMAN 2: KWITANSI ==================== --}}
-    @php
-        $cv = $po->cv;
-        $cvNama = $cv?->nama_cv ?? '-';
-        $cvAlamat = $cv?->alamat ?? '-';
-        $cvNamaBank = $cv?->nama_bank ?? '-';
-        $cvNoRek = $cv?->no_rekening ?? '-';
-        $cvAtasNama = $cv?->atas_nama_rekening ?? $cvNama;
-        $cvPimpinan = $cv?->nama_pimpinan ?? '';
-        $cvPrefix = $cv?->no_dokumen_prefix ?? '';
-        $noKwitansi = $cvPrefix ? $cvPrefix . '/' . $po->tanggal_po->format('III/Y') : $po->no_po;
-        $logoInisial = strtoupper(substr(preg_replace('/^CV\.?\s*/i', '', $cvNama), 0, 2));
-        try {
-            $formatter = new NumberFormatter('id', NumberFormatter::SPELLOUT);
-            $terbilang = ucwords($formatter->format($grandTotalHarga));
-        } catch (Exception $e) {
-            $terbilang = '...';
-        }
-    @endphp
+
 
     <div class="kwitansi-wrap">
+
         <div class="kwit-outer">
             <table class="kwit-header-table">
                 <tr>
-                    <td style="padding:0; margin:0;">
-                        <div class="kwit-company-name">{{ $cvNama }}</div>
-                        <div class="kwit-company-sub">{{ $cvAlamat }}</div>
+                    <td
+                        style="padding:0; margin:0; vertical-align:top; text-align:left; white-space: nowrap; width: 100%;">
+                        <div class="kwit-company-name" style="margin-top: 2px; margin-left:0;">{{ $cvNama }}
+                        </div>
+                        <div class="kwit-company-sub" style="margin-left:0;">{{ $cvAlamat }}</div>
                     </td>
-                    <td style="text-align:left; font-size:8px; color:#555; vertical-align:top;">
-                        No. {{ $noKwitansi }}
+                    <td
+                        style="text-align:right; font-size:8px; color:#555; vertical-align:top; white-space: nowrap; font-weight:bold;">
+                        No :&nbsp;&nbsp; {{ $noKwitansi }}
                     </td>
                 </tr>
             </table>
 
-            <div class="kwit-title-bar">K W I T A N S I</div>
+            <div class="kwit-title-bar">KWITANSI</div>
 
             <table class="kwit-body-table">
                 <tr>
                     <td class="kwit-label">Sudah Terima dari</td>
                     <td class="kwit-colon">:</td>
-                    <td class="kwit-value" style="font-weight:bold;">PT. SURYA UNGGAS MANDIRI</td>
+                    <td class="kwit-value" style="font-weight: bold;">PT. SURYA UNGGAS MANDIRI</td>
                 </tr>
                 <tr>
                     <td class="kwit-label">Untuk pembayaran</td>
@@ -445,45 +549,44 @@
                     <td class="kwit-label">Jumlah</td>
                     <td class="kwit-colon">:</td>
                     <td>
+
                         <div class="kwit-amount" style="padding:0; margin:0;">Rp &nbsp;
                             {{ number_format($grandTotalHarga, 0, ',', '.') }}</div>
-                        <div class="kwit-terbilang" style="padding:0; margin:0;">Terbilang : {{ $terbilang }}
-                            Rupiah,-</div>
+                        <div class="kwit-terbilang" style="padding:0; margin:0;">
+                            @php
+                                try {
+                                    $formatter = new NumberFormatter('id', NumberFormatter::SPELLOUT);
+                                    $terbilang = ucwords($formatter->format($grandTotalHarga));
+                                } catch (Exception $e) {
+                                    $terbilang = '...';
+                                }
+                            @endphp
+                            Terbilang : {{ $terbilang }} Rupiah,-
+                        </div>
                     </td>
                 </tr>
             </table>
 
-            <table class="kwit-body-table">
+            <table style="width: 100%; border-collapse: collapse; margin-top: 40px; margin-bottom: 20px">
                 <tr>
-                    <td class="kwit-label">PEMBAYARAN :</td>
-                </tr>
-                <tr>
-                    <td class="kwit-label">{{ $cvNamaBank }}</td>
-                </tr>
-                <tr>
-                    <td class="kwit-label">AN. {{ $cvAtasNama }}</td>
-                </tr>
-                <tr>
-                    <td class="kwit-label">NO REK : {{ $cvNoRek }}</td>
-                </tr>
-            </table>
-
-            <table class="kwit-sign-table">
-                <tr>
-                    <td style="width:60%;"></td>
-                    <td>
-                        <span class="kwit-sign-city">
+                    <td style="vertical-align: top; width: 50%; margin-top: 20px">
+                        <div style="font-weight: bold; font-size: 12px; line-height: 2; margin: 0;">PEMBAYARAN :</div>
+                        <div style="font-size: 12px; line-height: 2; margin: 0;">{{ $cvNamaBank }}</div>
+                        <div style="font-size: 12px; line-height: 2; margin: 0;">AN. {{ $cvAtasNama }}</div>
+                        <div style="font-size: 12px; line-height: 2; margin: 0;">NO REK : {{ $cvNoRek }}</div>
+                    </td>
+                    <td style="vertical-align: top; text-align: left; width: 50%;  ">
+                        <span style="display: block; margin-bottom: 45px; font-size: 12px; margin-top: 0;">
                             Jambi, {{ $po->tanggal_po->translatedFormat('d F Y') }}
                         </span>
-                        <span
-                            class="kwit-sign-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
-                        @if ($cvPimpinan)
-                            <br><strong>{{ $cvPimpinan }}</strong>
-                        @endif
+                        <span class="kwit-sign-line"></span>
+                        <div style="font-weight: bold; font-size: 12px; margin-top: 4px;">{{ $cvPimpinan }}</div>
                     </td>
                 </tr>
             </table>
+
         </div>
+
     </div>
 
 </body>

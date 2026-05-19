@@ -80,6 +80,10 @@
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <span class="fw-semibold">Trip #{{ $i + 1 }}</span>
                             <span class="text-muted small">
+                                @if ($lansir->no_do)
+                                    <i class="fa fa-file-text-o"></i> {{ $lansir->no_do }}
+                                    &nbsp;·&nbsp;
+                                @endif
                                 @if ($lansir->tanggal_lansir)
                                     <i class="fa fa-calendar"></i> {{ $lansir->tanggal_lansir->format('d/m/Y') }}
                                     &nbsp;·&nbsp;
@@ -226,6 +230,15 @@
                                 class="form-control @error('tanggal_lansir') is-invalid @enderror"
                                 value="{{ old('tanggal_lansir', date('Y-m-d')) }}">
                             @error('tanggal_lansir')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">No. Surat Jalan</label>
+                            <input type="text" name="no_do"
+                                class="form-control @error('no_do') is-invalid @enderror"
+                                value="{{ old('no_do', $penerima->no_do ?? '') }}" placeholder="Opsional">
+                            @error('no_do')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
