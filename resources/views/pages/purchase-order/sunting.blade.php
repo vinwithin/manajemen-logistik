@@ -1000,6 +1000,7 @@
                                     'nama_penerima' => $p->nama_penerima,
                                     'tujuan_id' => $p->tujuan_id,
                                     'tujuan_nama' => $p->tujuan->nama ?? '',
+                                    'no_do' => $p->no_do,
                                     'status' => $p->status,
                                     'pakans' => $p->pakans
                                         ->map(function ($pk) {

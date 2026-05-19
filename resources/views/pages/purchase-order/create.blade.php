@@ -583,6 +583,9 @@
                         'tujuan-nama') || '';
                     $card.find('.input-tujuan-display').val(tujuanNama);
                 }
+                
+                // Set No. Surat Jalan
+                $card.find('[name="kendaraan[' + ki + '][penerima][' + pi + '][no_surat_jalan]"]').val(oldData.no_do || '');
 
                 var pakans = oldData.pakans || [];
                 for (var pki = 0; pki < pakans.length; pki++) {
@@ -1017,6 +1020,7 @@
                                     return [
                                         'nama_penerima' => $p['nama_penerima'] ?? '',
                                         'tujuan_id' => $p['tujuan_id'] ?? '',
+                                        'no_do' => $p['no_surat_jalan'] ?? '',
                                         'pakans' => array_values($p['pakans'] ?? []),
                                     ];
                                 }, $kend['penerima'] ?? []),
