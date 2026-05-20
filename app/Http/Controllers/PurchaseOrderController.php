@@ -768,7 +768,7 @@ class PurchaseOrderController extends Controller
     public function update(Request $request, string $id)
     {
         $request->validate([
-            'no_po' => 'nullable|string|max:100|unique:purchase_orders,no_po',
+            'no_po' => 'nullable|string|max:100',
             'tanggal_po' => 'nullable|date',
             'catatan' => 'nullable|string',
             'cv_id' => 'nullable|exists:cv,id',
