@@ -434,15 +434,17 @@
                         <td style="vertical-align:middle;">
                             {{ $isFirstPenerima ? $po->tanggal_po->translatedFormat('d F Y') : '' }}
                         </td>
+                         <td class="td-center" style="vertical-align:middle;">
+                            {{ $kodePakanStr !== '' ? $kodePakanStr : '—' }}
+                        </td>
+                         <td style="vertical-align:middle;">
+                            {{ $isFirstPenerima ? ($penerima->no_do ?? '-') : '' }}
+                        </td>
                         <td style="vertical-align:middle;">
                             {{ $isFirstPenerima ? $kendaraan->no_polisi : '' }}
                         </td>
-                        <td class="td-center" style="vertical-align:middle;">
-                            {{ $kodePakanStr !== '' ? $kodePakanStr : '—' }}
-                        </td>
-                        <td style="vertical-align:middle;">
-                            {{ $isFirstPenerima ? ($penerima->no_do ?? '-') : '' }}
-                        </td>
+                       
+                       
                         <td class="td-center">{{ Str::upper($penerima->nama_penerima ?? '-') }}</td>
                         <td class="td-center">{{ Str::upper($penerima->tujuan?->nama ?? '-') }}</td>
                         <td class="td-kg-val">

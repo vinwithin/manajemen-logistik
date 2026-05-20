@@ -459,21 +459,23 @@
                             <td style="vertical-align:middle;">
                                 {{ $isFirstPenerima ? $po->tanggal_po->translatedFormat('d F Y') : '' }}
                             </td>
+                             {{-- Kode Pakan (tampil di setiap baris) --}}
+                            <td class="td-center" style="vertical-align:middle;">
+                                {{ $kodePakanStr !== '' ? $kodePakanStr : '—' }}
+                            </td>
+                             {{-- No. DO --}}
+                            <td style="vertical-align:middle;">
+                                {{ $isFirstPenerima ? ($penerima->no_do ?? '-') : '' }}
+                            </td>
 
                             {{-- No. Mobil --}}
                             <td style="vertical-align:middle;">
                                 {{ $isFirstPenerima ? $kendaraan->no_polisi : '' }}
                             </td>
 
-                            {{-- Kode Pakan (tampil di setiap baris) --}}
-                            <td class="td-center" style="vertical-align:middle;">
-                                {{ $kodePakanStr !== '' ? $kodePakanStr : '—' }}
-                            </td>
+                           
 
-                            {{-- No. DO --}}
-                            <td style="vertical-align:middle;">
-                                {{ $isFirstPenerima ? ($penerima->no_do ?? '-') : '' }}
-                            </td>
+                           
 
                             {{-- Nama Penerima --}}
                             <td class="td-center">{{ Str::upper($penerima->nama_penerima ?? '-') }}</td>
