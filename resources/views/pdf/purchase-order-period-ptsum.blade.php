@@ -462,7 +462,7 @@
                                 
                                 {{-- No. DO --}}
                                 <td style="vertical-align:middle;">
-                                    {{ $isFirstKendaraanPakan ? ($penerima->no_do ?? '-') : '' }}
+                                    {{ $penerima->no_do }}
                                 </td>
 
                                 {{-- No. Mobil --}}
