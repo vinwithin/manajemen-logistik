@@ -506,7 +506,7 @@ class PurchaseOrderController extends Controller
             $activeCvId = session('active_cv');
 
             $query = PurchaseOrder::with(['cv', 'kendaraans'])
-                ->withCount('kendaraans')->orderBy('created_at', 'desc');
+                ->withCount('kendaraans')->orderBy('tanggal_po', 'desc');
 
             if ($activeCvId) {
                 $query->where('cv_id', $activeCvId);

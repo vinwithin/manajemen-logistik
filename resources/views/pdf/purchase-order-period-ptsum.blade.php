@@ -426,89 +426,83 @@
             @foreach ($pos as $po)
                 @foreach ($po->kendaraans->sortBy('no_polisi') as $kendaraan)
                     @php
-                        $penerimaCount = $kendaraan->penerimas->count();
-                        $isFirstPenerima = true;
+                        $kendaraanPakanCount = 0;
+                        foreach ($kendaraan->penerimas as $p) {
+                            $kendaraanPakanCount += $p->pakans->count();
+                        }
+                        $isFirstKendaraanPakan = true;
                     @endphp
                     @foreach ($kendaraan->penerimas as $penerima)
-                        @php
-                            $totalKgPenerima = (float) $penerima->pakans->sum('jumlah_kg');
-                            $totalKarungPenerima = (int) $penerima->pakans->sum(
-                                fn($p) => (int) ($p->jumlah_karung ?? 0),
-                            );
-                            $totalHargaPenerima = (float) $penerima->pakans->sum(
-                                fn($p) => (float) $p->jumlah_kg * (float) ($p->harga_pt_sum ?? 0),
-                            );
-                            $hargaPtSum = $totalKgPenerima > 0 ? $totalHargaPenerima / $totalKgPenerima : 0;
-                            $kodePakanStr = $penerima->pakans
-                                ->map(fn($p) => $p->kodePakan?->kode)
-                                ->filter()
-                                ->unique()
-                                ->values()
-                                ->implode(', ');
-                            $rowClass = $rowIdx % 2 === 0 ? 'row-even' : 'row-odd';
-                            $rowIdx++;
-                        @endphp
+                        @foreach ($penerima->pakans as $pakan)
+                            @php
+                                $totalKgPakan = (float) $pakan->jumlah_kg;
+                                $totalKarungPakan = (int) ($pakan->jumlah_karung ?? 0);
+                                $totalHargaPakan = (float) $pakan->jumlah_kg * (float) ($pakan->harga_pt_sum ?? 0);
+                                $hargaPtSum = $pakan->harga_pt_sum ?? 0;
+                                $kodePakanStr = $pakan->kodePakan?->kode ?? '—';
+                                $rowClass = $rowIdx % 2 === 0 ? 'row-even' : 'row-odd';
+                                $rowIdx++;
+                            @endphp
 
-                      <tr class="{{ $rowClass }} isi">
-                            {{-- No --}}
-                            <td class="td-no" style="vertical-align:middle;">
-                                {{ $isFirstPenerima ? $no++ : '' }}
-                            </td>
+                            <tr class="{{ $rowClass }} isi">
+                                {{-- No --}}
+                                <td class="td-no" style="vertical-align:middle;">
+                                    {{ $isFirstKendaraanPakan ? $no++ : '' }}
+                                </td>
 
-                            {{-- Tanggal --}}
-                            <td style="vertical-align:middle;">
-                                {{ $isFirstPenerima ? $po->tanggal_po->translatedFormat('d F Y') : '' }}
-                            </td>
-                             {{-- Kode Pakan (tampil di setiap baris) --}}
-                            <td class="td-center" style="vertical-align:middle;">
-                                {{ $kodePakanStr !== '' ? $kodePakanStr : '—' }}
-                            </td>
-                             {{-- No. DO --}}
-                            <td style="vertical-align:middle;">
-                                {{ $isFirstPenerima ? ($penerima->no_do ?? '-') : '' }}
-                            </td>
+                                {{-- Tanggal --}}
+                                <td style="vertical-align:middle;">
+                                    {{ $isFirstKendaraanPakan ? $po->tanggal_po->translatedFormat('d F Y') : '' }}
+                                </td>
+                                
+                                {{-- Kode Pakan --}}
+                                <td class="td-center" style="vertical-align:middle;">
+                                    {{ $kodePakanStr }}
+                                </td>
+                                
+                                {{-- No. DO --}}
+                                <td style="vertical-align:middle;">
+                                    {{ $isFirstKendaraanPakan ? ($penerima->no_do ?? '-') : '' }}
+                                </td>
 
-                            {{-- No. Mobil --}}
-                            <td style="vertical-align:middle;">
-                                {{ $isFirstPenerima ? $kendaraan->no_polisi : '' }}
-                            </td>
+                                {{-- No. Mobil --}}
+                                <td style="vertical-align:middle;">
+                                    {{ $isFirstKendaraanPakan ? $kendaraan->no_polisi : '' }}
+                                </td>
 
-                           
+                                {{-- Nama Penerima --}}
+                                <td class="td-center">{{ Str::upper($penerima->nama_penerima ?? '-') }}</td>
 
-                           
+                                {{-- Tujuan --}}
+                                <td class="td-center">{{ Str::upper($penerima->tujuan?->nama ?? '-') }}</td>
 
-                            {{-- Nama Penerima --}}
-                            <td class="td-center">{{ Str::upper($penerima->nama_penerima ?? '-') }}</td>
+                                {{-- Jumlah Kg --}}
+                                <td class="td-kg-val">
+                                    {{ $totalKgPakan > 0 ? number_format($totalKgPakan, 0, ',', '.') : '' }}
+                                </td>
 
-                            {{-- Tujuan --}}
-                            <td class="td-center">{{ Str::upper($penerima->tujuan?->nama ?? '-') }}</td>
+                                {{-- Bag --}}
+                                <td class="td-karung-val">
+                                    {{ $totalKarungPakan > 0 ? number_format($totalKarungPakan, 0, ',', '.') : '' }}
+                                </td>
 
-                            {{-- Jumlah Kg --}}
-                            <td class="td-kg-val">
-                                {{ $totalKgPenerima > 0 ? number_format($totalKgPenerima, 0, ',', '.') : '' }}
-                            </td>
+                                {{-- Harga PT SUM per kg --}}
+                                <td>{{ $hargaPtSum > 0 ? number_format($hargaPtSum, 0, ',', '.') : '-' }}</td>
 
-                            {{-- Bag --}}
-                            <td class="td-karung-val">
-                                {{ $totalKarungPenerima > 0 ? number_format($totalKarungPenerima, 0, ',', '.') : '' }}
-                            </td>
+                                {{-- Total Harga --}}
+                                <td class="td-harga">
+                                    {{ $totalHargaPakan > 0 ? number_format($totalHargaPakan, 0, ',', '.') : '-' }}
+                                </td>
 
-                            {{-- Harga PT SUM per kg --}}
-                            <td>{{ $hargaPtSum > 0 ? number_format($hargaPtSum, 0, ',', '.') : '-' }}</td>
+                                @php $isFirstKendaraanPakan = false; @endphp
+                            </tr>
 
-                            {{-- Total Harga --}}
-                            <td class="td-harga">
-                                {{ $totalHargaPenerima > 0 ? number_format($totalHargaPenerima, 0, ',', '.') : '-' }}
-                            </td>
-
-                            @php $isFirstPenerima = false; @endphp
-                        </tr>
-
-                        @php
-                            $grandTotalKg += $totalKgPenerima;
-                            $grandTotalKarung += $totalKarungPenerima;
-                            $grandTotalHarga += $totalHargaPenerima;
-                        @endphp
+                            @php
+                                $grandTotalKg += $totalKgPakan;
+                                $grandTotalKarung += $totalKarungPakan;
+                                $grandTotalHarga += $totalHargaPakan;
+                            @endphp
+                        @endforeach
                     @endforeach
                 @endforeach
             @endforeach
