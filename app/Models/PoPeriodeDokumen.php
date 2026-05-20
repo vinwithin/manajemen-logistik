@@ -38,7 +38,7 @@ class PoPeriodeDokumen extends Model
         $bulanRomawi = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
         $bulan = $bulanRomawi[(int) date('n', strtotime($dari)) - 1];
 
-        $noSurat = "{$urutan}-{$prefix}/{$bulan}/{$tahun}";
+        $noSurat = "{$urutan}-{$prefix}//{$bulan}/{$tahun}";
 
         return ['no_surat' => $noSurat, 'urutan' => $urutan];
     }

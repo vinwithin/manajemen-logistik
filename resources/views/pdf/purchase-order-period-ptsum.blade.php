@@ -447,12 +447,12 @@
                             <tr class="{{ $rowClass }} isi">
                                 {{-- No --}}
                                 <td class="td-no" style="vertical-align:middle;">
-                                    {{ $isFirstKendaraanPakan ? $no++ : '' }}
+                                    {{ $no++ }}
                                 </td>
 
                                 {{-- Tanggal --}}
                                 <td style="vertical-align:middle;">
-                                    {{ $isFirstKendaraanPakan ? $po->tanggal_po->translatedFormat('d F Y') : '' }}
+                                    {{ $po->tanggal_po->translatedFormat('d F Y') }}
                                 </td>
                                 
                                 {{-- Kode Pakan --}}
@@ -467,7 +467,7 @@
 
                                 {{-- No. Mobil --}}
                                 <td style="vertical-align:middle;">
-                                    {{ $isFirstKendaraanPakan ? $kendaraan->no_polisi : '' }}
+                                    {{ $kendaraan->no_polisi}}
                                 </td>
 
                                 {{-- Nama Penerima --}}
