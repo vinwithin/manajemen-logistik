@@ -360,9 +360,9 @@
             <div style="font-size: 9px; padding-top: 0; margin-top: 0; color:rgb(123, 123, 239); font-style: italic;">
                 {{ $cvAlamat }}</div>
         </div>
-        <div style="position: absolute; right: -25px; top: -25px; font-size:9px; color:#555; font-weight:bold;">
+        <!-- <div style="position: absolute; right: -25px; top: -25px; font-size:9px; color:#555; font-weight:bold;">
             No. {{ $noKwitansi }}
-        </div>
+        </div> -->
 
         <div class="doc-title">REKAPITULASI PENGIRIMAN PAKAN</div>
         <div class="doc-title">PT. SURYA UNGGAS MANDIRI</div>
@@ -509,10 +509,10 @@
                         </div>
                         <div class="kwit-company-sub" style="margin-left:0;">{{ $cvAlamat }}</div>
                     </td>
-                    <td
+                    <!-- <td
                         style="text-align:right; font-size:8px; color:#555; vertical-align:top; white-space: nowrap; font-weight:bold;">
                         No :&nbsp;&nbsp; {{ $noKwitansi }}
-                    </td>
+                    </td> -->
                 </tr>
             </table>
 
