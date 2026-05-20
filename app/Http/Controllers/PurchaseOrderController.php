@@ -845,6 +845,68 @@ class PurchaseOrderController extends Controller
                 $savedKendaraanIds[] = $kendaraan->id;
                 $statusKendaraan = $kendaraanData['status'] ?? 'pending';
 
+                // Hitung total tagihan OA untuk kendaraan ini
+                $totalTagihanKendaraan = 0;
+                foreach ($kendaraanData['penerima'] ?? [] as $penerimaData) {
+                    foreach ($penerimaData['pakans'] ?? [] as $pakanData) {
+                        if (empty($pakanData['kode_pakan_id']) || empty($pakanData['jumlah_kg'])) {
+                            continue;
+                        }
+                        $totalTagihanKendaraan += ($pakanData['jumlah_kg'] ?? 0) * ($pakanData['ongkos_oa'] ?? 0);
+                    }
+                }
+
+                // Handle DP Payment
+                $dpNominal = (! empty($kendaraanData['dp_nominal']) && $kendaraanData['dp_nominal'] > 0)
+                    ? $kendaraanData['dp_nominal']
+                    : 0;
+                $dpTanggal = $kendaraanData['dp_tanggal'] ?? null;
+                $dpMetode = $kendaraanData['dp_metode'] ?? null;
+                $dpKeterangan = $kendaraanData['dp_keterangan'] ?? null;
+
+                if ($totalTagihanKendaraan > 0) {
+                    $jumlahBayar = $dpNominal;
+                    $tanggalBayar = $dpNominal > 0 ? ($dpTanggal ?? now()) : null;
+                    $metodeBayar = $dpNominal > 0 ? ($dpMetode ?? 'transfer') : null;
+
+                    $keterangan = 'Pembayaran OA - Kendaraan ' . $kendaraan->no_polisi . ' (PO: ' . $po->no_po . ')';
+                    if ($dpNominal > 0 && $dpKeterangan) {
+                        $keterangan .= ' | DP: ' . $dpKeterangan;
+                    }
+
+                    $status = 'pending';
+                    if ($dpNominal > 0) {
+                        $status = $dpNominal >= $totalTagihanKendaraan ? 'lunas' : 'partial';
+                    }
+
+                    // Update atau buat OaPayment
+                    $oaPayment = $kendaraan->dpPayment()->first();
+                    if ($oaPayment) {
+                        $oaPayment->update([
+                            'jumlah_tagihan' => $totalTagihanKendaraan,
+                            'jumlah_bayar' => $jumlahBayar,
+                            'tanggal_bayar' => $tanggalBayar,
+                            'metode_bayar' => $metodeBayar,
+                            'keterangan' => $keterangan,
+                            'status' => $status,
+                            'supplier_id' => $kendaraan->supplier_id,
+                        ]);
+                    } else {
+                        OaPayment::create([
+                            'po_kendaraan_id' => $kendaraan->id,
+                            'po_penerima_id' => null,
+                            'supplier_id' => $kendaraan->supplier_id,
+                            'tipe_pembayaran' => 'dp_supplier',
+                            'jumlah_tagihan' => $totalTagihanKendaraan,
+                            'jumlah_bayar' => $jumlahBayar,
+                            'tanggal_bayar' => $tanggalBayar,
+                            'metode_bayar' => $metodeBayar,
+                            'keterangan' => $keterangan,
+                            'status' => $status,
+                        ]);
+                    }
+                }
+
                 $submittedPenerimaIds = collect($kendaraanData['penerima'] ?? [])->pluck('id')->filter()->values();
                 $kendaraan->penerimas()->whereNotIn('id', $submittedPenerimaIds)->delete();
 
