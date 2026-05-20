@@ -252,6 +252,55 @@
                 {{-- Indikator selisih muatan vs penerima --}}
                 <div class="alert py-2 small mb-3 indikator-muatan" style="display:none"></div>
 
+                {{-- Section Down Payment (DP) --}}
+                <div class="border-top pt-3 mt-3 mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="mb-0 text-success"><i class="fa fa-money"></i> Down Payment (DP) Supplier</h6>
+                        <small class="text-muted">Opsional</small>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-md-3">
+                            <label class="form-label small">Nominal DP (Rp)</label>
+                            <input type="text" class="form-control form-control-sm input-dp-nominal-display"
+                                placeholder="0" value="0">
+                            <input type="hidden" name="kendaraan[__KI__][dp_nominal]" class="input-dp-nominal"
+                                value="0">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small">Persentase (%)</label>
+                            <input type="number" name="kendaraan[__KI__][dp_persen]"
+                                class="form-control form-control-sm input-dp-persen bg-light" placeholder="0"
+                                step="0.01" min="0" max="100" readonly>
+                            <small class="text-muted">Auto-calculated</small>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small">Tanggal Bayar</label>
+                            <input type="date" name="kendaraan[__KI__][dp_tanggal]"
+                                class="form-control form-control-sm">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small">Metode Pembayaran</label>
+                            <select name="kendaraan[__KI__][dp_metode]" class="form-select form-select-sm">
+                                <option value="">-- Pilih --</option>
+                                <option value="transfer">Transfer Bank</option>
+                                <option value="tunai">Tunai</option>
+                                <option value="giro">Giro</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small">Keterangan DP</label>
+                            <textarea name="kendaraan[__KI__][dp_keterangan]" class="form-control form-control-sm" rows="2"
+                                placeholder="Catatan pembayaran DP (opsional)"></textarea>
+                        </div>
+                        <div class="col-12">
+                            <div class="alert alert-info py-2 small mb-0 info-dp" style="display:none;">
+                                <strong>Info Tagihan:</strong>
+                                <span class="info-dp-text"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 {{-- Daftar Penerima dalam kendaraan --}}
                 <div class="border rounded p-3 bg-light">
                     <div class="d-flex justify-content-between align-items-center mb-2">
@@ -455,6 +504,26 @@
                 if (data.jumlah_kg) {
                     $card.find('.input-muatan-kg').val(data.jumlah_kg);
                     updateMuatanKarung($card);
+                }
+
+                // Set DP fields
+                if (data.dp_nominal) {
+                    var dpNominal = parseFloat(data.dp_nominal) || 0;
+                    $card.find('.input-dp-nominal').val(dpNominal);
+                    if (typeof formatRupiah === 'function') {
+                        $card.find('.input-dp-nominal-display').val(formatRupiah(dpNominal));
+                    } else {
+                        $card.find('.input-dp-nominal-display').val(dpNominal);
+                    }
+                }
+                if (data.dp_tanggal) {
+                    $card.find('[name="kendaraan[' + ki + '][dp_tanggal]"]').val(data.dp_tanggal);
+                }
+                if (data.dp_metode) {
+                    $card.find('[name="kendaraan[' + ki + '][dp_metode]"]').val(data.dp_metode);
+                }
+                if (data.dp_keterangan) {
+                    $card.find('[name="kendaraan[' + ki + '][dp_keterangan]"]').val(data.dp_keterangan);
                 }
 
                 // Set supplier dan populate jenis kendaraan dropdown
@@ -977,6 +1046,10 @@
             $(this).removeClass('is-invalid');
         });
 
+        // ── DP Handler Script - Load sebelum init untuk memastikan fungsi tersedia ──────────────────
+    </script>
+    <script src="{{ asset('js/po-dp-handler.js') }}"></script>
+    <script>
         // ── Init: load data existing dari server ──────────────────
         @php
             $kendaraanData = $po->kendaraans
@@ -992,6 +1065,11 @@
                         'ongkos_angkut' => $k->ongkos_angkut,
                         'jumlah_kg' => $k->jumlah_kg,
                         'status' => $k->status,
+                        'dp_nominal' => $k->dp_nominal,
+                        'dp_persen' => $k->dp_persen,
+                        'dp_tanggal' => $k->dp_tanggal?->format('Y-m-d'),
+                        'dp_metode' => $k->dp_metode,
+                        'dp_keterangan' => $k->dp_keterangan,
                         'penerima' => $k->penerimas
                             ->map(function ($p) {
                                 return [

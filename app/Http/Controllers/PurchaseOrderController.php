@@ -780,6 +780,12 @@ class PurchaseOrderController extends Controller
             'kendaraan.*.jumlah_kg' => 'nullable|numeric|min:0',
             'kendaraan.*.ongkos_angkut' => 'nullable|numeric|min:0',
             'kendaraan.*.status' => 'nullable|in:pending,berangkat,selesai,batal',
+            // Validasi DP
+            'kendaraan.*.dp_nominal' => 'nullable|numeric|min:0',
+            'kendaraan.*.dp_persen' => 'nullable|numeric|min:0|max:100',
+            'kendaraan.*.dp_tanggal' => 'nullable|date',
+            'kendaraan.*.dp_metode' => 'nullable|string|in:transfer,tunai,giro',
+            'kendaraan.*.dp_keterangan' => 'nullable|string|max:500',
             'kendaraan.*.penerima' => 'nullable|array',
             'kendaraan.*.penerima.*.id' => 'nullable|exists:po_penerima,id',
             'kendaraan.*.penerima.*.penerima_id' => 'nullable|exists:penerima,id',
@@ -828,6 +834,12 @@ class PurchaseOrderController extends Controller
                         ? (int) ceil($kendaraanData['jumlah_kg'] / 50)
                         : null,
                     'status' => $kendaraanData['status'] ?? 'pending',
+                    // Data DP
+                    'dp_nominal' => $kendaraanData['dp_nominal'] ?? 0,
+                    'dp_persen' => $kendaraanData['dp_persen'] ?? null,
+                    'dp_tanggal' => $kendaraanData['dp_tanggal'] ?? null,
+                    'dp_metode' => $kendaraanData['dp_metode'] ?? null,
+                    'dp_keterangan' => $kendaraanData['dp_keterangan'] ?? null,
                 ]);
                 $kendaraan->save();
                 $savedKendaraanIds[] = $kendaraan->id;
