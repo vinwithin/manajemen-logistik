@@ -427,42 +427,35 @@
                         $rowIdx++;
                     @endphp
 
-                    <tr class="{{ $rowClass }} isi">
-                        @if ($isFirstPenerima)
-                            <td class="td-no" rowspan="{{ $penerimaCount }}" style="vertical-align:middle;">
-                                {{ $no++ }}</td>
-                            <td rowspan="{{ $penerimaCount }}" style="vertical-align:middle;">
-                                {{ $po->tanggal_po->translatedFormat('d F Y') }}</td>
-                            <td class="td-center" style="vertical-align:middle;">
-                                {{ $kodePakanStr !== '' ? $kodePakanStr : '—' }}</td>
-                            <td rowspan="{{ $penerimaCount }}" style="vertical-align:middle;">
-                                {{ $penerima->no_do ?? '-' }}</td>
-                            <td rowspan="{{ $penerimaCount }}" style="vertical-align:middle;">
-                                {{ $kendaraan->no_polisi }}</td>
-                            @php $isFirstPenerima = false; @endphp
-                        @else
-                            <td class="td-center">
-                                {{ $kodePakanStr !== '' ? $kodePakanStr : '—' }}</td>
-                        @endif
+                   <tr class="{{ $rowClass }} isi">
+                        <td class="td-no" style="vertical-align:middle;">
+                            {{ $isFirstPenerima ? $no++ : '' }}
+                        </td>
+                        <td style="vertical-align:middle;">
+                            {{ $isFirstPenerima ? $po->tanggal_po->translatedFormat('d F Y') : '' }}
+                        </td>
+                        <td style="vertical-align:middle;">
+                            {{ $isFirstPenerima ? $kendaraan->no_polisi : '' }}
+                        </td>
+                        <td class="td-center" style="vertical-align:middle;">
+                            {{ $kodePakanStr !== '' ? $kodePakanStr : '—' }}
+                        </td>
+                        <td style="vertical-align:middle;">
+                            {{ $isFirstPenerima ? ($penerima->no_do ?? '-') : '' }}
+                        </td>
                         <td class="td-center">{{ Str::upper($penerima->nama_penerima ?? '-') }}</td>
                         <td class="td-center">{{ Str::upper($penerima->tujuan?->nama ?? '-') }}</td>
-
                         <td class="td-kg-val">
-                            {{ $totalKgPenerima > 0 ? number_format($totalKgPenerima, 0, ',', '.') : '' }}</td>
+                            {{ $totalKgPenerima > 0 ? number_format($totalKgPenerima, 0, ',', '.') : '' }}
+                        </td>
                         <td class="td-karung-val">
                             {{ $totalKarungPenerima > 0 ? number_format($totalKarungPenerima, 0, ',', '.') : '' }}
                         </td>
-
-
-                        {{-- Harga PT SUM per kg (rata-rata tertimbang kg) --}}
                         <td>{{ $hargaPtSum > 0 ? number_format($hargaPtSum, 0, ',', '.') : '-' }}</td>
-
-                        {{-- Total Harga --}}
                         <td class="td-harga">
                             {{ $totalHargaPenerima > 0 ? number_format($totalHargaPenerima, 0, ',', '.') : '-' }}
                         </td>
-
-
+                        @php $isFirstPenerima = false; @endphp
                     </tr>
 
                     @php

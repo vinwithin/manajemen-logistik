@@ -281,49 +281,43 @@
                     @endphp
 
                     <tr class="{{ $rowClass }} isi">
-                        @if ($isFirstPenerima)
-                            <td class="td-no" rowspan="{{ $penerimaCount }}" style="vertical-align:middle;">
-                                {{ $no++ }}</td>
-                            <td rowspan="{{ $penerimaCount }}" style="vertical-align:middle;">
-                                {{ $po->tanggal_po->translatedFormat('d F Y') }}</td>
-                            <td rowspan="{{ $penerimaCount }}" style="vertical-align:middle;">
-                                {{ $kendaraan->no_polisi }}</td>
-                            @php $isFirstPenerima = false; @endphp
-                        @endif
+                        <td class="td-no" style="vertical-align:middle;">
+                            {{ $isFirstPenerima ? $no++ : '' }}
+                        </td>
+                        <td style="vertical-align:middle;">
+                            {{ $isFirstPenerima ? $po->tanggal_po->translatedFormat('d F Y') : '' }}
+                        </td>
+                        <td style="vertical-align:middle;">
+                            {{ $isFirstPenerima ? $kendaraan->no_polisi : '' }}
+                        </td>
                         <td class="td-center" style="vertical-align:middle;">
-                            {{ $kodePakanStr !== '' ? $kodePakanStr : '—' }}</td>
-                        <td rowspan="{{ $penerimaCount }}" style="vertical-align:middle;">
-                            {{ $penerima->no_do ?? '-' }}</td>
+                            {{ $kodePakanStr !== '' ? $kodePakanStr : '—' }}
+                        </td>
+                        <td style="vertical-align:middle;">
+                            {{ $isFirstPenerima ? ($penerima->no_do ?? '-') : '' }}
+                        </td>
                         <td class="td-center">{{ Str::upper($penerima->nama_penerima ?? '-') }}</td>
                         <td class="td-center">{{ Str::upper($penerima->tujuan?->nama ?? '-') }}</td>
-
                         <td class="td-kg-val">
-                            {{ $totalKgPenerima > 0 ? number_format($totalKgPenerima, 0, ',', '.') : '' }}</td>
+                            {{ $totalKgPenerima > 0 ? number_format($totalKgPenerima, 0, ',', '.') : '' }}
+                        </td>
                         <td class="td-karung-val">
                             {{ $totalKarungPenerima > 0 ? number_format($totalKarungPenerima, 0, ',', '.') : '' }}
                         </td>
-
-                        {{-- Ongkos OA per kg --}}
                         <td>{{ $ongkosPerKg > 0 ? number_format($ongkosPerKg, 0, ',', '.') : '-' }}</td>
-
-                        {{-- Total Ongkos --}}
                         <td class="td-harga">
                             {{ $totalOngkosPenerima > 0 ? number_format($totalOngkosPenerima, 0, ',', '.') : '-' }}
                         </td>
-
-                        {{-- DP --}}
-                        @if ($loop->first)
-                            <td rowspan="{{ $penerimaCount }}" style="vertical-align:middle; font-weight:bold;">
-                                {{ $totalDpKendaraan > 0 ? number_format($totalDpKendaraan, 0, ',', '.') : '-' }}
-                            </td>
-                            <td rowspan="{{ $penerimaCount }}" style="vertical-align:middle; font-weight:bold;">
-                                {{ $sisaKendaraan > 0 ? number_format($sisaKendaraan, 0, ',', '.') : '-' }}
-                            </td>
-                        @endif
-
-                         <td rowspan="{{ $penerimaCount }}" style="font-weight: bold;">
-                            {{ $kendaraan->supplier?->nama ?? '-' }}
+                        <td style="vertical-align:middle; font-weight:bold;">
+                            {{ $isFirstPenerima ? ($totalDpKendaraan > 0 ? number_format($totalDpKendaraan, 0, ',', '.') : '-') : '' }}
                         </td>
+                        <td style="vertical-align:middle; font-weight:bold;">
+                            {{ $isFirstPenerima ? ($sisaKendaraan > 0 ? number_format($sisaKendaraan, 0, ',', '.') : '-') : '' }}
+                        </td>
+                        <td style="font-weight:bold;">
+                            {{ $isFirstPenerima ? ($kendaraan->supplier?->nama ?? '-') : '' }}
+                        </td>
+                        @php $isFirstPenerima = false; @endphp
                     </tr>
 
                     @php

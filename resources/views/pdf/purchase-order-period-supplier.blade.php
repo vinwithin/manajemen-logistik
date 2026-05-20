@@ -309,54 +309,22 @@
                             $rowIdx++;
                         @endphp
 
-                        <tr class="{{ $rowClass }} isi">
-                            @if ($loop->first)
-                                <td class="td-no" rowspan="{{ $penerimaCount }}" style="vertical-align:middle;">
-                                    {{ $no++ }}</td>
-                                <td rowspan="{{ $penerimaCount }}" style="vertical-align:middle;">
-                                    {{ $po->tanggal_po->translatedFormat('d F Y') }}</td>
-                                <td rowspan="{{ $penerimaCount }}" style="vertical-align:middle;">
-                                    {{ $kendaraan->no_polisi }}</td>
-                            @endif
-                            
-                            <td class="td-center" style="vertical-align:middle;">
-                                {{ $kodePakanStr !== '' ? $kodePakanStr : '—' }}</td>
-                            
-                     
-                                <td class="td-center" style="vertical-align:middle;">
-                                    {{ $penerima->no_do ?? '-' }}</td>
-                           
-                            
-                            <td class="td-center">{{ Str::upper($penerima->nama_penerima ?? '-') }}</td>
-                            <td class="td-center">{{ Str::upper($penerima->tujuan?->nama ?? '-') }}</td>
-
-                            <td class="td-kg-val">
-                                {{ $totalKgPenerima > 0 ? number_format($totalKgPenerima, 0, ',', '.') : '' }}</td>
-                            <td class="td-karung-val">
-                                {{ $totalKarungPenerima > 0 ? number_format($totalKarungPenerima, 0, ',', '.') : '' }}
-                            </td>
-
-                            {{-- Ongkos OA per kg --}}
-                            <td>{{ $ongkosPerKg > 0 ? number_format($ongkosPerKg, 0, ',', '.') : '-' }}</td>
-
-                            {{-- Total Ongkos --}}
-                            <td class="td-harga">
-                                {{ $totalOngkosPenerima > 0 ? number_format($totalOngkosPenerima, 0, ',', '.') : '-' }}
-                            </td>
-
-                            {{-- DP and Sisa --}}
-                            @if ($loop->first)
-                                <td rowspan="{{ $penerimaCount }}" style="vertical-align:middle; font-weight:bold;">
-                                    {{ $totalDpKendaraan > 0 ? number_format($totalDpKendaraan, 0, ',', '.') : '-' }}
-                                </td>
-                                <td rowspan="{{ $penerimaCount }}" style="vertical-align:middle; font-weight:bold;">
-                                    {{ $sisaKendaraan > 0 ? number_format($sisaKendaraan, 0, ',', '.') : '-' }}
-                                </td>
-                                <td rowspan="{{ $penerimaCount }}" style="vertical-align:middle; font-weight:bold;">
-                                    {{ $kendaraan->supplier?->nama ?? '-' }}
-                                </td>
-                            @endif
-                        </tr>
+                       <tr class="{{ $rowClass }} isi">
+                            <td class="td-no">{{ $loop->first ? $no++ : '' }}</td>
+                            <td>{{ $loop->first ? $po->tanggal_po->translatedFormat('d F Y') : '' }}</td>
+                            <td>{{ $loop->first ? $kendaraan->no_polisi : '' }}</td>
+                            <td>{{ $kodePakanStr !== '' ? $kodePakanStr : '—' }}</td>
+                            <td>{{ $penerima->no_do ?? '-' }}</td>
+                            <td>{{ Str::upper($penerima->nama_penerima ?? '-') }}</td>
+                            <td>{{ Str::upper($penerima->tujuan?->nama ?? '-') }}</td>
+                            <td>{{ $totalKgPenerima > 0 ? number_format($totalKgPenerima,0,',','.') : '' }}</td>
+                            <td>{{ $totalKarungPenerima > 0 ? number_format($totalKarungPenerima,0,',','.') : '' }}</td>
+                            <td>{{ $ongkosPerKg > 0 ? number_format($ongkosPerKg,0,',','.') : '-' }}</td>
+                            <td>{{ $totalOngkosPenerima > 0 ? number_format($totalOngkosPenerima,0,',','.') : '-' }}</td>
+                            <td>{{ $loop->first ? ($totalDpKendaraan > 0 ? number_format($totalDpKendaraan,0,',','.') : '-') : '' }}</td>
+                            <td>{{ $loop->first ? ($sisaKendaraan > 0 ? number_format($sisaKendaraan,0,',','.') : '-') : '' }}</td>
+                            <td>{{ $loop->first ? ($kendaraan->supplier?->nama ?? '-') : '' }}</td>
+                        </tr>   
 
                         @php
                             $grandTotalKg += $totalKgPenerima;
