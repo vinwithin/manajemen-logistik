@@ -422,10 +422,10 @@
 
                         <tr class="{{ $rowClass }} isi">
                             <td class="td-no" style="vertical-align:middle;">
-                                {{ $isFirstKendaraanPakan ? $no++ : '' }}
+                                {{  $no++ }}
                             </td>
                             <td style="vertical-align:middle;">
-                                {{ $isFirstKendaraanPakan ? $po->tanggal_po->translatedFormat('d F Y') : '' }}
+                                {{ $po->tanggal_po->translatedFormat('d F Y') }}
                             </td>
                             <td class="td-center" style="vertical-align:middle;">
                                 {{ $kodePakanStr }}
@@ -434,7 +434,7 @@
                                 {{ $penerima->no_do }}
                             </td>
                             <td style="vertical-align:middle;">
-                                {{ $isFirstKendaraanPakan ? $kendaraan->no_polisi : '' }}
+                                {{  $kendaraan->no_polisi }}
                             </td>
                            
                             <td class="td-center">{{ Str::upper($penerima->nama_penerima ?? '-') }}</td>
