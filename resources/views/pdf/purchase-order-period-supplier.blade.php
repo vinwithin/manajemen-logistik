@@ -302,10 +302,10 @@
                             <td class="td-center" style="vertical-align:middle;">
                                 {{ $kodePakanStr !== '' ? $kodePakanStr : '—' }}</td>
                             
-                            @if ($loop->first)
-                                <td rowspan="{{ $penerimaCount }}" style="vertical-align:middle;">
-                                    {{ $kendaraan->penerimas->first()?->no_do ?? '-' }}</td>
-                            @endif
+                     
+                                <td class="td-center" style="vertical-align:middle;">
+                                    {{ $penerima->no_do ?? '-' }}</td>
+                           
                             
                             <td class="td-center">{{ Str::upper($penerima->nama_penerima ?? '-') }}</td>
                             <td class="td-center">{{ Str::upper($penerima->tujuan?->nama ?? '-') }}</td>
