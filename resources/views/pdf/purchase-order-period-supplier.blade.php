@@ -64,6 +64,26 @@
         .isi {
             text-align: center;
         }
+          thead {
+            display: table-header-group;
+        }
+        
+        tfoot {
+            display: table-footer-group;
+        }
+        
+        table {
+            page-break-inside: avoid;
+        }
+        
+        tr {
+            page-break-inside: avoid;
+            page-break-after: auto;
+        }
+        
+        td, th {
+            page-break-inside: avoid;
+        }
         
 
         /* Header baris 1: group */
