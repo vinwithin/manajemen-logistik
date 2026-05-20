@@ -410,7 +410,7 @@ class PurchaseOrderController extends Controller
             $to = $request->to;
             $supplierId = $request->supplier_id;
             $tujuanId = $request->tujuan_id;
-            $buatNoSurat = $request->boolean('buat_no_surat'); // checkbox
+            $noSuratInput = $request->no_surat;
 
             if (! $cvId) {
                 return redirect()->route('purchase-order.export-ptsum-confirm')
@@ -420,10 +420,19 @@ class PurchaseOrderController extends Controller
             $cv = Cv::find($cvId);
             $noSurat = null;
           
+            // Fix typo findOfFail → findOrFail and update tujuanType mapping
+            $tujuan = Tujuan::findOrFail($tujuanId);
+            $tujuanTypeMap = [
+                'co_farm' => 'CFJ',
+                'rent_farm' => 'RFJ',
+                'gudang' => 'GJ',
+                'direct' => 'DRC',
+            ];
+            $tujuanType = $tujuanTypeMap[$tujuan->type] ?? 'DRC';
 
-            if ($buatNoSurat && $from && $to && $cv) {
+            if ($noSuratInput && $from && $to && $cv) {
                 // Gunakan database transaction dan locking untuk menghindari race condition
-                $dokumen = \DB::transaction(function () use ($cvId, $from, $to, $cv, $request) {
+                $dokumen = \DB::transaction(function () use ($cvId, $from, $to, $cv, $request, $noSuratInput) {
                     // Cek apakah sudah ada dokumen untuk periode ini
                     $existing = PoPeriodeDokumen::where('cv_id', $cvId)
                         ->where('dari', $from)
@@ -432,21 +441,25 @@ class PurchaseOrderController extends Controller
                         ->first();
 
                     if ($existing) {
-                        // Jika sudah ada, gunakan dokumen yang sudah ada
+                        // Update existing dokumen dengan no surat baru
+                        $existing->update([
+                            'no_surat' => $noSuratInput,
+                            'catatan' => $request->catatan,
+                        ]);
                         return $existing;
                     }
 
-                    // Generate nomor surat baru (selalu increment, tidak peduli periode)
+                    // Generate urutan otomatis tapi gunakan no surat manual
                     $generated = PoPeriodeDokumen::generateNoSurat($cv, 'ptsum', $from);
 
-                    // Buat dokumen baru
+                    // Buat dokumen baru dengan no surat manual
                     return PoPeriodeDokumen::create([
                         'cv_id' => $cvId,
                         'dari' => $from,
                         'sampai' => $to,
                         'tipe' => 'ptsum',
                         'urutan' => $generated['urutan'],
-                        'no_surat' => $generated['no_surat'],
+                        'no_surat' => $noSuratInput,
                         'catatan' => $request->catatan,
                         'created_by' => Auth::user()->id,
                     ]);

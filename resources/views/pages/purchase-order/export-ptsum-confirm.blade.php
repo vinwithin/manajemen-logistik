@@ -111,15 +111,11 @@
                                 </h6>
                             </div>
                             <div class="card-body">
-                                <div class="form-check mb-2">
-                                    <input class="form-check-input" type="checkbox" name="buat_no_surat"
-                                        id="checkBuatNoSurat" value="1" {{ $dokumen ? 'checked' : '' }}>
-                                    <label class="form-check-label fw-semibold" for="checkBuatNoSurat">
-                                        Buat Nomor Surat
-                                    </label>
+                                <div class="mb-2">
+                                    <label class="form-label small">Nomor Surat</label>
+                                    <input type="text" name="no_surat" class="form-control form-control-sm"
+                                        value="{{ $dokumen?->no_surat ?? ($noSuratSuggest ?? '') }}" placeholder="Masukkan nomor surat">
                                     <div class="text-muted small mt-1">
-                                        Jika dicentang, nomor surat akan di-generate otomatis dan muncul di kwitansi PDF.
-                                        Nomor increment per CV per tahun.
                                         @if ($dokumen)
                                             <span class="text-success ms-1">
                                                 <i class="fa fa-check-circle"></i>
