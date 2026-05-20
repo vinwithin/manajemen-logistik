@@ -367,11 +367,9 @@
         <div class="doc-title">REKAPITULASI PENGIRIMAN PAKAN</div>
         <div class="doc-title">PT. SURYA UNGGAS MANDIRI</div>
         <div class="doc-title">UNIT JAMBI</div>
-        <div class="doc-title">No. PO : {{ $po->no_po }} &nbsp;&mdash;&nbsp;
+        <div class="doc-title">
             {{ $po->tanggal_po->translatedFormat('d F Y') }}
-            @if ($po->cv)
-                &nbsp;&mdash;&nbsp; {{ $po->cv->nama_cv }}
-            @endif
+           
         </div>
     </div>
 
