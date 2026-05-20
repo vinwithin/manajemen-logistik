@@ -72,9 +72,9 @@
             display: table-footer-group;
         }
         
-        table {
+        /* table {
             page-break-inside: avoid;
-        }
+        } */
         
         tr {
             page-break-inside: avoid;
