@@ -419,8 +419,7 @@ class PurchaseOrderController extends Controller
 
             $cv = Cv::find($cvId);
             $noSurat = null;
-            $tujuan = Tujuan::findOfFail($tujuanId);
-            $tujuanType = $tujuan?->type ? $tujuan->type : "DRC";
+          
 
             if ($buatNoSurat && $from && $to && $cv) {
                 // Gunakan database transaction dan locking untuk menghindari race condition
