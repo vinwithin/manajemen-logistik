@@ -768,6 +768,8 @@ class PurchaseOrderController extends Controller
     public function update(Request $request, string $id)
     {
         $request->validate([
+            'no_po' => 'nullable|string|max:100|unique:purchase_orders,no_po',
+            'tanggal_po' => 'nullable|date',
             'catatan' => 'nullable|string',
             'cv_id' => 'nullable|exists:cv,id',
             'kendaraan' => 'required|array|min:1',
@@ -808,7 +810,12 @@ class PurchaseOrderController extends Controller
                 return redirect()->back()->with('error', 'PO sudah terkunci.');
             }
 
-            $po->update(['catatan' => $request->catatan, 'cv_id' => $request->cv_id]);
+            $po->update(
+                [
+                    'no_po' => $request->no_po,
+                    'tanggal_po' => $request->tanggal_po,
+                    'catatan' => $request->catatan, 'cv_id' => $request->cv_id]
+            );
 
             $submittedKendaraanIds = collect($request->kendaraan)->pluck('id')->filter()->values();
             $po->kendaraans()->whereNotIn('id', $submittedKendaraanIds)->delete();
