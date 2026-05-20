@@ -98,7 +98,7 @@
                                 <div class="row g-3">
                                     <div class="col-md-4">
                                         <label class="form-label">No. PO dari PT SUM</label>
-                                        <input type="text" class="form-control" value="{{ $po->no_po }}"
+                                        <input type="text" class="form-control" name="no_po" value="{{ $po->no_po }}"
                                             >
                                     </div>
                                     <div class="col-md-4">
