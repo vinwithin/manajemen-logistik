@@ -451,11 +451,11 @@
                 ).show();
             } else if (persen >= 80) {
                 box.html(
-                    `<div class="alert alert-warning py-2 small mb-0">Omzet <strong>${fmt(omzet)}</strong> (${persen}% dari batas Rp 48jt). Mendekati batas.</div>`
+                    `<div class="alert alert-warning py-2 small mb-0">Omzet <strong>${fmt(omzet)}</strong> (${persen}% dari batas Rp 48M). Mendekati batas.</div>`
                 ).show();
             } else {
                 box.html(
-                    `<div class="text-muted small mt-1">Omzet: ${fmt(omzet)} / Rp 48.000.000 (${persen}%)</div>`
+                    `<div class="text-muted small mt-1">Omzet: ${fmt(omzet)} / Rp 48.000.000.000 (${persen}%)</div>`
                 ).show();
             }
         });

@@ -58,6 +58,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/oa/{id}/bayar', [RekapOaController::class, 'bayar'])->name('oa.bayar');
         Route::post('/oa/{id}/bayar', [RekapOaController::class, 'storeBayar'])->name('oa.store-bayar');
         Route::get('/pembayaran', [PembayaranSupplierController::class, 'index'])->name('pembayaran.index');
+        Route::delete('/pembayaran/{id}', [PembayaranSupplierController::class, 'destroy'])->name('pembayaran.destroy');
 
         Route::get('/rugi-laba', [RekapRugiLabaController::class, 'index'])->name('rugi-laba.index');
         Route::get('/rugi-laba/create', [RekapRugiLabaController::class, 'create'])->name('rugi-laba.create');

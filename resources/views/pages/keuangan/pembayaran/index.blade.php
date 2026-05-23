@@ -85,6 +85,7 @@
                             <th style="width: 80px;">Metode</th>
                             <th style="width: 90px;">Status</th>
                             <th style="width: 70px;">Bukti</th>
+                            <th style="width: 70px;">Aksi</th>
                         </tr>
                     </thead>
                 </table>
@@ -186,6 +187,12 @@
                     {
                         data: 'bukti',
                         name: 'bukti',
+                        orderable: false,
+                        searchable: false
+                    },
+                    {
+                        data: 'aksi',
+                        name: 'aksi',
                         orderable: false,
                         searchable: false
                     },

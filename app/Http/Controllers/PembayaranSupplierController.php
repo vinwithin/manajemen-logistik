@@ -112,8 +112,15 @@ class PembayaranSupplierController extends Controller
                                 <i class='fa fa-file'></i> Lihat
                             </a>";
                 })
+                ->addColumn('aksi', function ($q) {
+                    return '<form action="' . route('keuangan.pembayaran.destroy', $q->id) . '" method="POST" onsubmit="return confirm(\'Yakin ingin membatalkan pembayaran ini? Data akan dihapus secara permanen.\')">
+                                ' . csrf_field() . '
+                                ' . method_field('DELETE') . '
+                                <button type="submit" class="btn btn-xs btn-outline-danger">Batalkan</button>
+                            </form>';
+                })
                 ->addIndexColumn()
-                ->rawColumns(['tipe', 'status_badge', 'bukti', 'tujuan', 'no_po', 'cv_name', 'no_polisi'])
+                ->rawColumns(['tipe', 'status_badge', 'bukti', 'tujuan', 'no_po', 'cv_name', 'no_polisi', 'aksi'])
                 ->make(true);
         }
 
@@ -171,5 +178,13 @@ class PembayaranSupplierController extends Controller
             'total_dp'      => (clone $base)->where('tipe_pembayaran', 'dp_supplier')->sum('jumlah_bayar'),
         ];
         return view('pages.keuangan.pembayaran.index', compact('suppliers', 'summary'));
+    }
+
+    public function destroy($id)
+    {
+        $oaPayment = OaPayment::findOrFail($id);
+        $oaPayment->delete();
+
+        return redirect()->back()->with('success', 'Pembayaran berhasil dibatalkan dan data telah dihapus.');
     }
 }
