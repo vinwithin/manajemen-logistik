@@ -420,7 +420,7 @@ class PurchaseOrderController extends Controller
 
             $cv = Cv::find($cvId);
             $noSurat = null;
-          
+
             // Fix typo findOfFail → findOrFail and update tujuanType mapping
             $tujuan = Tujuan::findOrFail($tujuanId);
             $tujuanTypeMap = [
@@ -931,7 +931,9 @@ class PurchaseOrderController extends Controller
                 [
                     'no_po' => $request->no_po,
                     'tanggal_po' => $request->tanggal_po,
-                    'catatan' => $request->catatan, 'cv_id' => $request->cv_id]
+                    'catatan' => $request->catatan,
+                    'cv_id' => $request->cv_id
+                ]
             );
 
             $submittedKendaraanIds = collect($request->kendaraan)->pluck('id')->filter()->values();
@@ -1391,7 +1393,7 @@ class PurchaseOrderController extends Controller
             $po = PurchaseOrder::findOrFail($id);
 
             if ($po->isLocked()) {
-                return response()->json(['success' => false, 'message' => 'PO terkunci tidak dapat dihapus.']);
+                return redirect()->route('purchase-order.index')->with('success', 'PO Terkunci tidak bisa dihapus.');
             }
 
             $po->delete();

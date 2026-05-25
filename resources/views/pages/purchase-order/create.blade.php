@@ -95,7 +95,7 @@
                                                     {{ $cv->melebihi_batas ? 'disabled' : '' }}>
                                                     {{ $cv->nama_cv }}
                                                     @if ($cv->melebihi_batas)
-                                                        ⚠️ (Omzet ≥ 48jt)
+                                                        ⚠️ (Omzet ≥ 4,8M)
                                                     @elseif($cv->persen_omzet >= 80)
                                                         ({{ $cv->persen_omzet }}%)
                                                     @endif
@@ -417,7 +417,7 @@
                 ).show();
             } else {
                 box.html(
-                    `<div class="text-muted small mt-1">Omzet: ${fmt(omzet)} / Rp 48.000.000.000 (${persen}%)</div>`
+                    `<div class="text-muted small mt-1">Omzet: ${fmt(omzet)} / Rp 4.800.000.000 (${persen}%)</div>`
                 ).show();
             }
         });

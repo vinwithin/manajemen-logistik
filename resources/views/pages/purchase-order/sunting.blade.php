@@ -119,7 +119,7 @@
                                                     {{ $cv->melebihi_batas && $po->cv_id != $cv->id ? 'disabled' : '' }}>
                                                     {{ $cv->nama_cv }}
                                                     @if ($cv->melebihi_batas)
-                                                        ⚠️ (Omzet ≥ 48jt)
+                                                        ⚠️ (Omzet ≥ 4,8M)
                                                     @elseif($cv->persen_omzet >= 80)
                                                         ({{ $cv->persen_omzet }}%)
                                                     @endif
@@ -360,7 +360,7 @@
                         <input type="text" name="kendaraan[__KI__][penerima][__PI__][no_surat_jalan]"
                             class="form-control form-control-sm" placeholder="Opsional">
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-3" style="display:none">
                         <label class="form-label small">Status Penerima </label>
                         <select name="kendaraan[__KI__][penerima][__PI__][status]"
                             class="form-select form-select-sm select-status-penerima">
@@ -455,7 +455,7 @@
                 ).show();
             } else {
                 box.html(
-                    `<div class="text-muted small mt-1">Omzet: ${fmt(omzet)} / Rp 48.000.000.000 (${persen}%)</div>`
+                    `<div class="text-muted small mt-1">Omzet: ${fmt(omzet)} / Rp 4.800.000.000 (${persen}%)</div>`
                 ).show();
             }
         });

@@ -12,7 +12,7 @@ class Cv extends Model
 
     protected $fillable = ['nama_cv', 'code', 'is_aktif', 'alamat', 'nama_bank', 'no_rekening', 'atas_nama_rekening', 'nama_pimpinan', 'no_dokumen_prefix', 'logo'];
 
-    const BATAS_OMZET = 48_000_000_000; // Rp 48 juta per tahun
+    const BATAS_OMZET = 4_800_000_000; // Rp 48 juta per tahun
 
     public function purchaseOrders()
     {
