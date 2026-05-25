@@ -119,7 +119,7 @@
                                                     {{ $cv->melebihi_batas && $po->cv_id != $cv->id ? 'disabled' : '' }}>
                                                     {{ $cv->nama_cv }}
                                                     @if ($cv->melebihi_batas)
-                                                        ⚠️ (Omzet ≥ 4,8M)
+                                                        ⚠️ (Omzet ≥ {{ number_format($batasOmzet / 1000000, 1) }}M)
                                                     @elseif($cv->persen_omzet >= 80)
                                                         ({{ $cv->persen_omzet }}%)
                                                     @endif
@@ -430,6 +430,9 @@
 
     <script>
         var kendaraanCount = 0;
+        var batasOmzet = {{ $batasOmzet }};
+        var batasOmzetM = {{ $batasOmzet / 1000000 }};
+        var batasOmzetFormatted = 'Rp ' + batasOmzet.toLocaleString('id-ID');
 
         function fmt(n) {
             return 'Rp ' + Math.round(n).toLocaleString('id-ID');
@@ -451,11 +454,11 @@
                 ).show();
             } else if (persen >= 80) {
                 box.html(
-                    `<div class="alert alert-warning py-2 small mb-0">Omzet <strong>${fmt(omzet)}</strong> (${persen}% dari batas Rp 48M). Mendekati batas.</div>`
+                    `<div class="alert alert-warning py-2 small mb-0">Omzet <strong>${fmt(omzet)}</strong> (${persen}% dari batas Rp ${batasOmzetM}M). Mendekati batas.</div>`
                 ).show();
             } else {
                 box.html(
-                    `<div class="text-muted small mt-1">Omzet: ${fmt(omzet)} / Rp 4.800.000.000 (${persen}%)</div>`
+                    `<div class="text-muted small mt-1">Omzet: ${fmt(omzet)} / ${batasOmzetFormatted} (${persen}%)</div>`
                 ).show();
             }
         });

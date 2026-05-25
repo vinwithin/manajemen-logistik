@@ -87,7 +87,7 @@
                                         <select name="cv_id" id="selectCv"
                                             class="form-select @error('cv_id') is-invalid @enderror">
                                             <option value="">-- Pilih CV --</option>
-                                            @foreach ($userCvs as $cv)
+                                            @foreach ($cvList as $cv)
                                                 <option value="{{ $cv->id }}" data-omzet="{{ $cv->omzet_tahun }}"
                                                     data-persen="{{ $cv->persen_omzet }}"
                                                     data-melebihi="{{ $cv->melebihi_batas ? '1' : '0' }}"
@@ -95,7 +95,7 @@
                                                     {{ $cv->melebihi_batas ? 'disabled' : '' }}>
                                                     {{ $cv->nama_cv }}
                                                     @if ($cv->melebihi_batas)
-                                                        ⚠️ (Omzet ≥ 4,8M)
+                                                        ⚠️ (Omzet ≥ {{ number_format($batasOmzet / 1000000, 1) }}M)
                                                     @elseif($cv->persen_omzet >= 80)
                                                         ({{ $cv->persen_omzet }}%)
                                                     @endif
@@ -391,6 +391,9 @@
 
     <script>
         var kendaraanCount = 0;
+        var batasOmzet = {{ $batasOmzet }};
+        var batasOmzetM = {{ $batasOmzet / 1000000 }};
+        var batasOmzetFormatted = 'Rp ' + batasOmzet.toLocaleString('id-ID');
 
         // ── CV Warning ────────────────────────────────────────────
         function fmt(n) {
@@ -413,11 +416,11 @@
                 ).show();
             } else if (persen >= 80) {
                 box.html(
-                    `<div class="alert alert-warning py-2 small mb-0">Omzet <strong>${fmt(omzet)}</strong> (${persen}% dari batas Rp 48M). Mendekati batas.</div>`
+                    `<div class="alert alert-warning py-2 small mb-0">Omzet <strong>${fmt(omzet)}</strong> (${persen}% dari batas Rp ${batasOmzetM}M). Mendekati batas.</div>`
                 ).show();
             } else {
                 box.html(
-                    `<div class="text-muted small mt-1">Omzet: ${fmt(omzet)} / Rp 4.800.000.000 (${persen}%)</div>`
+                    `<div class="text-muted small mt-1">Omzet: ${fmt(omzet)} / ${batasOmzetFormatted} (${persen}%)</div>`
                 ).show();
             }
         });

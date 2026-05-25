@@ -543,8 +543,9 @@ class PurchaseOrderController extends Controller
             ->where('is_aktif', true)
             ->orderBy('nama')
             ->get(['id', 'nama', 'tujuan_id']);
+        $batasOmzet = Cv::BATAS_OMZET;
 
-        return view('pages.purchase-order.create', compact('cvList', 'activeCvId', 'suppliers', 'kodePakans', 'tujuans', 'penerimas'));
+        return view('pages.purchase-order.create', compact('cvList', 'activeCvId', 'suppliers', 'kodePakans', 'tujuans', 'penerimas', 'batasOmzet'));
     }
 
     public function store(Request $request)
@@ -824,8 +825,9 @@ class PurchaseOrderController extends Controller
                 ->where('is_aktif', true)
                 ->orderBy('nama')
                 ->get(['id', 'nama', 'tujuan_id']);
+            $batasOmzet = Cv::BATAS_OMZET;
 
-            return view('pages.purchase-order.sunting', compact('po', 'cvList', 'tujuans', 'suppliers', 'kodePakans', 'penerimas'));
+            return view('pages.purchase-order.sunting', compact('po', 'cvList', 'tujuans', 'suppliers', 'kodePakans', 'penerimas', 'batasOmzet'));
         } catch (Exception $e) {
             return redirect()->back()->with('error', 'Gagal memuat halaman!');
         }
