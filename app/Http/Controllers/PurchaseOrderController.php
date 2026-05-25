@@ -404,7 +404,7 @@ class PurchaseOrderController extends Controller
             'to.after_or_equal' => 'Tanggal akhir harus sama atau setelah tanggal awal.',
         ]);
 
-        try {
+        // try {
             $cvId = $request->cv_id ?? session('active_cv');
             $from = $request->from;
             $to = $request->to;
@@ -433,7 +433,7 @@ class PurchaseOrderController extends Controller
 
             if ($noSuratInput && $from && $to && $cv) {
                 // Gunakan database transaction dan locking untuk menghindari race condition
-                $dokumen = \DB::transaction(function () use ($cvId, $from, $to, $cv, $request, $noSuratInput) {
+                $dokumen = DB::transaction(function () use ($cvId, $from, $to, $cv, $request, $noSuratInput, $cpi) {
                     // Cek apakah sudah ada dokumen untuk periode ini
                     $existing = PoPeriodeDokumen::where('cv_id', $cvId)
                         ->where('dari', $from)
@@ -445,6 +445,7 @@ class PurchaseOrderController extends Controller
                         // Update existing dokumen dengan no surat baru
                         $existing->update([
                             'no_surat' => $noSuratInput,
+                            'cpi' => $cpi,
                             'catatan' => $request->catatan,
                         ]);
                         return $existing;
@@ -496,7 +497,7 @@ class PurchaseOrderController extends Controller
             }
 
             $pos = $query->get();
-            $tujuanNama = Tujuan::find($tujuanId)->nama;
+            $tujuanNama = $cpi ?? Tujuan::find($tujuanId)->nama;
 
             $pdf = Pdf::loadView('pdf.purchase-order-period-ptsum', compact('pos', 'from', 'to', 'noSurat', 'tujuanNama'))
                 ->setPaper('legal', 'landscape')
@@ -509,9 +510,9 @@ class PurchaseOrderController extends Controller
             $filename = 'PO-Periode-PTSum-' . str_replace(' ', '-', $cvNama) . '-' . now()->format('Ymd') . '.pdf';
 
             return $pdf->download($filename);
-        } catch (Exception $e) {
-            return redirect()->back()->with('error', 'Gagal export PDF PT Sum: ' . $e->getMessage());
-        }
+        // } catch (Exception $e) {
+        //     return redirect()->back()->with('error', 'Gagal export PDF PT Sum: ' . $e->getMessage());
+        // }
     }
 
     public function index(Request $request)

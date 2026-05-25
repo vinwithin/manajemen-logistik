@@ -118,7 +118,7 @@
 
                                     <label class="form-label small">Masukkan Tujuan (Dari Pabrik CPI Padang ke .......)</label>
                                     <input type="text" name="cpi" class="form-control form-control-sm"
-                                        value="" placeholder="Masukkan tujuan">
+                                        value="{{ $dokumen?->cpi }}" placeholder="Masukkan tujuan">
 
                                     <div class="text-muted small mt-1">
                                         @if ($dokumen)

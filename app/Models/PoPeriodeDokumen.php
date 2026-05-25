@@ -9,7 +9,7 @@ class PoPeriodeDokumen extends Model
 {
     protected $table = 'po_periode_dokumen';
 
-    protected $fillable = ['cv_id', 'dari', 'sampai', 'no_surat', 'urutan', 'tipe', 'catatan', 'created_by'];
+    protected $fillable = ['cv_id', 'dari', 'sampai', 'no_surat', 'urutan', 'tipe', 'catatan', 'created_by', 'cpi'];
 
     protected $casts = [
         'dari' => 'date',
