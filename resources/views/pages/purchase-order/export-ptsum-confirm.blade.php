@@ -115,6 +115,11 @@
                                     <label class="form-label small">Nomor Surat</label>
                                     <input type="text" name="no_surat" class="form-control form-control-sm"
                                         value="{{ $dokumen?->no_surat ?? ($noSuratSuggest ?? '') }}" placeholder="Masukkan nomor surat">
+
+                                    <label class="form-label small">Masukkan Tujuan (Dari Pabrik CPI Padang ke .......)</label>
+                                    <input type="text" name="cpi" class="form-control form-control-sm"
+                                        value="" placeholder="Masukkan tujuan">
+
                                     <div class="text-muted small mt-1">
                                         @if ($dokumen)
                                             <span class="text-success ms-1">

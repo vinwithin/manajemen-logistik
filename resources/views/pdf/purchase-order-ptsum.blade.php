@@ -382,8 +382,9 @@
                 <th style="width:38px;">Kode Pakan</th>
                 <th style="width:28px;">No. DO</th>
                 <th style="width:42px;">No. Mobil</th>
-                <th style="width:65px;">Tujuan</th>
-                <th style="width:65px;">Cost Center</th>
+                <th style="width:42px;">Tanggal Bongkar/th>
+
+                <th style="width:65px;">Tujuan Bongkar</th>
 
                 <th style="width:42px;">Jumlah<br>(Kg)</th>
                 <th style="width:30px;">Bag</th>
@@ -436,9 +437,12 @@
                             <td style="vertical-align:middle;">
                                 {{  $kendaraan->no_polisi }}
                             </td>
+                            <td style="vertical-align:middle;">
+                                {{ $penerima->tiba_at->translatedFormat('d F Y') }}
+
+                            </td>
                            
                             <td class="td-center">{{ Str::upper($penerima->nama_penerima ?? '-') }}</td>
-                            <td class="td-center">{{ Str::upper($penerima->tujuan?->nama ?? '-') }}</td>
                             <td class="td-kg-val">
                                 {{ $totalKgPakan > 0 ? number_format($totalKgPakan, 0, ',', '.') : '' }}
                             </td>

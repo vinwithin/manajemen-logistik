@@ -411,6 +411,7 @@ class PurchaseOrderController extends Controller
             $supplierId = $request->supplier_id;
             $tujuanId = $request->tujuan_id;
             $noSuratInput = $request->no_surat;
+            $cpi = $request->cpi;
 
             if (! $cvId) {
                 return redirect()->route('purchase-order.export-ptsum-confirm')
@@ -449,16 +450,15 @@ class PurchaseOrderController extends Controller
                         return $existing;
                     }
 
-                    // Generate urutan otomatis tapi gunakan no surat manual
                     $generated = PoPeriodeDokumen::generateNoSurat($cv, 'ptsum', $from);
 
-                    // Buat dokumen baru dengan no surat manual
                     return PoPeriodeDokumen::create([
                         'cv_id' => $cvId,
                         'dari' => $from,
                         'sampai' => $to,
                         'tipe' => 'ptsum',
                         'urutan' => $generated['urutan'],
+                        'cpi' => $cpi,
                         'no_surat' => $noSuratInput,
                         'catatan' => $request->catatan,
                         'created_by' => Auth::user()->id,
