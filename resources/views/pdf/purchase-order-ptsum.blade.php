@@ -334,6 +334,7 @@
             $cvLogoBase64 = 'data:image/' . $type . ';base64,' . base64_encode($data);
         }
         $cvNama = $cv?->nama_cv ?? '-';
+        $cvCode = $cv?->code ?? '-';
         $cvAlamat = $cv?->alamat ?? '-';
         $cvNamaBank = $cv?->nama_bank ?? '-';
         $cvNoRek = $cv?->no_rekening ?? '-';
@@ -342,6 +343,34 @@
         $cvPrefix = $cv?->no_dokumen_prefix ?? '';
         $noKwitansi = $cvPrefix ? $cvPrefix . '/' . $po->tanggal_po->format('III/Y') : $po->no_po;
         $logoInisial = strtoupper(substr(preg_replace('/^CV\.?\s*/i', '', $cvNama), 0, 2));
+
+        $logoWidth = 170;
+        $logoHeight = 50;
+        
+        if ($cv) {
+            $namaCvLower = strtolower(trim($cvCode));
+            
+            if (str_contains($namaCvLower, 'tr')) {
+                $top = 24;
+                $logoWidth = 200;
+                $logoHeight = 60;
+            } elseif (str_contains($namaCvLower, 'hrz')) {
+                $top = 0;
+                $logoWidth = 200;
+                $logoHeight = 40;
+            
+            } elseif (str_contains($namaCvLower, 'htg')) {
+                $top = 14;
+                $logoWidth = 200;
+                $logoHeight = 40;
+            
+            } elseif (str_contains($namaCvLower, 'hnn')) {
+                $top = 14;
+                $logoWidth = 200;
+                $logoHeight = 40;
+            }
+            // Tambahkan kondisi lain untuk CV lainnya di sini
+        }
     @endphp
 
     {{-- Header dengan Logo --}}
@@ -349,12 +378,12 @@
         @if ($cvLogo && Storage::disk('public')->exists($cvLogo))
             <div style="position: absolute; left: -25px; top: -45px;">
                 <img src="{{ $cvLogoBase64 }}"
-                    style="max-width: 100px; height: 50px; object-fit: contain; display: block; margin: 0; padding: 0;"
+                    style="width: {{ $logoWidth }}px; height: {{ $logoHeight }}px; object-fit: contain; display: block; margin: 0; padding: 0;"
                     alt="Logo CV">
             </div>
         @endif
 
-        <div style="position: absolute; left: -52px; top: 8px;">
+        <div style="position: absolute; left: -52px; top: {{ $top }}px;">
             <div style="font-weight: bold; font-size: 10px; margin-top: 2px; margin-bottom: 0;">{{ $cvNama }}
             </div>
             <div style="font-size: 9px; padding-top: 0; margin-top: 0; color:rgb(123, 123, 239); font-style: italic;">

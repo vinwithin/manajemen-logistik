@@ -355,7 +355,7 @@
         $logoHeight = 50;
         
         if ($cv) {
-            $namaCvLower = strtolower(trim($cvNama));
+            $namaCvLower = strtolower(trim($cvCode));
             
             if (str_contains($namaCvLower, 'tr')) {
                 $top = 24;
@@ -385,7 +385,7 @@
         @if ($cvLogo && Storage::disk('public')->exists($cvLogo))
             <div style="position: absolute; left: -25px; top: -45px;">
                 <img src="{{ $cvLogoBase64 }}"
-                    style="width: {{ $logoWidth }}px; height: {{ $logoHeight }}px; display: block; margin: 0; padding: 0;"
+                    style="width: {{ $logoWidth }}px; height: {{ $logoHeight }}px; object-fit: contain; display: block; margin: 0; padding: 0;"
                     alt="Logo CV">
             </div>
         @endif
