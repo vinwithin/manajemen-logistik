@@ -382,7 +382,7 @@
                 <th style="width:38px;">Kode Pakan</th>
                 <th style="width:28px;">No. DO</th>
                 <th style="width:42px;">No. Mobil</th>
-                <th style="width:42px;">Tanggal Bongkar/th>
+                <th style="width:42px;">Tanggal Bongkar</th>
 
                 <th style="width:65px;">Tujuan Bongkar</th>
 
