@@ -350,10 +350,10 @@
         if ($cv) {
             $namaCvLower = strtolower(trim($cvCode));
             
-            if (str_contains($namaCvLower, 'tr')) {
-                $top = 24;
+           if (str_contains($namaCvLower, 'tr')) {
+                $top = 20;
                 $logoWidth = 200;
-                $logoHeight = 60;
+                $logoHeight = 70;
             } elseif (str_contains($namaCvLower, 'hrz')) {
                 $top = 0;
                 $logoWidth = 200;
@@ -362,12 +362,12 @@
             } elseif (str_contains($namaCvLower, 'htg')) {
                 $top = 14;
                 $logoWidth = 200;
-                $logoHeight = 40;
+                $logoHeight = 70;
             
             } elseif (str_contains($namaCvLower, 'hnn')) {
                 $top = 14;
                 $logoWidth = 200;
-                $logoHeight = 40;
+                $logoHeight = 70;
             }
             // Tambahkan kondisi lain untuk CV lainnya di sini
         }
