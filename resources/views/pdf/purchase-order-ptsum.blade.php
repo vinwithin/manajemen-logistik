@@ -345,7 +345,7 @@
     @endphp
 
     {{-- Header dengan Logo --}}
-    <div style="position: relative; margin-bottom: 15px;">
+    <div style="position: relative; margin-bottom: 5px;">
         @if ($cvLogo && Storage::disk('public')->exists($cvLogo))
             <div style="position: absolute; left: -25px; top: -45px;">
                 <img src="{{ $cvLogoBase64 }}"
