@@ -471,7 +471,7 @@
                                 </td>
 
                                 <td style="vertical-align:middle;">
-                                    {{ $penerima->tiba_at->translatedFormat('d F Y') }}
+                                    {{ $penerima->tiba_at->translatedFormat('d F Y') ?? '-' }}
 
                                 </td>
 
