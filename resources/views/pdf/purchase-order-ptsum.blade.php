@@ -384,8 +384,8 @@
         @endif
 
         <div style="position: absolute; left: -52px; top: {{ $top }}px;">
-            <div style="font-weight: bold; font-size: 10px; margin-top: 2px; margin-bottom: 0;">{{ $cvNama }}
-            </div>
+            <!-- <div style="font-weight: bold; font-size: 10px; margin-top: 2px; margin-bottom: 0;">{{ $cvNama }}
+            </div> -->
             <div style="font-size: 9px; padding-top: 0; margin-top: 0; color:rgb(123, 123, 239); font-style: italic;">
                 {{ $cvAlamat }}</div>
         </div>
