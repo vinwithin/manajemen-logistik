@@ -259,7 +259,16 @@
                                         <span class="badge bg-{{ $pBadge['color'] }}">{{ $pBadge['label'] }}</span>
                                         @if ($penerima->validasi_oleh)
                                             <div class="text-muted small mt-1">{{ $penerima->validasi_oleh }}</div>
-                                            <div class="text-muted small">{{ $penerima->tiba_at?->format('d/m/Y') }}
+                                            <div class="text-muted small d-flex align-items-center justify-content-center gap-1">
+                                                {{ $penerima->tiba_at?->format('d/m/Y') }}
+                                                @if ($po->isLocked() && in_array($penerima->status, ['tiba', 'selesai']))
+                                                    <button class="btn btn-sm btn-outline-primary btn-edit-tanggal-tiba ms-1"
+                                                        data-id="{{ $penerima->id }}"
+                                                        data-nama="{{ $penerima->nama_penerima }}"
+                                                        data-tanggal="{{ $penerima->tiba_at?->format('Y-m-d') }}">
+                                                        Edit
+                                                    </button>
+                                                @endif
                                             </div>
                                         @endif
                                     </td>
@@ -593,6 +602,19 @@
                     cancel: 'Batal'
                 });
             });
+
+            // Tombol Edit Tanggal Tiba
+            $(document).on('click', '.btn-edit-tanggal-tiba', function() {
+                var id = $(this).data('id');
+                var nama = $(this).data('nama');
+                var tanggal = $(this).data('tanggal');
+
+                $('#editTanggalNama').text(nama);
+                $('#editTanggalInput').val(tanggal);
+                $('#formEditTanggalTiba').attr('action', '/purchase-order/penerima/' + id + '/update-tanggal-tiba');
+
+                new bootstrap.Modal(document.getElementById('modalEditTanggalTiba')).show();
+            });
         </script>
     @endif
 
@@ -684,6 +706,36 @@
                         <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Batal</button>
                         <button type="submit" class="btn btn-sm btn-warning">
                             <i class="fa fa-check"></i> Assign GPS
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {{-- Modal Edit Tanggal Tiba --}}
+    <div class="modal fade" id="modalEditTanggalTiba" tabindex="-1">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header py-2">
+                    <h6 class="modal-title"><i class="fa fa-calendar text-primary"></i> Edit Tanggal Tiba — <span
+                            id="editTanggalNama"></span></h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="formEditTanggalTiba" method="POST">
+                    @csrf
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label form-label-sm">Tanggal Tiba <span
+                                    class="text-danger">*</span></label>
+                            <input type="date" id="editTanggalInput" name="tanggal_tiba"
+                                class="form-control form-control-sm" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer py-2">
+                        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-sm btn-primary">
+                            <i class="fa fa-save"></i> Simpan
                         </button>
                     </div>
                 </form>

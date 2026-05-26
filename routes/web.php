@@ -73,6 +73,7 @@ Route::middleware('auth')->group(function () {
 
     Route::resource('/purchase-order', PurchaseOrderController::class)->middleware(['can:po.view']);
     Route::post('/purchase-order/penerima/{penerimaId}/status', [PurchaseOrderController::class, 'penerimaUpdateStatus'])->name('po-penerima.update-status')->middleware('can:po.edit');
+Route::post('/purchase-order/penerima/{penerimaId}/update-tanggal-tiba', [PurchaseOrderController::class, 'penerimaUpdateTanggalTiba'])->name('po-penerima.update-tanggal-tiba')->middleware('can:po.edit');
     Route::post('/purchase-order/kendaraan/{kendaraanId}/status', [PurchaseOrderController::class, 'kendaraanUpdateStatus'])->name('po-kendaraan.update-status')->middleware('can:po.edit');
     Route::get('/purchase-order/penerima/{penerimaId}/lansir', [PurchaseOrderController::class, 'penerimaLansirPage'])->name('po-penerima.lansir-page')->middleware('can:lansir.create');
     Route::post('/purchase-order/penerima/{penerimaId}/lansir', [PurchaseOrderController::class, 'penerimaStoreLansir'])->name('po-penerima.lansir-store')->middleware('can:lansir.create');

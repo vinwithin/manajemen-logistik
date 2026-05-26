@@ -1347,6 +1347,41 @@ class PurchaseOrderController extends Controller
         }
     }
 
+    public function penerimaUpdateTanggalTiba(Request $request, string $penerimaId)
+    {
+        $request->validate([
+            'tanggal_tiba' => 'required|date',
+        ], [
+            'tanggal_tiba.required' => 'Tanggal tiba wajib diisi.',
+            'tanggal_tiba.date' => 'Tanggal tiba harus berupa tanggal yang valid.',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $penerima = PoPenerima::with(['kendaraan.po'])->findOrFail($penerimaId);
+            $po = $penerima->kendaraan->po;
+
+            if (! $po->isLocked()) {
+                return redirect()->back()->with('error', 'PO harus dikunci terlebih dahulu.');
+            }
+
+            if (! in_array($penerima->status, ['tiba', 'selesai'])) {
+                return redirect()->back()->with('error', 'Tanggal tiba hanya bisa diubah jika penerima sudah tiba atau selesai.');
+            }
+
+            $tibaAt = $request->date('tanggal_tiba');
+            $penerima->update(['tiba_at' => $tibaAt->format('Y-m-d H:i:s')]);
+
+            DB::commit();
+
+            return redirect()->back()->with('success', 'Tanggal tiba berhasil diperbarui.');
+        } catch (Exception $e) {
+            DB::rollBack();
+
+            return redirect()->back()->with('error', 'Gagal: ' . $e->getMessage());
+        }
+    }
+
     public function lock(string $id)
     {
         try {

@@ -355,18 +355,18 @@
         @if ($cvLogo && Storage::disk('public')->exists($cvLogo))
             <div style="position: absolute; left: -25px; top: -45px;">
                 <img src="{{ $cvLogoBase64 }}"
-                    style="max-width: 100px; height: 50px; object-fit: contain; display: block; margin: 0; padding: 0;"
+                    style="max-width: 170px; height: 50px; object-fit: contain; display: block; margin: 0; padding: 0;"
                     alt="Logo CV">
             </div>
         @endif
 
         <div style="position: absolute; left: -52px; top: 8px;">
-            <div style="font-weight: bold; font-size: 10px; margin-top: 2px; margin-bottom: 0;">{{ $cvNama }}
+            <div style="font-weight: bold; font-size: 12px; margin-top: 2px; margin-bottom: 0;">{{ $cvNama }}
             </div>
-            <div style="font-size: 9px; padding-top: 0; margin-top: 0; color:rgb(123, 123, 239); font-style: italic;">
+            <div style="font-size: 11px; padding-top: 0; margin-top: 0; color:rgb(123, 123, 239); font-style: italic;">
                 {{ $cvAlamat }}</div>
         </div>
-        <div style="position: absolute; right: -25px; top: -25px; font-size:9px; color:#555; font-weight:bold;">
+        <div style="position: absolute; right: -25px; top: -25px; font-size:11px; color:#555; font-weight:bold;">
             No. {{ $noKwitansi }}
         </div>
 
