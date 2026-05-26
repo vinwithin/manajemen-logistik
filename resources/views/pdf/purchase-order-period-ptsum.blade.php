@@ -340,6 +340,7 @@
         }
         // $cv sudah didefinisikan di atas
         $cvNama = $cv?->nama_cv ?? '-';
+        $cvCode = $cv?->code ?? '-';
         $cvAlamat = $cv?->alamat ?? '-';
         $cvNamaBank = $cv?->nama_bank ?? '-';
         $cvNoRek = $cv?->no_rekening ?? '-';
@@ -348,21 +349,50 @@
         $cvPrefix = $cv?->no_dokumen_prefix ?? '';
         $noKwitansi = $noSurat ?? ($cvPrefix ? $cvPrefix . '/' . now()->format('III/Y') : now()->format('Y/m'));
         $logoInisial = strtoupper(substr(preg_replace('/^CV\.?\s*/i', '', $cvNama), 0, 2));
+        
+        // Ukuran logo berdasarkan nama CV
+        $logoWidth = 170;
+        $logoHeight = 50;
+        
+        if ($cv) {
+            $namaCvLower = strtolower(trim($cvNama));
+            
+            if (str_contains($namaCvLower, 'tr')) {
+                $top = 24;
+                $logoWidth = 200;
+                $logoHeight = 60;
+            } elseif (str_contains($namaCvLower, 'hrz')) {
+                $top = 0;
+                $logoWidth = 200;
+                $logoHeight = 40;
+            
+            } elseif (str_contains($namaCvLower, 'htg')) {
+                $top = 14;
+                $logoWidth = 200;
+                $logoHeight = 40;
+            
+            } elseif (str_contains($namaCvLower, 'hnn')) {
+                $top = 14;
+                $logoWidth = 200;
+                $logoHeight = 40;
+            }
+            // Tambahkan kondisi lain untuk CV lainnya di sini
+        }
     @endphp
 
     {{-- Header dengan Logo --}}
-    <div style="position: relative; margin-bottom: 5px;">
+    <div style="position: relative; margin-bottom: 0px;">
         @if ($cvLogo && Storage::disk('public')->exists($cvLogo))
             <div style="position: absolute; left: -25px; top: -45px;">
                 <img src="{{ $cvLogoBase64 }}"
-                    style="max-width: 170px; height: 50px; object-fit: cover; display: block; margin: 0; padding: 0;"
+                    style="width: {{ $logoWidth }}px; height: {{ $logoHeight }}px; display: block; margin: 0; padding: 0;"
                     alt="Logo CV">
             </div>
         @endif
 
-        <div style="position: absolute; left: -52px; top: 8px;">
-            <div style="font-weight: bold; font-size: 12px; margin-top: 2px; margin-bottom: 0;">{{ $cvNama }}
-            </div>
+        <div style="position: absolute; left: -52px; top: {{ $top }}px;">
+            <!-- <div style="font-weight: bold; font-size: 12px; margin-top: 2px; margin-bottom: 0;">{{ $cvNama }}
+            </div> -->
             <div style="font-size: 11px; padding-top: 0; margin-top: 0; color:rgb(123, 123, 239); font-style: italic;">
                 {{ $cvAlamat }}</div>
         </div>
