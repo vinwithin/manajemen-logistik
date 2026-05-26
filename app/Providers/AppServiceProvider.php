@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Helpers\MenuHelper;
 use App\Models\Cv;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -23,6 +24,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Paginator::useBootstrapFive();
         View::composer('*', function ($view) {
             if (Auth::check()) {
                 $user = Auth::user();
