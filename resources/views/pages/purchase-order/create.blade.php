@@ -321,7 +321,7 @@
                         <input type="text" name="kendaraan[__KI__][penerima][__PI__][no_surat_jalan]"
                             class="form-control form-control-sm" placeholder="Opsional">
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-3" style="display: none;">
                         <label class="form-label small">Status Penerima</label>
                         <select name="kendaraan[__KI__][penerima][__PI__][status]"
                             class="form-select form-select-sm select-status-penerima">
