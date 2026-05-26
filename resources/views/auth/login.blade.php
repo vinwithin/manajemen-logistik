@@ -46,12 +46,38 @@
                             </a>
                         @endif
                     </div>
-                    <input id="password" type="password" name="password"
-                        class="form-control @error('password') is-invalid @enderror" required
-                        autocomplete="current-password" placeholder="••••••••">
+                    <div class="input-group">
+                        <input id="password" type="password" name="password"
+                            class="form-control @error('password') is-invalid @enderror" required
+                            autocomplete="current-password" placeholder="••••••••">
+                        <button class="btn btn-outline-secondary" type="button" id="togglePassword"
+                            style="border-top-left-radius: 0; border-bottom-left-radius: 0;">
+                            <i data-feather="eye"></i>
+
+                        </button>
+                    </div>
                     @error('password')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
+
+                    <script>
+                        document.getElementById('togglePassword').addEventListener('click', function() {
+                            const passwordInput = document.getElementById('password');
+                            const icon = this.querySelector('i');
+                            
+                            if (passwordInput.type === 'password') {
+                                passwordInput.type = 'text';
+                                icon.setAttribute('data-feather', 'eye-off');
+                            } else {
+                                passwordInput.type = 'password';
+                                icon.setAttribute('data-feather', 'eye');
+                            }
+                            
+                            if (typeof feather !== 'undefined') {
+                                feather.replace();
+                            }
+                        });
+                    </script>
                 </div>
 
                 {{-- Remember Me --}}
