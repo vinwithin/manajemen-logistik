@@ -43,7 +43,7 @@
                                         class="text-muted">(opsional)</span></label>
                                 <select name="cv_id" class="form-select form-select-sm">
                                     <option value="">-- Semua CV --</option>
-                                    @foreach ($cvList as $cv)
+                                    @foreach ($userCvs as $cv)
                                         <option value="{{ $cv->id }}"
                                             {{ request('cv_id') == $cv->id ? 'selected' : '' }}>
                                             {{ $cv->nama_cv }}

@@ -45,7 +45,7 @@
                                         <label class="form-label small">CV <span class="text-danger">*</span></label>
                                         <select name="cv_id" id="selectCv" class="form-select form-select-sm" required>
                                             <option value="">-- Pilih CV --</option>
-                                            @foreach ($cvList as $cv)
+                                            @foreach ($userCvs as $cv)
                                                 <option value="{{ $cv->id }}"
                                                     data-prefix="{{ $cv->no_dokumen_prefix }}"
                                                     {{ (request('cv_id') ?? session('active_cv')) == $cv->id ? 'selected' : '' }}>

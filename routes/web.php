@@ -83,19 +83,19 @@ Route::post('/purchase-order/penerima/{penerimaId}/update-tanggal-tiba', [Purcha
     Route::get('/purchase-order/tujuan-by-cv/{cvId}', [PurchaseOrderController::class, 'tujuanByCv'])->name('purchase-order.tujuan-by-cv')->middleware('can:po.view');
 
     // Excel exports
-    Route::get('/purchase-order-export', [PurchaseOrderController::class, 'export'])->name('purchase-order.export')->middleware('can:report.po.export');
-    Route::get('/purchase-order/{id}/export-data-awal', [PurchaseOrderController::class, 'exportToPT'])->name('purchase-order.export.data-awal')->middleware('can:report.po.export');
-    Route::get('/purchase-order/{id}/export', [PurchaseOrderController::class, 'exportPo'])->name('purchase-order.export-po')->middleware('can:report.po.export');
+    Route::get('/purchase-order-export', [PurchaseOrderController::class, 'export'])->name('purchase-order.export');
+    Route::get('/purchase-order/{id}/export-data-awal', [PurchaseOrderController::class, 'exportToPT'])->name('purchase-order.export.data-awal');
+    Route::get('/purchase-order/{id}/export', [PurchaseOrderController::class, 'exportPo'])->name('purchase-order.export-po');
 
     // PDF exports
-    Route::get('/purchase-order-export-pdf', [PurchaseOrderController::class, 'exportPdf'])->name('purchase-order.export-pdf')->middleware('can:report.po.export');
-    Route::get('/purchase-order-export-pdf-supplier', [PurchaseOrderController::class, 'exportPdfSupplier'])->name('purchase-order.export-pdf-supplier')->middleware('can:report.payment.export');
-    Route::get('/purchase-order-export-pdf-supplier-confirm', [PurchaseOrderController::class, 'exportPdfSupplierConfirm'])->name('purchase-order.export-supplier-confirm')->middleware('can:report.payment.export');
-    Route::get('/purchase-order-export-pdf-ptsum', [PurchaseOrderController::class, 'exportPdfPtSum'])->name('purchase-order.export-pdf-ptsum')->middleware('can:report.po.export');
-    Route::get('/purchase-order-export-pdf-ptsum-confirm', [PurchaseOrderController::class, 'exportPdfPtSumConfirm'])->name('purchase-order.export-ptsum-confirm')->middleware('can:report.po.export');
-    Route::get('/purchase-order/{id}/export-pdf', [PurchaseOrderController::class, 'exportPoPdf'])->name('purchase-order.export-po-pdf')->middleware('can:report.po.export');
-    Route::get('/purchase-order/{id}/export-pdf-supplier', [PurchaseOrderController::class, 'exportPoPdfSupplier'])->name('purchase-order.export-po-pdf-supplier')->middleware('can:report.payment.export');
-    Route::get('/purchase-order/{id}/export-pdf-ptsum', [PurchaseOrderController::class, 'exportPoPdfPtSum'])->name('purchase-order.export-po-pdf-ptsum')->middleware('can:report.po.export');
+    Route::get('/purchase-order-export-pdf', [PurchaseOrderController::class, 'exportPdf'])->name('purchase-order.export-pdf');
+    Route::get('/purchase-order-export-pdf-supplier', [PurchaseOrderController::class, 'exportPdfSupplier'])->name('purchase-order.export-pdf-supplier');
+    Route::get('/purchase-order-export-pdf-supplier-confirm', [PurchaseOrderController::class, 'exportPdfSupplierConfirm'])->name('purchase-order.export-supplier-confirm');
+    Route::get('/purchase-order-export-pdf-ptsum', [PurchaseOrderController::class, 'exportPdfPtSum'])->name('purchase-order.export-pdf-ptsum');
+    Route::get('/purchase-order-export-pdf-ptsum-confirm', [PurchaseOrderController::class, 'exportPdfPtSumConfirm'])->name('purchase-order.export-ptsum-confirm');
+    Route::get('/purchase-order/{id}/export-pdf', [PurchaseOrderController::class, 'exportPoPdf'])->name('purchase-order.export-po-pdf');
+    Route::get('/purchase-order/{id}/export-pdf-supplier', [PurchaseOrderController::class, 'exportPoPdfSupplier'])->name('purchase-order.export-po-pdf-supplier');
+    Route::get('/purchase-order/{id}/export-pdf-ptsum', [PurchaseOrderController::class, 'exportPoPdfPtSum'])->name('purchase-order.export-po-pdf-ptsum');
 
     // Arrival actions (per item)
     Route::post('/purchase-order/lansir/{itemId}/selesai', [PurchaseOrderController::class, 'itemSelesai'])->name('po-item.selesai')->middleware('can:lansir.edit');

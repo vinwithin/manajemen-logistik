@@ -236,7 +236,6 @@ class PurchaseOrderController extends Controller
 
     public function exportPdfSupplierConfirm(Request $request)
     {
-        $cvList = Cv::orderBy('nama_cv')->get();
         $supplierList = Supplier::orderBy('nama')->get();
         $tujuans = Tujuan::where('is_aktif', true)->orderBy('nama')->get();
 
@@ -264,7 +263,6 @@ class PurchaseOrderController extends Controller
         }
 
         return view('pages.purchase-order.export-supplier-confirm', compact(
-            'cvList',
             'supplierList',
             'tujuans',
             'cvId',
@@ -330,7 +328,6 @@ class PurchaseOrderController extends Controller
 
     public function exportPdfPtSumConfirm(Request $request)
     {
-        $cvList = Cv::orderBy('nama_cv')->get();
         $suppliers = Supplier::orderBy('nama')->get();
         $tujuans = Tujuan::where('is_aktif', true)->orderBy('nama')->get();
 
@@ -377,7 +374,6 @@ class PurchaseOrderController extends Controller
         }
 
         return view('pages.purchase-order.export-ptsum-confirm', compact(
-            'cvList',
             'suppliers',
             'tujuans',
             'cvId',
@@ -536,7 +532,6 @@ class PurchaseOrderController extends Controller
     public function create()
     {
         $activeCvId = session('active_cv');
-        $cvList = Cv::withOmzet();
         $suppliers = Supplier::orderBy('nama')->get();
         $kodePakans = KodePakan::orderBy('kode')->get();
         $tujuans = Tujuan::where('is_aktif', true)->orderBy('nama')->get();
@@ -546,7 +541,8 @@ class PurchaseOrderController extends Controller
             ->get(['id', 'nama', 'tujuan_id']);
         $batasOmzet = Cv::BATAS_OMZET;
 
-        return view('pages.purchase-order.create', compact('cvList', 'activeCvId', 'suppliers', 'kodePakans', 'tujuans', 'penerimas', 'batasOmzet'));
+        // $userCvs dan $activeCv sudah tersedia di semua view dari AppServiceProvider
+        return view('pages.purchase-order.create', compact('activeCvId', 'suppliers', 'kodePakans', 'tujuans', 'penerimas', 'batasOmzet'));
     }
 
     public function store(Request $request)

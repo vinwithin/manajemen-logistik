@@ -111,7 +111,7 @@
                                         <select name="cv_id" id="selectCv"
                                             class="form-select @error('cv_id') is-invalid @enderror">
                                             <option value="">-- Pilih CV --</option>
-                                            @foreach ($cvList as $cv)
+                                            @foreach ($userCvs as $cv)
                                                 <option value="{{ $cv->id }}" data-omzet="{{ $cv->omzet_tahun }}"
                                                     data-persen="{{ $cv->persen_omzet }}"
                                                     data-melebihi="{{ $cv->melebihi_batas ? '1' : '0' }}"

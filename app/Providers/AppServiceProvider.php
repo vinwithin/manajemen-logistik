@@ -33,11 +33,18 @@ class AppServiceProvider extends ServiceProvider
                 // Share CV context ke semua views
                 $activeCvId = session('active_cv');
 
-                if ($user->level == 1) {
-                    $userCvs = Cv::where('is_aktif', true)->get();
-                } else {
-                    $userCvs = Cv::whereIn('id', $user->userCV->pluck('cv_id'))
-                        ->where('is_aktif', true)->get();
+                // Ambil semua CV dengan omzet
+                $userCvs = Cv::withOmzet();
+                
+                // if ($user->level == 1) {
+                //     $userCvs = Cv::where('is_aktif', true)->get();
+                // } else {
+                //     $userCvs = Cv::whereIn('id', $user->userCV->pluck('cv_id'))
+                //         ->where('is_aktif', true)->get();
+                
+                // Filter sesuai level user
+                if ($user->level != 1) {
+                    $userCvs = $userCvs->whereIn('id', $user->userCV->pluck('cv_id'));
                 }
 
                 // Jika user hanya punya 1 CV dan belum ada session, otomatis set ke CV itu
