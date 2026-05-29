@@ -47,9 +47,14 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
             'kendaraans.penerimas.tujuan',
             'kendaraans.penerimas.lansirs.mobils',
             'kendaraans.penerimas.lansirs.tims',
-        ])->whereHas('kendaraans.penerimas.penerima', function ($q) use ($tujuans) {
-                        $q->whereIn('tujuan_id', $tujuans->pluck('id'));
-                    })->where('status', '!=', 'batal')->orderBy('tanggal_po', 'asc')->orderBy('no_po', 'asc');
+        ])
+         ->where(function ($q) use ($tujuans) {
+                        $q->whereHas('kendaraans.penerimas.penerima', function ($q) use ($tujuans) {
+                            $q->whereIn('tujuan_id', $tujuans->pluck('id'));
+                        })
+                        ->orWhereDoesntHave('kendaraans.penerimas');
+                    })
+                    ->where('status', '!=', 'batal')->orderBy('tanggal_po', 'asc')->orderBy('no_po', 'asc');
 
         if ($from) {
             $query->whereDate('tanggal_po', '>=', $from);

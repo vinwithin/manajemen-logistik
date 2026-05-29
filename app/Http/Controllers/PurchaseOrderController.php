@@ -524,8 +524,11 @@ class PurchaseOrderController extends Controller
            $query = PurchaseOrder::with(['cv', 'kendaraans', 'kendaraans.penerimas.penerima'])
                     ->withCount('kendaraans')
                     ->orderBy('tanggal_po', 'desc')
-                    ->whereHas('kendaraans.penerimas.penerima', function ($q) use ($tujuans) {
-                        $q->whereIn('tujuan_id', $tujuans->pluck('id'));
+                    ->where(function ($q) use ($tujuans) {
+                        $q->whereHas('kendaraans.penerimas.penerima', function ($q) use ($tujuans) {
+                            $q->whereIn('tujuan_id', $tujuans->pluck('id'));
+                        })
+                        ->orWhereDoesntHave('kendaraans.penerimas');
                     });
        
                 
