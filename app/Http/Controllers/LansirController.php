@@ -25,14 +25,15 @@ class LansirController extends Controller
                 'pakans.kodePakan',
                 'penerima'
             ])
-                ->whereHas('penerima', function ($q) use ($tujuans) {
-                    $q->where('tujuan_id', $tujuans->pluck('id'));
-                })
+               
                 ->whereHas('lansirs') // Hanya penerima yang memiliki lansir
                 ->whereHas('kendaraan.po', function ($q) use ($activeCvId) {
                     if ($activeCvId) {
                         $q->where('cv_id', $activeCvId);
                     }
+                })
+                 ->whereHas('penerima', function ($q) use ($tujuans) {
+                    $q->whereIn('tujuan_id', $tujuans->pluck('id'));
                 })
                 ->select('po_penerima.*');
 
