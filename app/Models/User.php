@@ -25,6 +25,7 @@ class User extends Authenticatable
         'password',
         'aktif',
         'level',
+        'level_tujuan',
     ];
 
     /**
@@ -53,5 +54,10 @@ class User extends Authenticatable
     public function userCV()
     {
         return $this->hasMany(UserCv::class);
+    }
+
+    public function userTujuan()
+    {
+        return $this->hasMany(UserTujuan::class);
     }
 }

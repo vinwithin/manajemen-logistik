@@ -9,11 +9,13 @@ use App\Models\PoKendaraan;
 use App\Models\PoPenerima;
 use App\Models\PurchaseOrder;
 use App\Services\RekapLansirService;
+use App\Traits\WithUserTujuan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class LaporanPembayaranController extends Controller
 {
+    use WithUserTujuan;
     public function __construct(
         private RekapLansirService $rekapLansirService,
     ) {}
@@ -21,12 +23,14 @@ class LaporanPembayaranController extends Controller
     public function index(Request $request)
     {
         $activeCvId = session('active_cv');
+        $tujuans = $this->getUserTujuan();
+        $tujuanIds = $tujuans->pluck('id');
 
         $dari = $request->dari ?? now()->startOfYear()->format('Y-m-d');
         $sampai = $request->sampai ?? now()->format('Y-m-d');
         $cvId = $request->cv_id ?? $activeCvId;
 
-        $poPenerimas = PoPenerima::with(['pakans', 'oaPayment', 'kendaraan.oaPayment', 'kendaraan.po'])
+        $poPenerimas = PoPenerima::with(['pakans', 'oaPayment', 'kendaraan.oaPayment', 'kendaraan.po', 'penerima'])
             ->whereIn('status', ['selesai', 'batal'])
             ->whereHas('kendaraan.po', function ($q) use ($cvId, $dari, $sampai) {
                 $q->whereDate('tanggal_po', '>=', $dari)
@@ -35,11 +39,15 @@ class LaporanPembayaranController extends Controller
                     $q->where('cv_id', $cvId);
                 }
             })
+           ->whereHas('penerima', function ($q) use ($tujuanIds) {
+                $q->whereIn('tujuan_id', $tujuanIds);
+            })
             ->get();
             
         $poKendaraan = PoKendaraan::with([
             'penerimas:id,po_kendaraan_id',
             'penerimas.pakans:id,po_penerima_id,jumlah_kg,ongkos_oa',
+            'oaPayment',
         ])
             ->select('id', 'status', 'po_id')
             ->where('status', '!=', 'batal')
@@ -50,7 +58,11 @@ class LaporanPembayaranController extends Controller
                     $q->where('cv_id', $cvId);
                 }
             })
+           ->whereHas('penerimas.penerima', function ($q) use ($tujuanIds) {
+                $q->whereIn('tujuan_id', $tujuanIds);
+            })
             ->get();
+            // dd($poKendaraan->toArray());
 
 
 
@@ -63,6 +75,9 @@ class LaporanPembayaranController extends Controller
 
         $oaPaymentRows = OaPayment::whereIn('po_kendaraan_id', $kendaraanIds)
             ->whereIn('tipe_pembayaran', ['oa', 'dp_supplier'])
+            ->whereHas('kendaraan.penerimas.penerima', function ($q) use ($tujuanIds) {
+                $q->whereIn('tujuan_id', $tujuanIds);
+            })
             ->select('id', 'jumlah_bayar', 'status')
             ->get();
 
@@ -76,25 +91,31 @@ class LaporanPembayaranController extends Controller
         $bayarPerKendaraan = OaPayment::query()
             ->whereIn('po_kendaraan_id', $kendaraanIds)
             ->whereIn('tipe_pembayaran', ['oa', 'dp_supplier'])
+            ->whereHas('kendaraan.penerimas.penerima', function ($q) use ($tujuanIds) {
+                $q->whereIn('tujuan_id', $tujuanIds);
+            })
             ->get()
             ->groupBy('po_kendaraan_id')
             ->map(fn($rows) => (float) $rows->sum('jumlah_bayar'));
 
-        $oaLunas = $poPenerimas->filter(function (PoPenerima $p) use ($tagihanPerKendaraan, $bayarPerKendaraan) {
-            if ($p->oaPayment && $p->oaPayment->status === 'lunas') {
-                return true;
-            }
-            $kid = $p->po_kendaraan_id;
+        // Hitung lunas PER KENDARAAN (bukan per penerima)
+        $oaLunas = $poKendaraan->filter(function (PoKendaraan $k) use ($tagihanPerKendaraan, $bayarPerKendaraan) {
+            // Cek apakah ada oaPayment per kendaraan dengan status lunas
+            $hasLunasPayment = $k->oaPayment && $k->oaPayment->status === 'lunas';
+            
+            $kid = $k->id;
             $tagihan = (float) ($tagihanPerKendaraan[$kid] ?? 0);
             if ($tagihan <= 0) {
-                return false;
+                return $hasLunasPayment;
             }
             $bayar = (float) ($bayarPerKendaraan[$kid] ?? 0);
 
-            return $bayar >= $tagihan;
+            return $hasLunasPayment || ($bayar >= $tagihan);
         })->count();
-
-        $oaBelum = $poPenerimas->count() - $oaLunas;
+        
+        // Hitung total kendaraan untuk oaBelum
+        $totalKendaraan = $poKendaraan->count();
+        $oaBelum = $totalKendaraan - $oaLunas;
 
         // ── 2. Lansir Payment (dari PO) ───────────────────────────────
         $lansirPoQuery = PurchaseOrder::with([
@@ -105,6 +126,9 @@ class LaporanPembayaranController extends Controller
             'items.lansirRecords.mobils',
             'items.lansirRecords.tims',
         ])
+            ->whereHas('kendaraans.penerimas.penerima', function ($q) use ($tujuans) {
+                $q->whereIn('tujuan_id', $tujuans->pluck('id'));
+            })
             ->whereDate('tanggal_po', '>=', $dari)
             ->whereDate('tanggal_po', '<=', $sampai);
 
@@ -130,6 +154,9 @@ class LaporanPembayaranController extends Controller
             'kendaraans.penerimas.pakans',
             'kendaraans.penerimas.tims',
         ])
+            ->whereHas('kendaraans.penerimas', function ($q) use ($tujuans) {
+                $q->whereIn('tujuan_id', $tujuans->pluck('id'));
+            })
             ->whereDate('tanggal_lansir', '>=', $dari)
             ->whereDate('tanggal_lansir', '<=', $sampai);
 
@@ -161,9 +188,11 @@ class LaporanPembayaranController extends Controller
             ->join('po_penerima as p', 'p.id', '=', 'pk.po_penerima_id')
             ->join('po_kendaraan as k', 'k.id', '=', 'p.po_kendaraan_id')
             ->join('purchase_orders as po', 'po.id', '=', 'k.po_id')
+            ->join('penerima as pen', 'pen.id', '=', 'p.penerima_id') // Join ke tabel penerima untuk tujuan
             ->selectRaw('MONTH(po.tanggal_po) as bulan, SUM(pk.jumlah_kg * pk.ongkos_oa) as total')
             ->whereYear('po.tanggal_po', $tahun)
-            ->whereIn('p.status', ['selesai', 'batal'])
+            ->where('k.status', '!=' ,'batal')
+            ->whereIn('pen.tujuan_id', $tujuanIds) // Filter tujuan
             ->when($cvId, fn($q) => $q->where('po.cv_id', $cvId))
             ->groupBy('bulan')
             ->pluck('total', 'bulan');
@@ -172,8 +201,10 @@ class LaporanPembayaranController extends Controller
             ->join('gudang_lansir_kendaraan as k', 'k.lansir_header_id', '=', 'h.id')
             ->join('gudang_lansir_penerima as p', 'p.kendaraan_id', '=', 'k.id')
             ->join('gudang_lansir_pakan as pk', 'pk.penerima_id', '=', 'p.id')
+            ->join('penerima as pen', 'pen.id', '=', 'p.po_penerima_id') // Join ke tabel penerima untuk tujuan
             ->selectRaw('MONTH(h.tanggal_lansir) as bulan, SUM(pk.jumlah_kg * pk.ongkos_oa) as total')
             ->whereYear('h.tanggal_lansir', $tahun)
+            ->whereIn('pen.tujuan_id', $tujuanIds) // Filter tujuan
             ->when($cvId, fn($q) => $q->where('h.cv_id', $cvId))
             ->groupBy('bulan')
             ->pluck('total', 'bulan');

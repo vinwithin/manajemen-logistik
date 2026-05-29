@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Master;
 
 use App\Http\Controllers\Controller;
 use App\Models\Cv;
+use App\Models\Tujuan;
 use App\Models\User;
 use App\Models\UserCv;
+use App\Models\UserTujuan;
 use App\Services\Datatables\UserService;
 use Exception;
 use Illuminate\Http\Request;
@@ -48,10 +50,12 @@ class UserController extends Controller
     public function create()
     {
         $data = Cv::all();
+        $tujuan = Tujuan::where('is_aktif', true)->orderBy('nama')->get();
 
         return view('pages.user.create', [
             'data' => $data,
             'roles' => Role::all(),
+            'tujuan' => $tujuan,
         ]);
     }
 
@@ -68,6 +72,7 @@ class UserController extends Controller
             'roles' => 'array',
             'roles.*' => 'exists:roles,id',
             'id_cv' => 'array',
+            'id_tujuan' => 'array',
         ]);
 
         DB::beginTransaction();
@@ -77,6 +82,7 @@ class UserController extends Controller
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
                 'level' => $request->level,
+                'level_tujuan' => $request->level_tujuan,
                 'aktif' => $request->has('aktif') ? 1 : 0,
             ]);
 
@@ -100,6 +106,20 @@ class UserController extends Controller
                 }
             }
 
+            // Simpan Tujuan berdasarkan level_tujuan
+            if ($request->level_tujuan == 1) {
+                // Level Tujuan 1 = Pusat, create semua Tujuan
+                $allTujuan = Tujuan::all();
+                foreach ($allTujuan as $tujuan) {
+                    UserTujuan::create(['user_id' => $user->id, 'tujuan_id' => $tujuan->id, 'role' => '']);
+                }
+            } elseif ($request->level_tujuan == 2 && $request->filled('id_tujuan')) {
+                // Level Tujuan 2 = Per Tujuan, create Tujuan yang dipilih saja
+                foreach ($request->id_tujuan as $tujuanId) {
+                    UserTujuan::create(['user_id' => $user->id, 'tujuan_id' => $tujuanId, 'role' => '']);
+                }
+            }
+
             DB::commit();
 
             return redirect()->route('user.index')->with('success', 'User berhasil ditambahkan.');
@@ -109,6 +129,8 @@ class UserController extends Controller
             return redirect()->back()->with('error', 'Gagal menyimpan user: '.$e->getMessage())->withInput();
         }
     }
+
+
 
     /**
      * Display the specified resource.
@@ -129,6 +151,7 @@ class UserController extends Controller
             $user_roles = [];
             $roles = Role::all();
             $user_cv = [];
+            $user_tujuan = [];
             $cv = Cv::all();
             foreach ($data->roles as $role) {
                 $user_roles[] = $role->id;
@@ -138,12 +161,23 @@ class UserController extends Controller
                 $user_cv[] = $v->cv_id;
             }
 
+            foreach ($data->userTujuan as $v) {
+                $user_tujuan[] = $v->tujuan_id;
+            }
+
+            // Dapatkan semua tujuan aktif
+            $tujuan = Tujuan::where('is_aktif', true)
+                ->orderBy('nama')
+                ->get(['id', 'nama', 'type']);
+
             return view('pages.user.edit', [
                 'user' => $data,
                 'user_roles' => $user_roles,
                 'roles' => $roles,
                 'user_cv' => $user_cv,
+                'user_tujuan' => $user_tujuan,
                 'cv' => $cv,
+                'tujuan' => $tujuan,
             ]);
         } catch (Exception $e) {
             return redirect()->back()->with('error', 'Gagal memuat halaman!');
@@ -162,6 +196,7 @@ class UserController extends Controller
             'roles' => 'array',
             'roles.*' => 'exists:roles,id',
             'id_cv' => 'array',
+            'id_tujuan' => 'array',
         ]);
 
         DB::beginTransaction();
@@ -171,6 +206,7 @@ class UserController extends Controller
             $user->update([
                 'name' => $request->name,
                 'level' => $request->level,
+                'level_tujuan' => $request->level_tujuan,
                 'aktif' => $request->has('aktif') ? 1 : 0,
             ]);
 
@@ -187,6 +223,7 @@ class UserController extends Controller
             }
 
             UserCv::where('user_id', $user->id)->delete();
+            UserTujuan::where('user_id', $user->id)->delete();
 
             // Simpan CV berdasarkan level
             if ($request->level == 1) {
@@ -198,6 +235,17 @@ class UserController extends Controller
                 // Level 2 = Per CV, create CV yang dipilih saja
                 foreach ($request->id_cv as $cvId) {
                     UserCv::create(['user_id' => $user->id, 'cv_id' => $cvId, 'role' => '']);
+                }
+            }
+
+            if ($request->level_tujuan == 1) {
+                $allTujuan = Tujuan::all();
+                foreach ($allTujuan as $tujuan) {
+                    UserTujuan::create(['user_id' => $user->id, 'tujuan_id' => $tujuan->id, 'role' => '']);
+                }
+            } elseif ($request->level_tujuan == 2 && $request->filled('id_tujuan')) {
+                foreach ($request->id_tujuan as $tujuanId) {
+                    UserTujuan::create(['user_id' => $user->id, 'tujuan_id' => $tujuanId, 'role' => '']);
                 }
             }
 
@@ -220,6 +268,7 @@ class UserController extends Controller
         try {
             $user = User::findOrFail($id);
             UserCv::where('user_id', $user->id)->delete();
+            UserTujuan::where('user_id', $user->id)->delete();
             $user->syncRoles([]);
             $user->delete();
 

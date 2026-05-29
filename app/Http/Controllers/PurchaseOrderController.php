@@ -24,6 +24,7 @@ use App\Models\Tujuan;
 use App\Services\Datatables\PurchaseOrderService;
 use App\Services\GudangStokService;
 use App\Services\PoKendaraanIdtrackSpjService;
+use App\Traits\WithUserTujuan;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Exception;
 use Illuminate\Database\QueryException;
@@ -35,6 +36,8 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class PurchaseOrderController extends Controller
 {
+    use WithUserTujuan;
+
     protected $poService;
 
     protected $gudangStokService;
@@ -237,7 +240,7 @@ class PurchaseOrderController extends Controller
     public function exportPdfSupplierConfirm(Request $request)
     {
         $supplierList = Supplier::orderBy('nama')->get();
-        $tujuans = Tujuan::where('is_aktif', true)->orderBy('nama')->get();
+        $tujuans = $this->getUserTujuan();
 
         $cvId = $request->cv_id;   // opsional
         $supplierId = $request->supplier_id; // opsional
@@ -329,7 +332,7 @@ class PurchaseOrderController extends Controller
     public function exportPdfPtSumConfirm(Request $request)
     {
         $suppliers = Supplier::orderBy('nama')->get();
-        $tujuans = Tujuan::where('is_aktif', true)->orderBy('nama')->get();
+        $tujuans = $this->getUserTujuan();
 
         $cvId = $request->cv_id ?? session('active_cv');
         $from = $request->from;
@@ -514,14 +517,23 @@ class PurchaseOrderController extends Controller
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            $activeCvId = session('active_cv');
+            $activeCvId = session('active_cv');    
+            $tujuans = $this->getUserTujuan();
 
-            $query = PurchaseOrder::with(['cv', 'kendaraans'])
-                ->withCount('kendaraans')->orderBy('tanggal_po', 'desc');
+
+           $query = PurchaseOrder::with(['cv', 'kendaraans', 'kendaraans.penerimas.penerima'])
+                    ->withCount('kendaraans')
+                    ->orderBy('tanggal_po', 'desc')
+                    ->whereHas('kendaraans.penerimas.penerima', function ($q) use ($tujuans) {
+                        $q->whereIn('tujuan_id', $tujuans->pluck('id'));
+                    });
+       
+                
 
             if ($activeCvId) {
                 $query->where('cv_id', $activeCvId);
             }
+           
 
             return $this->poService->getData($query);
         }
@@ -532,11 +544,16 @@ class PurchaseOrderController extends Controller
     public function create()
     {
         $activeCvId = session('active_cv');
+        
+        // Gunakan trait untuk mengambil userTujuan
+        $userTujuan = $this->getUserTujuan();
+
         $suppliers = Supplier::orderBy('nama')->get();
         $kodePakans = KodePakan::orderBy('kode')->get();
-        $tujuans = Tujuan::where('is_aktif', true)->orderBy('nama')->get();
+        $tujuans = $userTujuan; 
         $penerimas = Penerima::with('tujuan')
             ->where('is_aktif', true)
+            ->whereIn('tujuan_id', $userTujuan->pluck('id'))
             ->orderBy('nama')
             ->get(['id', 'nama', 'tujuan_id']);
         $batasOmzet = Cv::BATAS_OMZET;
@@ -815,7 +832,7 @@ class PurchaseOrderController extends Controller
             ])->findOrFail(decrypt($id));
 
             $cvList = Cv::withOmzet();
-            $tujuans = Tujuan::where('is_aktif', true)->orderBy('nama')->get();
+            $tujuans = $this->getUserTujuan();
             $suppliers = Supplier::orderBy('nama')->get();
             $kodePakans = KodePakan::orderBy('kode')->get();
             $penerimas = Penerima::with('tujuan')

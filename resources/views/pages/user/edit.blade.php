@@ -38,14 +38,39 @@
                                     </select>
                                 </div>
                             </div>
+
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label">Level Akses Tujuan</label>
+                                <div class="col-sm-7">
+                                    <select class="form-control" name="level_tujuan" id="level_tujuan">
+                                        <option value="1" {{ $user->level_tujuan == '1' ? 'selected' : '' }}>Pusat (Semua Tujuan)
+                                        </option>
+                                        <option value="2" {{ $user->level_tujuan == '2' ? 'selected' : '' }}>Per Tujuan</option>
+                                    </select>
+                                </div>
+                            </div>
                             <div class="form-group" id="unit_kerja" style="display:none;">
                                 <label class="col-sm-2 control-label">CV</label>
                                 <div class="col-sm-7">
-                                    <select class="form-control select2" multiple name="id_cv[]" style="width: 100%">
+                                    <select class="form-control select2" multiple name="id_cv[]" id="id_cv" style="width: 100%">
                                         @foreach ($cv as $c)
                                             <option value="{{ $c->id }}"
                                                 {{ in_array($c->id, $user_cv) ? 'selected' : '' }}>
                                                 {{ $c->nama_cv }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-group" id="unit_tujuan" style="display:none;">
+                                <label class="col-sm-2 control-label">Tujuan</label>
+                                <div class="col-sm-7">
+                                    <select class="form-control select2" multiple name="id_tujuan[]" id="id_tujuan" style="width: 100%">
+                                        @foreach ($tujuan as $t)
+                                            <option value="{{ $t->id }}"
+                                                {{ in_array($t->id, $user_tujuan) ? 'selected' : '' }}>
+                                                {{ $t->nama }} ({{ $t->type }})
                                             </option>
                                         @endforeach
                                     </select>
@@ -100,16 +125,21 @@
         $("#level_akun").on("change", function() {
             if ($(this).val() == '1') {
                 $("#unit_kerja").css('display', 'none');
+                $("#unit_tujuan").css('display', 'none');
             } else {
                 $("#unit_kerja").css('display', '');
+                $("#unit_tujuan").css('display', '');
             }
         });
+
 
         $(document).ready(function() {
             @if ($user->level == '2')
                 $("#unit_kerja").css('display', '');
+                $("#unit_tujuan").css('display', '');
             @else
                 $("#unit_kerja").css('display', 'none');
+                $("#unit_tujuan").css('display', 'none');
             @endif
         });
     </script>

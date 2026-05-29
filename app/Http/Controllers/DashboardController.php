@@ -3,6 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Cv;
+use App\Models\PurchaseOrder;
+use App\Models\Supplier;
+use App\Models\Tujuan;
+use App\Models\Penerima;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -26,7 +30,35 @@ class DashboardController extends Controller
 
         $selectedCv = $activeCv ? $userCvs->firstWhere('id', $activeCv) : null;
 
-        return view('pages.dashboard', compact('userCvs', 'selectedCv', 'activeCv'));
+        // Hitung statistik
+        $totalPO = PurchaseOrder::query();
+        $totalSupplier = Supplier::query();
+        $totalTujuan = Tujuan::query();
+        $totalPenerima = Penerima::query();
+
+        // Filter jika ada selectedCv
+        if ($selectedCv) {
+            $totalPO->where('cv_id', $selectedCv->id);
+            $totalTujuan->where('cv_id', $selectedCv->id);
+            $totalPenerima->whereHas('tujuan', function ($q) use ($selectedCv) {
+                $q->where('cv_id', $selectedCv->id);
+            });
+        }
+
+        $totalPO = $totalPO->count();
+        $totalSupplier = $totalSupplier->count();
+        $totalTujuan = $totalTujuan->where('is_aktif', true)->count();
+        $totalPenerima = $totalPenerima->where('is_aktif', true)->count();
+
+        return view('pages.dashboard', compact(
+            'userCvs', 
+            'selectedCv', 
+            'activeCv',
+            'totalPO',
+            'totalSupplier',
+            'totalTujuan',
+            'totalPenerima'
+        ));
     }
 
     public function switchCv(Request $request)

@@ -67,4 +67,9 @@ class Tujuan extends Model
             ->withPivot('ongkos_angkut', 'jenis_kendaraan')
             ->withTimestamps();
     }
+
+    public function userTujuan()
+    {
+        return $this->hasMany(UserTujuan::class);
+    }
 }

@@ -5,11 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\OaPayment;
 use App\Models\PoKendaraan;
 use App\Models\Supplier;
+use App\Traits\WithUserTujuan;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 
 class RekapOaController extends Controller
 {
+    use WithUserTujuan;
+
     public function index(Request $request)
     {
         if ($request->ajax()) {
@@ -18,10 +21,12 @@ class RekapOaController extends Controller
             $status = $request->status;
             $from = $request->from;
             $to = $request->to;
+            $tujuans = $this->getUserTujuan();
 
-            $query = PoKendaraan::with(['po.cv', 'supplier', 'penerimas', 'oaPayments', 'oaPaymentOnly'])
+            $query = PoKendaraan::with(['po.cv', 'supplier', 'penerimas', 'oaPayments', 'oaPaymentOnly', 'penerimas.penerima'])
                 ->where('status', '!=', 'batal')
-                ->whereHas('po', function ($q) use ($activeCvId, $from, $to) {
+                ->whereHas('po', function ($q) use ($activeCvId, $from, $to, $tujuans) {
+                    
                     if ($activeCvId) {
                         $q->where('cv_id', $activeCvId);
                     }
@@ -31,6 +36,9 @@ class RekapOaController extends Controller
                     if ($to) {
                         $q->whereDate('tanggal_po', '<=', $to);
                     }
+                })
+                ->whereHas('penerimas.penerima', function ($q) use ($tujuans) {
+                    $q->whereIn('tujuan_id', $tujuans->pluck('id'));
                 })
                 ->when($supplierId, fn ($q) => $q->where('supplier_id', $supplierId))
                 ->when($status, function ($q) use ($status) {

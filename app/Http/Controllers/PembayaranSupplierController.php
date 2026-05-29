@@ -7,13 +7,16 @@ use App\Models\PoKendaraan;
 use App\Models\Supplier;
 use App\Models\PoPenerima;
 use App\Models\PurchaseOrder;
+use App\Traits\WithUserTujuan;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 
 class PembayaranSupplierController extends Controller
 {
+    use WithUserTujuan;
     public function index(Request $request)
     {
+        $tujuans = $this->getUserTujuan();
         if ($request->ajax()) {
             $supplierId = $request->supplier_id;
             $status = $request->status;
@@ -22,12 +25,17 @@ class PembayaranSupplierController extends Controller
             $tipePembayaran = $request->tipe_pembayaran; // Filter by tipe
             $activeCvId = session('active_cv');
 
+
             $query = OaPayment::with([
                 'supplier',
                 'penerima.kendaraan.po.cv', // Untuk tipe 'oa'
                 'penerima.tujuan',
                 'kendaraan.po.cv', // Untuk tipe 'dp_supplier'
+                'kendaraan.penerimas.penerima',
             ])
+                ->whereHas('kendaraan.penerimas.penerima', function ($q) use ($tujuans) {
+                    $q->whereIn('tujuan_id', $tujuans->pluck('id'));
+                })
                 ->when($supplierId, fn($q) => $q->where('supplier_id', $supplierId))
                 ->when($status, fn($q) => $q->where('status', $status))
                 ->when($tipePembayaran, fn($q) => $q->where('tipe_pembayaran', $tipePembayaran))
@@ -139,6 +147,7 @@ class PembayaranSupplierController extends Controller
         $poKendaraan = PoKendaraan::with([
             'penerimas:id,po_kendaraan_id',
             'penerimas.pakans:id,po_penerima_id,jumlah_kg,ongkos_oa',
+            'penerimas.penerima'
         ])
             ->select('id', 'status', 'po_id')
             ->where('status', '!=', 'batal')
@@ -147,12 +156,16 @@ class PembayaranSupplierController extends Controller
                     $q->where('cv_id', $activeCvId);
                 }
             })
+            ->whereHas('penerimas.penerima', function ($q) use ($tujuans) {
+                $q->whereIn('tujuan_id', $tujuans->pluck('id'));
+            })
             ->get();
 
         $kendaraanIds = $poKendaraan->pluck('id');
 
         // === Hitung total tagihan dari accessor (tanpa loop manual) ===
         $total = $poKendaraan->sum(fn($po) => $po->total_tagihan_supplier);
+        // dd($total);
 
         // === Count belum bayar — pakai IDs yang sudah ada ===
         $belumBayar = PoKendaraan::whereIn('id', $kendaraanIds)
@@ -160,8 +173,12 @@ class PembayaranSupplierController extends Controller
             ->count();
 
         // === OaPayment rows — query bersih tanpa closure & unique ===
-        $oaPaymentRows = OaPayment::whereIn('po_kendaraan_id', $kendaraanIds)
+        $oaPaymentRows = OaPayment::with('kendaraan.penerimas.penerima')
+            ->whereIn('po_kendaraan_id', $kendaraanIds)
             ->whereIn('tipe_pembayaran', ['oa', 'dp_supplier'])
+            ->whereHas('kendaraan.penerimas.penerima', function ($q) use ($tujuans) {
+                $q->whereIn('tujuan_id', $tujuans->pluck('id'));
+            })
             ->select('id', 'jumlah_bayar', 'status')
             ->get();
 

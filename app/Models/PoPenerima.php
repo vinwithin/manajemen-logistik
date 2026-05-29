@@ -37,7 +37,7 @@ class PoPenerima extends Model
 
     public function penerima(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\Penerima::class, 'penerima_id');
+        return $this->belongsTo(Penerima::class, 'penerima_id');
     }
 
     public function tujuan(): BelongsTo

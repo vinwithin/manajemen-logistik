@@ -6,11 +6,13 @@ use App\Models\Cv;
 use App\Models\PurchaseOrder;
 use App\Models\Supplier;
 use App\Models\GudangLansirHeader;
+use App\Traits\WithUserTujuan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class LaporanPoController extends Controller
 {
+    use WithUserTujuan;
     public function index(Request $request)
     {
         $activeCvId = session('active_cv');
@@ -21,42 +23,69 @@ class LaporanPoController extends Controller
         $cvId    = $request->cv_id   ?? $activeCvId;
         $supplierId = $request->supplier_id ?? null;
         $tahun   = $request->tahun   ?? now()->year;
+        $tujuans = $this->getUserTujuan();
 
         // ── Summary cards ─────────────────────────────────────────────
-        $baseQuery = PurchaseOrder::with(['kendaraans.penerimas.pakans'])
+        $baseQuery = PurchaseOrder::with([
+                'kendaraans.penerimas.pakans',
+                'kendaraans.penerimas.penerima'
+            ])
+            ->whereHas('kendaraans.penerimas.penerima', function ($q) use ($tujuans) {
+                $q->whereIn('tujuan_id', $tujuans->pluck('id'));
+            })
             ->whereBetween('tanggal_po', [$dari, $sampai]);
 
         if ($cvId) {
-            $baseQuery->where('cv_id', $cvId);
+            $baseQuery = $baseQuery->where('cv_id', $cvId); // ← reassign
         }
 
         if ($supplierId) {
-            $baseQuery->whereHas('kendaraans', fn($q) => $q->where('supplier_id', $supplierId));
+            $baseQuery = $baseQuery->whereHas( // ← reassign
+                'kendaraans',
+                fn($q) => $q->where('supplier_id', $supplierId)
+            );
         }
 
         $pos = $baseQuery->get();
 
+        $tujuanIds = $tujuans->pluck('id');
+
         // Data PO
         $totalPoPo       = $pos->count();
-        $totalKendaraanPo = $pos->sum(fn($po) => $po->kendaraans->count());
+        $totalKendaraanPo = $pos->sum(fn($po) =>
+            $po->kendaraans->where('status', '!=', 'batal')->filter(fn($k) =>
+                $k->penerimas->contains(fn($p) =>
+                    $tujuanIds->contains($p->penerima?->tujuan_id)
+                )
+            )->count()
+        );
         $totalVolumePo   = $pos->sum(fn($po) =>
             $po->kendaraans->sum(fn($k) =>
-                $k->penerimas->sum('total_kg')
+                $k->penerimas
+                ->filter(fn($p) => $tujuanIds->contains($p->penerima?->tujuan_id))
+                ->sum('total_kg')
             )
         );
         $totalPtSumPo    = $pos->sum(fn($po) =>
             $po->kendaraans->sum(fn($k) =>
-                $k->penerimas->sum('total_pt_sum')
+                $k->penerimas
+                ->filter(fn($p) => $tujuanIds->contains($p->penerima?->tujuan_id))
+                ->sum('total_pt_sum')
             )
         );
         $totalOaPo       = $pos->sum(fn($po) =>
             $po->kendaraans->sum(fn($k) =>
-                $k->penerimas->sum('total_oa')
+                $k->penerimas
+                ->filter(fn($p) => $tujuanIds->contains($p->penerima?->tujuan_id))
+                ->sum('total_oa')
             )
         );
 
         // Data Gudang Lansir
         $gudangQuery = GudangLansirHeader::with(['kendaraans.penerimas.pakans', 'kendaraans.penerimas.tims'])
+            ->whereHas('kendaraans.penerimas', function ($q) use ($tujuanIds) {
+                $q->whereIn('tujuan_id', $tujuanIds);
+            })
             ->whereBetween('tanggal_lansir', [$dari, $sampai]);
 
         if ($cvId) {
@@ -66,20 +95,34 @@ class LaporanPoController extends Controller
         $gudangLansirs = $gudangQuery->get();
 
         $totalPoGudang       = $gudangLansirs->count();
-        $totalKendaraanGudang = $gudangLansirs->sum(fn($gl) => $gl->kendaraans->count());
+        $totalKendaraanGudang = $gudangLansirs->sum(fn($gl) =>
+                $gl->kendaraans->filter(fn($k) =>
+                    $k->penerimas->contains(fn($p) =>
+                        $tujuanIds->contains($p->tujuan_id)
+                    )
+                )->count()
+        );
+
         $totalVolumeGudang   = $gudangLansirs->sum(fn($gl) =>
             $gl->kendaraans->sum(fn($k) =>
-                $k->penerimas->sum('total_kg')
+                $k->penerimas
+                ->filter(fn($p) => $tujuanIds->contains($p->tujuan_id))
+                ->sum('total_kg')
             )
         );
-        $totalPtSumGudang    = $gudangLansirs->sum(fn($gl) =>
+        $totalPtSumGudang = $gudangLansirs->sum(fn($gl) =>
             $gl->kendaraans->sum(fn($k) =>
-                $k->penerimas->sum(fn($p) => $p->pakans->sum(fn($pakan) => $pakan->jumlah_kg * $pakan->harga_pt_sum))
+                $k->penerimas
+                ->filter(fn($p) => $tujuanIds->contains($p->tujuan_id))
+                ->sum(fn($p) => $p->pakans->sum(fn($pakan) => $pakan->jumlah_kg * $pakan->harga_pt_sum))
             )
         );
+
         $totalOaGudang       = $gudangLansirs->sum(fn($gl) =>
             $gl->kendaraans->sum(fn($k) =>
-                $k->penerimas->sum(fn($p) => $p->pakans->sum(fn($pakan) => $pakan->jumlah_kg * $pakan->ongkos_oa))
+                $k->penerimas
+                ->filter(fn($p) => $tujuanIds->contains($p->tujuan_id))
+                ->sum(fn($p) => $p->pakans->sum(fn($pakan) => $pakan->jumlah_kg * $pakan->ongkos_oa))
             )
         );
 
@@ -93,10 +136,14 @@ class LaporanPoController extends Controller
         // ── Data grafik: volume per bulan dalam tahun yang dipilih ────
         $chartData = PurchaseOrder::select(
                 DB::raw('MONTH(tanggal_po) as bulan'),
-                DB::raw('SUM(po_kendaraan.jumlah_kg) as total_kg'),
+                DB::raw('SUM(po_penerima_pakan.jumlah_kg) as total_kg'),
                 DB::raw('COUNT(DISTINCT purchase_orders.id) as total_po')
             )
             ->join('po_kendaraan', 'purchase_orders.id', '=', 'po_kendaraan.po_id')
+            ->join('po_penerima', 'po_kendaraan.id', '=', 'po_penerima.po_kendaraan_id')
+            ->join('po_penerima_pakan', 'po_penerima.id', '=', 'po_penerima_pakan.po_penerima_id')
+            ->join('penerima', 'po_penerima.penerima_id', '=', 'penerima.id')
+            ->whereIn('penerima.tujuan_id', $tujuanIds)
             ->whereYear('tanggal_po', $tahun)
             ->when($cvId, fn($q) => $q->where('cv_id', $cvId))
             ->groupBy(DB::raw('MONTH(tanggal_po)'))
@@ -120,7 +167,11 @@ class LaporanPoController extends Controller
                 'cv',
                 'kendaraans.supplier',
                 'kendaraans.penerimas.pakans',
+                'kendaraans.penerimas.penerima',
             ])
+            ->whereHas('kendaraans.penerimas.penerima', function ($q) use ($tujuans) {
+                $q->whereIn('tujuan_id', $tujuans->pluck('id'));
+            })
             ->whereBetween('tanggal_po', [$dari, $sampai])
             ->orderBy('tanggal_po', 'desc');
 
@@ -132,7 +183,7 @@ class LaporanPoController extends Controller
             $tableQuery->whereHas('kendaraans', fn($q) => $q->where('supplier_id', $supplierId));
         }
 
-        $tablePos = $tableQuery->paginate(25)->withQueryString();
+        $tablePos = $tableQuery->paginate(5)->withQueryString();
 
         // ── Data untuk filter dropdown ────────────────────────────────
         $cvList      = Cv::where('is_aktif', true)->orderBy('nama_cv')->get();

@@ -10,12 +10,14 @@ use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use Maatwebsite\Excel\Events\AfterSheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use App\Traits\WithUserTujuan;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
 {
     protected Collection $pos;
+    use WithUserTujuan;
 
     protected array $kodePakanList;
 
@@ -30,6 +32,9 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
     {
         $this->from = $from;
         $this->to = $to;
+        $tujuans = $this->getUserTujuan();
+
+
 
         $query = PurchaseOrder::with([
             'cv',
@@ -42,7 +47,9 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
             'kendaraans.penerimas.tujuan',
             'kendaraans.penerimas.lansirs.mobils',
             'kendaraans.penerimas.lansirs.tims',
-        ])->where('status', '!=', 'batal')->orderBy('tanggal_po', 'asc')->orderBy('no_po', 'asc');
+        ])->whereHas('kendaraans.penerimas.penerima', function ($q) use ($tujuans) {
+                        $q->whereIn('tujuan_id', $tujuans->pluck('id'));
+                    })->where('status', '!=', 'batal')->orderBy('tanggal_po', 'asc')->orderBy('no_po', 'asc');
 
         if ($from) {
             $query->whereDate('tanggal_po', '>=', $from);

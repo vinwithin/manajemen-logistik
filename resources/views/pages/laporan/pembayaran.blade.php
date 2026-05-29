@@ -23,21 +23,18 @@
                     <label class="form-label small fw-semibold">Sampai Tanggal</label>
                     <input type="date" name="sampai" class="form-control form-control-sm" value="{{ $sampai }}">
                 </div>
-                @if ($canSeeAllCv)
                     <div class="col-12 col-md-2">
                         <label class="form-label small fw-semibold">CV</label>
                         <select name="cv_id" class="form-select form-select-sm">
-                            <option value="">Semua CV</option>
-                            @foreach ($cvList as $cv)
+                            <option value="">{{$canSeeAllCv ? 'Semua CV' : 'Semua CV (Hanya CV yang diakses)'}}</option>
+                            @foreach ($userCvs as $cv)
                                 <option value="{{ $cv->id }}" {{ $cvId == $cv->id ? 'selected' : '' }}>
                                     {{ $cv->nama_cv }}
                                 </option>
                             @endforeach
                         </select>
                     </div>
-                @else
-                    <input type="hidden" name="cv_id" value="{{ $cvId }}">
-                @endif
+               
                 <div class="col-12 col-md-2">
                     <label class="form-label small fw-semibold">Tahun Grafik</label>
                     <select name="tahun" class="form-select form-select-sm">

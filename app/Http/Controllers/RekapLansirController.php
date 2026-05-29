@@ -9,6 +9,7 @@ use App\Models\PoPenerimaLansir;
 use App\Models\PurchaseOrder;
 use App\Services\Datatables\RekapLansirDatatableService;
 use App\Services\RekapLansirService;
+use App\Traits\WithUserTujuan;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,6 +20,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class RekapLansirController extends Controller
 {
+    use WithUserTujuan;
     public function __construct(
         private RekapLansirService $service,
         private RekapLansirDatatableService $datatableService,
@@ -27,12 +29,16 @@ class RekapLansirController extends Controller
     public function index(Request $request): mixed
     {
         $activeCvId = session('active_cv');
+        $tujuans = $this->getUserTujuan();
 
         if ($request->ajax()) {
             // Gabungkan data dari PO Lansir dan Gudang Lansir
-            $poLansir = PoPenerimaLansir::with(['penerima.kendaraan.po.cv'])
+            $poLansir = PoPenerimaLansir::with(['penerima.kendaraan.po.cv', 'penerima.tujuan'])
                 ->withCount('mobils')
                 ->when($activeCvId, fn ($q) => $q->whereHas('penerima.kendaraan.po', fn ($q2) => $q2->where('cv_id', $activeCvId)))
+                ->whereHas('penerima', function ($q) use ($tujuans) {
+                    $q->whereIn('tujuan_id', $tujuans->pluck('id'));
+                })
                 ->get()
                 ->map(function ($item) {
                     return [
@@ -47,9 +53,12 @@ class RekapLansirController extends Controller
                     ];
                 });
 
-            $gudangLansir = GudangLansirHeader::with(['cv', 'gudang'])
+            $gudangLansir = GudangLansirHeader::with(['cv', 'gudang', 'kendaraans.penerimas'])
                 ->withCount('kendaraans')
                 ->when($activeCvId, fn ($q) => $q->where('cv_id', $activeCvId))
+                ->whereHas('kendaraans.penerimas', function ($q) use ($tujuans) {
+                    $q->whereIn('tujuan_id', $tujuans->pluck('id'));
+                })
                 ->get()
                 ->map(function ($item) {
                     return [

@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Helpers\MenuHelper;
 use App\Models\Cv;
+use App\Models\Tujuan;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\View;
@@ -58,9 +59,18 @@ class AppServiceProvider extends ServiceProvider
                 // Hanya admin (level 1) yang boleh melihat opsi "Semua Perusahaan"
                 $canSeeAllCv = $user->level == 1;
 
+                // Share Tujuan context ke semua views
+                $userTujuan = Tujuan::where('is_aktif', true)->orderBy('nama')->get();
+                
+                // Filter sesuai level_tujuan user
+                if ($user->level_tujuan != 1) {
+                    $userTujuan = $userTujuan->whereIn('id', $user->userTujuan->pluck('tujuan_id'));
+                }
+
                 $view->with('userCvs', $userCvs);
                 $view->with('activeCv', $activeCv);
                 $view->with('canSeeAllCv', $canSeeAllCv);
+                $view->with('userTujuan', $userTujuan);
             }
         });
     }
