@@ -7,15 +7,18 @@ use App\Models\PurchaseOrder;
 use App\Models\Supplier;
 use App\Models\Tujuan;
 use App\Models\Penerima;
+use App\Traits\WithUserTujuan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
 {
+    use WithUserTujuan;
     public function index()
     {
         $user = Auth::user();
         $activeCv = session('active_cv');
+        $tujuans = $this->getUserTujuan();
 
         if ($user->level == 1) {
             $userCvs = Cv::where('is_aktif', true)->get();
@@ -31,14 +34,20 @@ class DashboardController extends Controller
         $selectedCv = $activeCv ? $userCvs->firstWhere('id', $activeCv) : null;
 
         // Hitung statistik
-        $totalPO = PurchaseOrder::query();
+        $totalPO = PurchaseOrder::with('kendaraans.penerimas.penerima');
         $totalSupplier = Supplier::query();
         $totalTujuan = Tujuan::query();
         $totalPenerima = Penerima::query();
 
         // Filter jika ada selectedCv
         if ($selectedCv) {
-            $totalPO->where('cv_id', $selectedCv->id);
+            $totalPO->where('cv_id', $selectedCv->id)
+            ->where(function ($q) use ($tujuans) {
+                        $q->whereHas('kendaraans.penerimas.penerima', function ($q) use ($tujuans) {
+                            $q->whereIn('tujuan_id', $tujuans->pluck('id'));
+                        })
+                        ->orWhereDoesntHave('kendaraans.penerimas');
+                    });
             $totalTujuan->where('cv_id', $selectedCv->id);
             $totalPenerima->whereHas('tujuan', function ($q) use ($selectedCv) {
                 $q->where('cv_id', $selectedCv->id);
