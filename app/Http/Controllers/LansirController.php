@@ -3,16 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\Models\PoPenerima;
+use App\Traits\WithUserTujuan;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 
 class LansirController extends Controller
 {
+    use WithUserTujuan;
     // ── Daftar penerima yang memiliki lansir ──────────────────
     public function index(Request $request)
     {
         if ($request->ajax()) {
             $activeCvId = session('active_cv');
+            $tujuans = $this->getUserTujuan();
 
             $query = PoPenerima::with([
                 'kendaraan.po.cv',
@@ -20,7 +23,11 @@ class LansirController extends Controller
                 'tujuan',
                 'lansirs',
                 'pakans.kodePakan',
+                'penerima'
             ])
+                ->whereHas('penerima', function ($q) use ($tujuans) {
+                    $q->where('tujuan_id', $tujuans->pluck('id'));
+                })
                 ->whereHas('lansirs') // Hanya penerima yang memiliki lansir
                 ->whereHas('kendaraan.po', function ($q) use ($activeCvId) {
                     if ($activeCvId) {
