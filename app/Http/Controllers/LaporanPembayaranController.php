@@ -201,10 +201,10 @@ class LaporanPembayaranController extends Controller
             ->join('gudang_lansir_kendaraan as k', 'k.lansir_header_id', '=', 'h.id')
             ->join('gudang_lansir_penerima as p', 'p.kendaraan_id', '=', 'k.id')
             ->join('gudang_lansir_pakan as pk', 'pk.penerima_id', '=', 'p.id')
-            ->join('penerima as pen', 'pen.id', '=', 'p.po_penerima_id') // Join ke tabel penerima untuk tujuan
-            ->selectRaw('MONTH(h.tanggal_lansir) as bulan, SUM(pk.jumlah_kg * pk.ongkos_oa) as total')
+            ->join('gudang_lansir_tim as tim', 'tim.penerima_id', '=', 'p.id')
+            ->selectRaw('MONTH(h.tanggal_lansir) as bulan, SUM(pk.jumlah_kg * pk.ongkos_oa + tim.jumlah_kg * tim.upah_per_kg) as total')
             ->whereYear('h.tanggal_lansir', $tahun)
-            ->whereIn('pen.tujuan_id', $tujuanIds) // Filter tujuan
+            ->whereIn('p.tujuan_id', $tujuanIds) // Filter tujuan
             ->when($cvId, fn($q) => $q->where('h.cv_id', $cvId))
             ->groupBy('bulan')
             ->pluck('total', 'bulan');
