@@ -351,6 +351,7 @@
         $logoInisial = strtoupper(substr(preg_replace('/^CV\.?\s*/i', '', $cvNama), 0, 2));
         
         // Ukuran logo berdasarkan nama CV
+        $top = 14;
         $logoWidth = 170;
         $logoHeight = 50;
         
