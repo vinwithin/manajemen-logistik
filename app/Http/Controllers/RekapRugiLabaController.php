@@ -351,7 +351,9 @@ class RekapRugiLabaController extends Controller
             ->where('purchase_orders.cv_id', $cvId)
             ->whereDate('purchase_orders.tanggal_po', '>=', $dari)
             ->whereDate('purchase_orders.tanggal_po', '<=', $sampai)
-            ->sum(DB::raw('COALESCE(po_lansir_tim.upah, 0)'));
+            ->sum(DB::raw('COALESCE(po_lansir_tim.berat, 0) * COALESCE(po_lansir_tim.upah, 0)'));
+
+            // ->sum(DB::raw('COALESCE(po_lansir_tim.upah, 0)'));
 
         // Mobil lokal otomatis
         $mobilGudang = DB::table('gudang_lansir_pakan')
