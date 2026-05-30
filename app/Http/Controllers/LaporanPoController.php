@@ -36,19 +36,19 @@ class LaporanPoController extends Controller
                 $q->whereHas('kendaraans.penerimas.penerima', function ($q) use ($tujuans) {
                     $q->whereIn('tujuan_id', $tujuans->pluck('id'));
                 })
-                    ->orWhereDoesntHave('kendaraans.penerimas')        // kendaraan tanpa penerima
+                    ->orWhereDoesntHave('kendaraans.penerimas')
                     ->orWhereHas('kendaraans.penerimas', function ($q) {
-                        $q->whereDoesntHave('penerima');               // penerima orphan
+                        $q->whereDoesntHave('penerima');
                     });
             })
             ->whereBetween('tanggal_po', [$dari, $sampai]);
 
         if ($cvId) {
-            $baseQuery = $baseQuery->where('cv_id', $cvId); // ← reassign
+            $baseQuery = $baseQuery->where('cv_id', $cvId);
         }
 
         if ($supplierId) {
-            $baseQuery = $baseQuery->whereHas( // ← reassign
+            $baseQuery = $baseQuery->whereHas(
                 'kendaraans',
                 fn($q) => $q->where('supplier_id', $supplierId)
             );
@@ -170,6 +170,7 @@ class LaporanPoController extends Controller
             ->join('po_penerima', 'po_kendaraan.id', '=', 'po_penerima.po_kendaraan_id')
             ->join('po_penerima_pakan', 'po_penerima.id', '=', 'po_penerima_pakan.po_penerima_id')
             ->join('penerima', 'po_penerima.penerima_id', '=', 'penerima.id')
+            ->where('po_kendaraan.status', '!=', 'batal')
             ->whereIn('penerima.tujuan_id', $tujuanIds)
             ->whereYear('tanggal_po', $tahun)
             ->when($cvId, fn($q) => $q->where('cv_id', $cvId))
