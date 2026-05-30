@@ -3,6 +3,7 @@
     @php
         $typeLabels = [
             'gudang' => 'Gudang',
+            'tr_kerinci' => 'TR Kerinci',
             'direct' => 'Direct PIR',
             'co_farm' => 'Co Farm',
             'rent_farm' => 'Rent Farm',

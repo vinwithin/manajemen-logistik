@@ -305,7 +305,6 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                     }
                     $rows[] = $row;
 
-                    // Tambahkan baris extra untuk mobil/tim tambahan (zip bersama)
                     if ($penerima !== null && $lansir) {
                         $extraMobils = $lansir->mobils->slice(1)->values();
                         $extraTims = $lansir->tims->slice(1)->values();

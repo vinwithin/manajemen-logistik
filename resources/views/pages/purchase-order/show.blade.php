@@ -238,7 +238,7 @@
                                             </span>
                                         @endif
                                     </td>
-                                    <td>{{ $penerima->tujuan?->nama ?? '-' }}</td>
+                                    <td>{{ $penerima->penerima?->tujuan?->nama  }}</td>
                                     @foreach ($kodePakanList as $kp)
                                         @php $pk = $pakanMap[$kp->id] ?? null; @endphp
                                         <td class="text-center">

@@ -286,7 +286,7 @@ class RekapRugiLabaController extends Controller
 
         $dari   = "{$tahun}-" . str_pad($bulan, 2, '0', STR_PAD_LEFT) . '-01';
         $sampai = date('Y-m-t', strtotime($dari));
-        $types  = ['gudang', 'direct', 'co_farm', 'rent_farm'];
+        $types  = ['gudang', 'direct', 'co_farm', 'rent_farm', 'tr_kerinci'];
 
         $pembelian = array_fill_keys($types, 0);
         $penjualan = array_fill_keys($types, 0);

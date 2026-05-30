@@ -808,6 +808,7 @@ class PurchaseOrderController extends Controller
                 'kendaraans.supplier',
                 'kendaraans.penerimas.pakans.kodePakan',
                 'kendaraans.penerimas.tujuan',
+                'kendaraans.penerimas.penerima.tujuan',
                 'kendaraans.penerimas.oaPayment',
             ])->findOrFail(decrypt($id));
 

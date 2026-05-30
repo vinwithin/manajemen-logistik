@@ -6,6 +6,7 @@
         $action = $isEdit ? route('keuangan.rugi-laba.store') : route('keuangan.rugi-laba.store');
         $typeLabels = [
             'gudang' => 'Gudang',
+            'tr_kerinci' => 'TR Kerinci',
             'direct' => 'Direct PIR',
             'co_farm' => 'Co Farm',
             'rent_farm' => 'Rent Farm',
