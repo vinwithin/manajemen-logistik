@@ -269,6 +269,7 @@ class RekapRugiLabaController extends Controller
             ->join('po_kendaraan', 'po_kendaraan.id', '=', 'po_penerima.po_kendaraan_id')
             ->join('purchase_orders', 'purchase_orders.id', '=', 'po_kendaraan.po_id')
             ->leftJoin('tujuan', 'tujuan.id', '=', 'po_penerima.tujuan_id')
+            ->where('po_kendaraan.status' , '!=', 'batal')
             ->where('purchase_orders.cv_id', $cvId)
             ->whereDate('purchase_orders.tanggal_po', '>=', $dari)
             ->whereDate('purchase_orders.tanggal_po', '<=', $sampai)

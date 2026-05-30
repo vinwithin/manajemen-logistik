@@ -25,13 +25,18 @@ class LaporanPoController extends Controller
         $tahun   = $request->tahun   ?? now()->year;
         $tujuans = $this->getUserTujuan();
 
-        // ── Summary cards ─────────────────────────────────────────────
+
         $baseQuery = PurchaseOrder::with([
-                'kendaraans.penerimas.pakans',
-                'kendaraans.penerimas.penerima'
-            ])
-            ->whereHas('kendaraans.penerimas.penerima', function ($q) use ($tujuans) {
-                $q->whereIn('tujuan_id', $tujuans->pluck('id'));
+            'kendaraans.penerimas.pakans',
+            'kendaraans.penerimas.penerima',
+            'kendaraans' => fn($q) => $q->where('status', '!=', 'batal'),
+        ])
+
+            ->where(function ($q) use ($tujuans) {
+                $q->whereHas('kendaraans.penerimas.penerima', function ($q) use ($tujuans) {
+                    $q->whereIn('tujuan_id', $tujuans->pluck('id'));
+                })
+                    ->orWhereDoesntHave('kendaraans.penerimas');
             })
             ->whereBetween('tanggal_po', [$dari, $sampai]);
 
@@ -50,37 +55,47 @@ class LaporanPoController extends Controller
 
         $tujuanIds = $tujuans->pluck('id');
 
+
         // Data PO
         $totalPoPo       = $pos->count();
-        $totalKendaraanPo = $pos->sum(fn($po) =>
-            $po->kendaraans->where('status', '!=', 'batal')->filter(fn($k) =>
-                $k->penerimas->contains(fn($p) =>
+        $totalKendaraanPo = $pos->sum(
+            fn($po) =>
+            $po->kendaraans->where('status', '!=', 'batal')->filter(
+                fn($k) =>
+                $k->penerimas->contains(
+                    fn($p) =>
                     $tujuanIds->contains($p->penerima?->tujuan_id)
                 )
             )->count()
         );
-        $totalVolumePo   = $pos->sum(fn($po) =>
-            $po->kendaraans->sum(fn($k) =>
+        $totalVolumePo   = $pos->sum(
+            fn($po) =>
+            $po->kendaraans->sum(
+                fn($k) =>
                 $k->penerimas
-                ->filter(fn($p) => $tujuanIds->contains($p->penerima?->tujuan_id))
-                ->sum('total_kg')
+                    ->filter(fn($p) => $tujuanIds->contains($p->penerima?->tujuan_id))
+                    ->sum('total_kg')
             )
         );
-        $totalPtSumPo    = $pos->sum(fn($po) =>
-            $po->kendaraans->sum(fn($k) =>
+        $totalPtSumPo    = $pos->sum(
+            fn($po) =>
+            $po->kendaraans->sum(
+                fn($k) =>
                 $k->penerimas
-                ->filter(fn($p) => $tujuanIds->contains($p->penerima?->tujuan_id))
-                ->sum('total_pt_sum')
+                    ->filter(fn($p) => $tujuanIds->contains($p->penerima?->tujuan_id))
+                    ->sum('total_pt_sum')
             )
         );
-        $totalOaPo       = $pos->sum(fn($po) =>
-            $po->kendaraans->sum(fn($k) =>
+        $totalOaPo       = $pos->sum(
+            fn($po) =>
+            $po->kendaraans->sum(
+                fn($k) =>
                 $k->penerimas
-                ->filter(fn($p) => $tujuanIds->contains($p->penerima?->tujuan_id))
-                ->sum('total_oa')
+                    ->filter(fn($p) => $tujuanIds->contains($p->penerima?->tujuan_id))
+                    ->sum('total_oa')
             )
         );
-
+       
         // Data Gudang Lansir
         $gudangQuery = GudangLansirHeader::with(['kendaraans.penerimas.pakans', 'kendaraans.penerimas.tims'])
             ->whereHas('kendaraans.penerimas', function ($q) use ($tujuanIds) {
@@ -95,34 +110,43 @@ class LaporanPoController extends Controller
         $gudangLansirs = $gudangQuery->get();
 
         $totalPoGudang       = $gudangLansirs->count();
-        $totalKendaraanGudang = $gudangLansirs->sum(fn($gl) =>
-                $gl->kendaraans->filter(fn($k) =>
-                    $k->penerimas->contains(fn($p) =>
-                        $tujuanIds->contains($p->tujuan_id)
-                    )
-                )->count()
+        $totalKendaraanGudang = $gudangLansirs->sum(
+            fn($gl) =>
+            $gl->kendaraans->filter(
+                fn($k) =>
+                $k->penerimas->contains(
+                    fn($p) =>
+                    $tujuanIds->contains($p->tujuan_id)
+                )
+            )->count()
         );
 
-        $totalVolumeGudang   = $gudangLansirs->sum(fn($gl) =>
-            $gl->kendaraans->sum(fn($k) =>
+        $totalVolumeGudang   = $gudangLansirs->sum(
+            fn($gl) =>
+            $gl->kendaraans->sum(
+                fn($k) =>
                 $k->penerimas
-                ->filter(fn($p) => $tujuanIds->contains($p->tujuan_id))
-                ->sum('total_kg')
+                    ->filter(fn($p) => $tujuanIds->contains($p->tujuan_id))
+                    ->sum('total_kg')
             )
         );
-        $totalPtSumGudang = $gudangLansirs->sum(fn($gl) =>
-            $gl->kendaraans->sum(fn($k) =>
+        $totalPtSumGudang = $gudangLansirs->sum(
+            fn($gl) =>
+            $gl->kendaraans->sum(
+                fn($k) =>
                 $k->penerimas
-                ->filter(fn($p) => $tujuanIds->contains($p->tujuan_id))
-                ->sum(fn($p) => $p->pakans->sum(fn($pakan) => $pakan->jumlah_kg * $pakan->harga_pt_sum))
+                    ->filter(fn($p) => $tujuanIds->contains($p->tujuan_id))
+                    ->sum(fn($p) => $p->pakans->sum(fn($pakan) => $pakan->jumlah_kg * $pakan->harga_pt_sum))
             )
         );
 
-        $totalOaGudang       = $gudangLansirs->sum(fn($gl) =>
-            $gl->kendaraans->sum(fn($k) =>
+        $totalOaGudang       = $gudangLansirs->sum(
+            fn($gl) =>
+            $gl->kendaraans->sum(
+                fn($k) =>
                 $k->penerimas
-                ->filter(fn($p) => $tujuanIds->contains($p->tujuan_id))
-                ->sum(fn($p) => $p->pakans->sum(fn($pakan) => $pakan->jumlah_kg * $pakan->ongkos_oa))
+                    ->filter(fn($p) => $tujuanIds->contains($p->tujuan_id))
+                    ->sum(fn($p) => $p->pakans->sum(fn($pakan) => $pakan->jumlah_kg * $pakan->ongkos_oa))
             )
         );
 
@@ -135,10 +159,10 @@ class LaporanPoController extends Controller
 
         // ── Data grafik: volume per bulan dalam tahun yang dipilih ────
         $chartData = PurchaseOrder::select(
-                DB::raw('MONTH(tanggal_po) as bulan'),
-                DB::raw('SUM(po_penerima_pakan.jumlah_kg) as total_kg'),
-                DB::raw('COUNT(DISTINCT purchase_orders.id) as total_po')
-            )
+            DB::raw('MONTH(tanggal_po) as bulan'),
+            DB::raw('SUM(po_penerima_pakan.jumlah_kg) as total_kg'),
+            DB::raw('COUNT(DISTINCT purchase_orders.id) as total_po')
+        )
             ->join('po_kendaraan', 'purchase_orders.id', '=', 'po_kendaraan.po_id')
             ->join('po_penerima', 'po_kendaraan.id', '=', 'po_penerima.po_kendaraan_id')
             ->join('po_penerima_pakan', 'po_penerima.id', '=', 'po_penerima_pakan.po_penerima_id')
@@ -155,7 +179,7 @@ class LaporanPoController extends Controller
         $chartLabels  = [];
         $chartVolume  = [];
         $chartPoCount = [];
-        $namaBulan    = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+        $namaBulan    = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
         for ($m = 1; $m <= 12; $m++) {
             $chartLabels[]  = $namaBulan[$m - 1];
             $chartVolume[]  = (float) ($chartData[$m]->total_kg ?? 0);
@@ -164,11 +188,11 @@ class LaporanPoController extends Controller
 
         // ── Tabel rekap PO ────────────────────────────────────────────
         $tableQuery = PurchaseOrder::with([
-                'cv',
-                'kendaraans.supplier',
-                'kendaraans.penerimas.pakans',
-                'kendaraans.penerimas.penerima',
-            ])
+            'cv',
+            'kendaraans.supplier',
+            'kendaraans.penerimas.pakans',
+            'kendaraans.penerimas.penerima',
+        ])
             ->whereHas('kendaraans.penerimas.penerima', function ($q) use ($tujuans) {
                 $q->whereIn('tujuan_id', $tujuans->pluck('id'));
             })
@@ -194,11 +218,23 @@ class LaporanPoController extends Controller
             ->pluck('tahun');
 
         return view('pages.laporan.po', compact(
-            'dari', 'sampai', 'cvId', 'supplierId', 'tahun',
-            'totalPo', 'totalKendaraan', 'totalVolume', 'totalPtSum', 'totalOa',
-            'chartLabels', 'chartVolume', 'chartPoCount',
+            'dari',
+            'sampai',
+            'cvId',
+            'supplierId',
+            'tahun',
+            'totalPo',
+            'totalKendaraan',
+            'totalVolume',
+            'totalPtSum',
+            'totalOa',
+            'chartLabels',
+            'chartVolume',
+            'chartPoCount',
             'tablePos',
-            'cvList', 'supplierList', 'tahunList'
+            'cvList',
+            'supplierList',
+            'tahunList'
         ));
     }
 }
