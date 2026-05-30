@@ -9,12 +9,15 @@ use App\Models\RugiLaba;
 use App\Models\RugiLabaHarian;
 use Exception;
 use Illuminate\Http\Request;
+use App\Traits\WithUserTujuan;
+
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 
 class RekapRugiLabaController extends Controller
 {
+    use WithUserTujuan;
     // ── Daftar per CV ─────────────────────────────────────────────────────────
     public function index(Request $request)
     {
@@ -56,7 +59,12 @@ class RekapRugiLabaController extends Controller
         }
 
         return view('pages.keuangan.rugi-laba.index', compact(
-            'cvList', 'cvId', 'tahun', 'cv', 'records', 'summary'
+            'cvList',
+            'cvId',
+            'tahun',
+            'cv',
+            'records',
+            'summary'
         ));
     }
 
@@ -84,7 +92,12 @@ class RekapRugiLabaController extends Controller
         $autoData = $cvId ? $this->hitungOtomatis($cvId, $bulan, $tahun) : null;
 
         return view('pages.keuangan.rugi-laba.create', compact(
-            'cvList', 'cvId', 'bulan', 'tahun', 'cv', 'autoData'
+            'cvList',
+            'cvId',
+            'bulan',
+            'tahun',
+            'cv',
+            'autoData'
         ));
     }
 
@@ -98,10 +111,23 @@ class RekapRugiLabaController extends Controller
         ]);
 
         $fields = [
-            'gaji', 'atk', 'pembayaran_supplier_lintas', 'pembayaran_mobil_lokal',
-            'sharing_fee', 'sharing_profit', 'perjalanan_dinas', 'entertain',
-            'adm_bank', 'upah_bongkar', 'upah_muat', 'upah_bongkar_muat',
-            'biaya_lain_lain', 'bbm', 'listrik', 'pdam', 'potongan_voucher',
+            'gaji',
+            'atk',
+            'pembayaran_supplier_lintas',
+            'pembayaran_mobil_lokal',
+            'sharing_fee',
+            'sharing_profit',
+            'perjalanan_dinas',
+            'entertain',
+            'adm_bank',
+            'upah_bongkar',
+            'upah_muat',
+            'upah_bongkar_muat',
+            'biaya_lain_lain',
+            'bbm',
+            'listrik',
+            'pdam',
+            'potongan_voucher',
         ];
 
         $data = [];
@@ -230,7 +256,8 @@ class RekapRugiLabaController extends Controller
     }
 
     // ── Export Excel ──────────────────────────────────────────────────────────
-    public function export(string $id)    {
+    public function export(string $id)
+    {
         $rl   = RugiLaba::with('cv')->findOrFail($id);
         $data = $this->hitungOtomatis($rl->cv_id, $rl->bulan, $rl->tahun);
         $data['rl'] = $rl;
@@ -253,8 +280,10 @@ class RekapRugiLabaController extends Controller
     }
 
     // ── Helper: Hitung data otomatis dari sistem ──────────────────────────────
-    private function hitungOtomatis(int $cvId, int $bulan, int $tahun): array
+    public function hitungOtomatis(int $cvId, int $bulan, int $tahun): array
     {
+        $tujuans = $this->getUserTujuan();
+
         $dari   = "{$tahun}-" . str_pad($bulan, 2, '0', STR_PAD_LEFT) . '-01';
         $sampai = date('Y-m-t', strtotime($dari));
         $types  = ['gudang', 'direct', 'co_farm', 'rent_farm'];
@@ -268,20 +297,23 @@ class RekapRugiLabaController extends Controller
             ->join('po_penerima', 'po_penerima.id', '=', 'po_penerima_pakan.po_penerima_id')
             ->join('po_kendaraan', 'po_kendaraan.id', '=', 'po_penerima.po_kendaraan_id')
             ->join('purchase_orders', 'purchase_orders.id', '=', 'po_kendaraan.po_id')
-            ->leftJoin('tujuan', 'tujuan.id', '=', 'po_penerima.tujuan_id')
-            ->where('po_kendaraan.status' , '!=', 'batal')
+            ->leftJoin('penerima', 'penerima.id', '=', 'po_penerima.penerima_id')
+            ->leftJoin('tujuan', 'tujuan.id', '=', 'penerima.tujuan_id')
+            ->where('po_kendaraan.status', '!=', 'batal')
+            ->whereIn('penerima.tujuan_id', $tujuans->pluck('id'))
             ->where('purchase_orders.cv_id', $cvId)
             ->whereDate('purchase_orders.tanggal_po', '>=', $dari)
             ->whereDate('purchase_orders.tanggal_po', '<=', $sampai)
             ->get();
 
-        // Data dari Gudang Lansir
+        // Data dari Gudang Lansir 
         $pakansGudang = DB::table('gudang_lansir_pakan')
             ->select('gudang_lansir_pakan.jumlah_kg', 'gudang_lansir_pakan.ongkos_oa', 'gudang_lansir_pakan.harga_pt_sum', DB::raw("'direct' as tujuan_type"))
             ->join('gudang_lansir_penerima', 'gudang_lansir_penerima.id', '=', 'gudang_lansir_pakan.penerima_id')
             ->join('gudang_lansir_kendaraan', 'gudang_lansir_kendaraan.id', '=', 'gudang_lansir_penerima.kendaraan_id')
             ->join('gudang_lansir_header', 'gudang_lansir_header.id', '=', 'gudang_lansir_kendaraan.lansir_header_id')
             ->where('gudang_lansir_header.cv_id', $cvId)
+            ->whereIn('gudang_lansir_penerima.tujuan_id', $tujuans->pluck('id'))
             ->whereDate('gudang_lansir_header.tanggal_lansir', '>=', $dari)
             ->whereDate('gudang_lansir_header.tanggal_lansir', '<=', $sampai)
             ->get();

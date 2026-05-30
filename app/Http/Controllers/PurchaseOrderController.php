@@ -404,111 +404,111 @@ class PurchaseOrderController extends Controller
         ]);
 
         // try {
-            $cvId = $request->cv_id ?? session('active_cv');
-            $from = $request->from;
-            $to = $request->to;
-            $supplierId = $request->supplier_id;
-            $tujuanId = $request->tujuan_id;
-            $noSuratInput = $request->no_surat;
-            $cpi = $request->cpi;
+        $cvId = $request->cv_id ?? session('active_cv');
+        $from = $request->from;
+        $to = $request->to;
+        $supplierId = $request->supplier_id;
+        $tujuanId = $request->tujuan_id;
+        $noSuratInput = $request->no_surat;
+        $cpi = $request->cpi;
 
-            if (! $cvId) {
-                return redirect()->route('purchase-order.export-ptsum-confirm')
-                    ->with('error', 'Pilih CV terlebih dahulu.');
-            }
+        if (! $cvId) {
+            return redirect()->route('purchase-order.export-ptsum-confirm')
+                ->with('error', 'Pilih CV terlebih dahulu.');
+        }
 
-            $cv = Cv::find($cvId);
-            $noSurat = null;
+        $cv = Cv::find($cvId);
+        $noSurat = null;
 
-            // Fix typo findOfFail → findOrFail and update tujuanType mapping
-            $tujuan = Tujuan::findOrFail($tujuanId);
-            $tujuanTypeMap = [
-                'co_farm' => 'CFJ',
-                'rent_farm' => 'RFJ',
-                'gudang' => 'GJ',
-                'direct' => 'DRC',
-            ];
-            $tujuanType = $tujuanTypeMap[$tujuan->type] ?? 'DRC';
+        // Fix typo findOfFail → findOrFail and update tujuanType mapping
+        $tujuan = Tujuan::findOrFail($tujuanId);
+        $tujuanTypeMap = [
+            'co_farm' => 'CFJ',
+            'rent_farm' => 'RFJ',
+            'gudang' => 'GJ',
+            'direct' => 'DRC',
+        ];
+        $tujuanType = $tujuanTypeMap[$tujuan->type] ?? 'DRC';
 
-            if ($noSuratInput && $from && $to && $cv) {
-                // Gunakan database transaction dan locking untuk menghindari race condition
-                $dokumen = DB::transaction(function () use ($cvId, $from, $to, $cv, $request, $noSuratInput, $cpi) {
-                    // Cek apakah sudah ada dokumen untuk periode ini
-                    $existing = PoPeriodeDokumen::where('cv_id', $cvId)
-                        ->where('dari', $from)
-                        ->where('sampai', $to)
-                        ->where('tipe', 'ptsum')
-                        ->first();
+        if ($noSuratInput && $from && $to && $cv) {
+            // Gunakan database transaction dan locking untuk menghindari race condition
+            $dokumen = DB::transaction(function () use ($cvId, $from, $to, $cv, $request, $noSuratInput, $cpi) {
+                // Cek apakah sudah ada dokumen untuk periode ini
+                $existing = PoPeriodeDokumen::where('cv_id', $cvId)
+                    ->where('dari', $from)
+                    ->where('sampai', $to)
+                    ->where('tipe', 'ptsum')
+                    ->first();
 
-                    if ($existing) {
-                        // Update existing dokumen dengan no surat baru
-                        $existing->update([
-                            'no_surat' => $noSuratInput,
-                            'cpi' => $cpi,
-                            'catatan' => $request->catatan,
-                        ]);
-                        return $existing;
-                    }
-
-                    $generated = PoPeriodeDokumen::generateNoSurat($cv, 'ptsum', $from);
-
-                    return PoPeriodeDokumen::create([
-                        'cv_id' => $cvId,
-                        'dari' => $from,
-                        'sampai' => $to,
-                        'tipe' => 'ptsum',
-                        'urutan' => $generated['urutan'],
-                        'cpi' => $cpi,
+                if ($existing) {
+                    // Update existing dokumen dengan no surat baru
+                    $existing->update([
                         'no_surat' => $noSuratInput,
+                        'cpi' => $cpi,
                         'catatan' => $request->catatan,
-                        'created_by' => Auth::user()->id,
                     ]);
-                });
+                    return $existing;
+                }
 
-                $noSurat = $dokumen->no_surat;
-            }
+                $generated = PoPeriodeDokumen::generateNoSurat($cv, 'ptsum', $from);
 
-            $query = PurchaseOrder::with([
-                'cv',
-                'kendaraans' => function ($q) {
-                    $q->where('status', '!=', 'batal');
-                },
-                'kendaraans.supplier',
-                'kendaraans.penerimas.pakans.kodePakan',
-                'kendaraans.penerimas.tujuan',
-            ])->orderBy('tanggal_po', 'asc')->orderBy('no_po', 'asc');
+                return PoPeriodeDokumen::create([
+                    'cv_id' => $cvId,
+                    'dari' => $from,
+                    'sampai' => $to,
+                    'tipe' => 'ptsum',
+                    'urutan' => $generated['urutan'],
+                    'cpi' => $cpi,
+                    'no_surat' => $noSuratInput,
+                    'catatan' => $request->catatan,
+                    'created_by' => Auth::user()->id,
+                ]);
+            });
 
-            $query->whereDate('tanggal_po', '>=', $from)
-                ->whereDate('tanggal_po', '<=', $to);
+            $noSurat = $dokumen->no_surat;
+        }
 
-            if ($cvId) {
-                $query->where('cv_id', $cvId);
-            }
+        $query = PurchaseOrder::with([
+            'cv',
+            'kendaraans' => function ($q) {
+                $q->where('status', '!=', 'batal');
+            },
+            'kendaraans.supplier',
+            'kendaraans.penerimas.pakans.kodePakan',
+            'kendaraans.penerimas.tujuan',
+        ])->orderBy('tanggal_po', 'asc')->orderBy('no_po', 'asc');
 
-            // Filter supplier
-            if ($supplierId) {
-                $query->whereHas('kendaraans', fn($q) => $q->where('supplier_id', $supplierId));
-            }
+        $query->whereDate('tanggal_po', '>=', $from)
+            ->whereDate('tanggal_po', '<=', $to);
 
-            // Filter tujuan
-            if ($tujuanId) {
-                $query->whereHas('kendaraans.penerimas', fn($q) => $q->where('tujuan_id', $tujuanId));
-            }
+        if ($cvId) {
+            $query->where('cv_id', $cvId);
+        }
 
-            $pos = $query->get();
-            $tujuanNama = $cpi ?? Tujuan::find($tujuanId)->nama;
+        // Filter supplier
+        if ($supplierId) {
+            $query->whereHas('kendaraans', fn($q) => $q->where('supplier_id', $supplierId));
+        }
 
-            $pdf = Pdf::loadView('pdf.purchase-order-period-ptsum', compact('pos', 'from', 'to', 'noSurat', 'tujuanNama'))
-                ->setPaper('legal', 'landscape')
-                ->setOption('margin-top', 10)
-                ->setOption('margin-bottom', 10)
-                ->setOption('margin-left', 10)
-                ->setOption('margin-right', 10);
+        // Filter tujuan
+        if ($tujuanId) {
+            $query->whereHas('kendaraans.penerimas', fn($q) => $q->where('tujuan_id', $tujuanId));
+        }
 
-            $cvNama = $pos->first()?->cv?->nama_cv ?? 'CV';
-            $filename = 'PO-Periode-PTSum-' . str_replace(' ', '-', $cvNama) . '-' . now()->format('Ymd') . '.pdf';
+        $pos = $query->get();
+        $tujuanNama = $cpi ?? Tujuan::find($tujuanId)->nama;
 
-            return $pdf->download($filename);
+        $pdf = Pdf::loadView('pdf.purchase-order-period-ptsum', compact('pos', 'from', 'to', 'noSurat', 'tujuanNama'))
+            ->setPaper('legal', 'landscape')
+            ->setOption('margin-top', 10)
+            ->setOption('margin-bottom', 10)
+            ->setOption('margin-left', 10)
+            ->setOption('margin-right', 10);
+
+        $cvNama = $pos->first()?->cv?->nama_cv ?? 'CV';
+        $filename = 'PO-Periode-PTSum-' . str_replace(' ', '-', $cvNama) . '-' . now()->format('Ymd') . '.pdf';
+
+        return $pdf->download($filename);
         // } catch (Exception $e) {
         //     return redirect()->back()->with('error', 'Gagal export PDF PT Sum: ' . $e->getMessage());
         // }
@@ -517,26 +517,29 @@ class PurchaseOrderController extends Controller
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            $activeCvId = session('active_cv');    
+            $activeCvId = session('active_cv');
             $tujuans = $this->getUserTujuan();
 
 
-           $query = PurchaseOrder::with(['cv', 'kendaraans', 'kendaraans.penerimas.penerima'])
-                    ->withCount('kendaraans')
-                    ->orderBy('tanggal_po', 'desc')
-                    ->where(function ($q) use ($tujuans) {
-                        $q->whereHas('kendaraans.penerimas.penerima', function ($q) use ($tujuans) {
-                            $q->whereIn('tujuan_id', $tujuans->pluck('id'));
-                        })
-                        ->orWhereDoesntHave('kendaraans.penerimas');
-                    });
-       
-                
+            $query = PurchaseOrder::with(['cv', 'kendaraans', 'kendaraans.penerimas.penerima'])
+                ->withCount('kendaraans')
+                ->orderBy('tanggal_po', 'desc')
+                ->where(function ($q) use ($tujuans) {
+                    $q->whereHas('kendaraans.penerimas.penerima', function ($q) use ($tujuans) {
+                        $q->whereIn('tujuan_id', $tujuans->pluck('id'));
+                    })
+                        ->orWhereDoesntHave('kendaraans.penerimas')        // kendaraan tanpa penerima
+                        ->orWhereHas('kendaraans.penerimas', function ($q) {
+                            $q->whereDoesntHave('penerima');               // penerima orphan
+                        });
+                });
+
+
 
             if ($activeCvId) {
                 $query->where('cv_id', $activeCvId);
             }
-           
+
 
             return $this->poService->getData($query);
         }
@@ -547,13 +550,13 @@ class PurchaseOrderController extends Controller
     public function create()
     {
         $activeCvId = session('active_cv');
-        
+
         // Gunakan trait untuk mengambil userTujuan
         $userTujuan = $this->getUserTujuan();
 
         $suppliers = Supplier::orderBy('nama')->get();
         $kodePakans = KodePakan::orderBy('kode')->get();
-        $tujuans = $userTujuan; 
+        $tujuans = $userTujuan;
         $penerimas = Penerima::with('tujuan')
             ->where('is_aktif', true)
             ->whereIn('tujuan_id', $userTujuan->pluck('id'))

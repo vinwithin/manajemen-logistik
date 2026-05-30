@@ -27,16 +27,19 @@ class LaporanPoController extends Controller
 
 
         $baseQuery = PurchaseOrder::with([
-            'kendaraans.penerimas.pakans',
-            'kendaraans.penerimas.penerima',
-            'kendaraans' => fn($q) => $q->where('status', '!=', 'batal'),
+            'kendaraans' => function ($q) {
+                $q->where('status', '!=', 'batal')
+                    ->with(['penerimas.pakans', 'penerimas.penerima']);
+            },
         ])
-
             ->where(function ($q) use ($tujuans) {
                 $q->whereHas('kendaraans.penerimas.penerima', function ($q) use ($tujuans) {
                     $q->whereIn('tujuan_id', $tujuans->pluck('id'));
                 })
-                    ->orWhereDoesntHave('kendaraans.penerimas');
+                    ->orWhereDoesntHave('kendaraans.penerimas')        // kendaraan tanpa penerima
+                    ->orWhereHas('kendaraans.penerimas', function ($q) {
+                        $q->whereDoesntHave('penerima');               // penerima orphan
+                    });
             })
             ->whereBetween('tanggal_po', [$dari, $sampai]);
 
@@ -95,7 +98,7 @@ class LaporanPoController extends Controller
                     ->sum('total_oa')
             )
         );
-       
+
         // Data Gudang Lansir
         $gudangQuery = GudangLansirHeader::with(['kendaraans.penerimas.pakans', 'kendaraans.penerimas.tims'])
             ->whereHas('kendaraans.penerimas', function ($q) use ($tujuanIds) {
