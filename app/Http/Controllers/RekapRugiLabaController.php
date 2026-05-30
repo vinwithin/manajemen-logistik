@@ -308,10 +308,11 @@ class RekapRugiLabaController extends Controller
 
         // Data dari Gudang Lansir 
         $pakansGudang = DB::table('gudang_lansir_pakan')
-            ->select('gudang_lansir_pakan.jumlah_kg', 'gudang_lansir_pakan.ongkos_oa', 'gudang_lansir_pakan.harga_pt_sum', DB::raw("'direct' as tujuan_type"))
+            ->select('gudang_lansir_pakan.jumlah_kg', 'gudang_lansir_pakan.ongkos_oa', 'gudang_lansir_pakan.harga_pt_sum', 'tujuan.type as tujuan_type')
             ->join('gudang_lansir_penerima', 'gudang_lansir_penerima.id', '=', 'gudang_lansir_pakan.penerima_id')
             ->join('gudang_lansir_kendaraan', 'gudang_lansir_kendaraan.id', '=', 'gudang_lansir_penerima.kendaraan_id')
             ->join('gudang_lansir_header', 'gudang_lansir_header.id', '=', 'gudang_lansir_kendaraan.lansir_header_id')
+            ->leftJoin('tujuan', 'tujuan.id', '=', 'gudang_lansir_penerima.tujuan_id')
             ->where('gudang_lansir_header.cv_id', $cvId)
             ->whereIn('gudang_lansir_penerima.tujuan_id', $tujuans->pluck('id'))
             ->whereDate('gudang_lansir_header.tanggal_lansir', '>=', $dari)
@@ -330,6 +331,7 @@ class RekapRugiLabaController extends Controller
             $type = in_array($p->tujuan_type ?? 'direct', $types) ? ($p->tujuan_type ?? 'direct') : 'direct';
             $penjualan[$type] += (float) $p->jumlah_kg * (float) ($p->harga_pt_sum ?? 0);
         }
+
 
         // Upah bongkar otomatis dari lansir gudang
         $upahGudang = DB::table('gudang_lansir_tim')
