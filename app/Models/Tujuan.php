@@ -46,6 +46,7 @@ class Tujuan extends Model
         'gudang'     => 'Gudang',
         'co_farm'    => 'Co Farm',
         'rent_farm'  => 'Rent Farm',
+        'tr_kerinci' => 'TR Kerinci',
     ];
 
     public function cv()
