@@ -45,6 +45,7 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
             'kendaraans.tujuan',
             'kendaraans.penerimas.pakans.kodePakan',
             'kendaraans.penerimas.tujuan',
+            'kendaraans.penerimas.penerima.tujuan',
             'kendaraans.penerimas.lansirs.mobils',
             'kendaraans.penerimas.lansirs.tims',
         ])
@@ -52,7 +53,10 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                         $q->whereHas('kendaraans.penerimas.penerima', function ($q) use ($tujuans) {
                             $q->whereIn('tujuan_id', $tujuans->pluck('id'));
                         })
-                        ->orWhereDoesntHave('kendaraans.penerimas');
+                        ->orWhereDoesntHave('kendaraans.penerimas')
+                        ->orWhereHas('kendaraans.penerimas', function ($q) {
+                            $q->whereDoesntHave('penerima');               // penerima orphan
+                        });
                     })
                     ->where('status', '!=', 'batal')->orderBy('tanggal_po', 'asc')->orderBy('no_po', 'asc');
 
@@ -213,7 +217,7 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
 
                         // Keterangan: tipe tujuan penerima (kosong jika tidak ada)
                         $lansir = $penerima->lansirs->first();
-                        $row[] = $penerima->tujuan?->type ?? '';
+                        $row[] = $penerima->penerima?->tujuan?->type ?? '';
 
                         // ── LANSIR MOBIL DATA ─────────────────────────────────
                         if ($lansir && $lansir->mobils->count() > 0) {
