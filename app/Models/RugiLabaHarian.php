@@ -49,6 +49,7 @@ class RugiLabaHarian extends Model
             'listrik' => 'Listrik',
             'pdam' => 'PDAM',
             'potongan_voucher' => 'Potongan Voucher',
+            'lingkungan' => 'Lingkungan',
         ];
     }
 }

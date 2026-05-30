@@ -138,6 +138,8 @@
                                 ['BBM', $rl->bbm],
                                 ['LISTRIK', $rl->listrik],
                                 ['PDAM', $rl->pdam],
+                                ['POTONGAN VOUCHER', $rl->potongan_voucher],
+                                ['LINGKUNGAN', $rl->lingkungan],
                             ];
                         @endphp
                         @foreach ($biayaRows as [$label, $val])

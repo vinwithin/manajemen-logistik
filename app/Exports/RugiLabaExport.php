@@ -42,7 +42,8 @@ class RugiLabaExport implements FromArray, WithEvents, WithTitle
         $rows[] = ['', '- Direct PIR',   $fmt($d['pembelian']['direct'])];
         $rows[] = ['', '- Co Farm',      $fmt($d['pembelian']['co_farm'])];
         $rows[] = ['', '- Rent Farm',    $fmt($d['pembelian']['rent_farm'])];
-        $rows[] = ['', '- Cab. Bungo',   0];
+        $rows[] = ['', '- Tr Kerinci',    $fmt($d['pembelian']['tr_kerinci'])];
+        // $rows[] = ['', '- Cab. Bungo',   0];
         $rows[] = ['', '- Transper Pakan', 0];
         $rows[] = ['', 'TOTAL',          $fmt($d['totalPembelian'])];
         $rows[] = [];
@@ -53,7 +54,8 @@ class RugiLabaExport implements FromArray, WithEvents, WithTitle
         $rows[] = ['', '- Direct PIR',   $fmt($d['penjualan']['direct'])];
         $rows[] = ['', '- Co Farm',      $fmt($d['penjualan']['co_farm'])];
         $rows[] = ['', '- Rent Farm',    $fmt($d['penjualan']['rent_farm'])];
-        $rows[] = ['', '- Cab. Bungo',   0];
+        $rows[] = ['', '- Tr Kerinci',    $fmt($d['penjualan']['tr_kerinci'])];
+        // $rows[] = ['', '- Cab. Bungo',   0];
         $rows[] = ['', '- Transper Pakan', 0];
         $rows[] = ['', 'TOTAL',          $fmt($d['totalPenjualan'])];
         $rows[] = [];
@@ -62,7 +64,6 @@ class RugiLabaExport implements FromArray, WithEvents, WithTitle
         $rows[] = ['C.', 'Biaya Operasional', ''];
         $rows[] = ['', 'GAJI',                      $fmt($d['rl']->gaji)];
         $rows[] = ['', 'ATK',                       $fmt($d['rl']->atk)];
-        $rows[] = ['', 'PEMBAYARAN SUPLIER LINTAS',  $fmt($d['rl']->pembayaran_supplier_lintas)];
         $rows[] = ['', 'PEMBAYARAN MOBIL LOKAL',     $fmt($d['rl']->pembayaran_mobil_lokal) + $fmt($d['mobilLokalOtomatis'])];
         $rows[] = ['', 'SHARING FEE',               $fmt($d['rl']->sharing_fee)];
         $rows[] = ['', 'SHARING PROFIT',            $fmt($d['rl']->sharing_profit)];
@@ -74,13 +75,15 @@ class RugiLabaExport implements FromArray, WithEvents, WithTitle
         $rows[] = ['', 'BBM',                       $fmt($d['rl']->bbm)];
         $rows[] = ['', 'LISTRIK',                   $fmt($d['rl']->listrik)];
         $rows[] = ['', 'PDAM',                      $fmt($d['rl']->pdam)];
+        $rows[] = ['', 'POTONGAN VOUCHER',          $fmt($d['rl']->potongan_voucher)];
+        $rows[] = ['', 'LINGKUNGAN',                $fmt($d['rl']->lingkungan)];
         $rows[] = ['', 'TOTAL',                     $fmt($d['totalBiayaOperasional'])];
         $rows[] = [];
 
         // D-G
         $rows[] = ['D.', 'LABA KOTOR (B - A)',              $fmt($d['labaKotor'])];
         $rows[] = ['E.', 'Pph 21 (LABA KOTOR X 0.5%)',     $fmt($d['pph21'])];
-        $rows[] = ['F.', 'Potongan Voucher',                $fmt($d['rl']->potongan_voucher)];
+        $rows[] = ['F.', 'Potongan Voucher',                $fmt($d['pph21'])];
         $rows[] = [];
         $rows[] = ['G.', 'LABA BERSIH (D - C - E - F)',    $fmt($d['labaBersih'])];
 

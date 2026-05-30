@@ -123,6 +123,7 @@
                                                 'bbm' => 'BBM',
                                                 'listrik' => 'LISTRIK',
                                                 'pdam' => 'PDAM',
+                                                'potongan_voucher' => 'POTONGAN VOUCHER',
                                                 'lingkungan' => 'LINGKUNGAN',
                                             ];
                                         @endphp

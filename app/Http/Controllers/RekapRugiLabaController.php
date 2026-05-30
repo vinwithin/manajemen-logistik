@@ -128,6 +128,7 @@ class RekapRugiLabaController extends Controller
             'listrik',
             'pdam',
             'potongan_voucher',
+            'lingkungan'
         ];
 
         $data = [];
@@ -268,7 +269,7 @@ class RekapRugiLabaController extends Controller
 
         $data['labaKotor']  = $data['totalPenjualan'] - $data['totalPembelian'];
         $data['pph21']      = $data['labaKotor'] > 0 ? $data['labaKotor'] * 0.005 : 0;
-        $data['labaBersih'] = $data['labaKotor'] - $data['totalBiayaOperasional'] - $data['pph21'] - (float) $rl->potongan_voucher;
+        $data['labaBersih'] = $data['labaKotor'] - $data['totalBiayaOperasional'] - $data['pph21'] - $data['pph21'];
 
         $periode  = RugiLaba::namaBulan($rl->bulan) . ' ' . $rl->tahun;
         $filename = 'rugi-laba-' . $rl->cv->nama_cv . '-' . $rl->bulan . '-' . $rl->tahun . '.xlsx';
