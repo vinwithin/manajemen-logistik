@@ -137,6 +137,8 @@ Route::post('/purchase-order/penerima/{penerimaId}/update-tanggal-tiba', [Purcha
         Route::get('/lansir/export-pdf-supplier', [GudangLansirController::class, 'exportPdfSupplier'])->name('lansir.export-pdf-supplier')->middleware('can:gudang-stok.lansir');
         Route::get('/lansir/create', [GudangLansirController::class, 'create'])->name('lansir.create')->middleware('can:gudang-stok.lansir');
         Route::post('/lansir', [GudangLansirController::class, 'store'])->name('lansir.store')->middleware('can:gudang-stok.lansir');
+        Route::get('/lansir/{id}/edit', [GudangLansirController::class, 'edit'])->name('lansir.edit')->middleware('can:gudang-stok.lansir');
+        Route::put('/lansir/{id}', [GudangLansirController::class, 'update'])->name('lansir.update')->middleware('can:gudang-stok.lansir');
         Route::get('/lansir/{id}', [GudangLansirController::class, 'show'])->name('lansir.show')->middleware('can:gudang-stok.lansir');
         Route::post('/lansir/penerima/{id}/update-status', [GudangLansirController::class, 'penerimaUpdateStatus'])->name('lansir.penerima.update-status')->middleware('can:gudang-stok.lansir');
         Route::get('/lansir/api/po-penerima/{id}', [GudangLansirController::class, 'getPoPenerimaData'])->name('lansir.api.po-penerima')->middleware('can:gudang-stok.lansir');

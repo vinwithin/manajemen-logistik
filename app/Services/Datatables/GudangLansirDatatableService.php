@@ -61,10 +61,16 @@ class GudangLansirDatatableService
             })
             ->addColumn('action', function ($q) {
                 $showUrl = route('gudang.lansir.show', encrypt($q->id));
+                $editUrl = route('gudang.lansir.edit', encrypt($q->id));
 
-                return "<a href=\"{$showUrl}\" class=\"btn btn-xs btn-info text-white\">
-                    <i class=\"fa fa-eye\"></i> Detail
-                </a>";
+                return "<div class=\"d-flex gap-1\">
+                    <a href=\"{$showUrl}\" class=\"btn btn-xs btn-info text-white\">
+                        <i class=\"fa fa-eye\"></i> Detail
+                    </a>
+                    <a href=\"{$editUrl}\" class=\"btn btn-xs btn-warning text-white\">
+                        <i class=\"fa fa-edit\"></i> Edit
+                    </a>
+                </div>";
             })
             ->addIndexColumn()
             ->rawColumns(['action', 'status_pengiriman'])

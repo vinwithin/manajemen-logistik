@@ -200,7 +200,7 @@ class RekapLansirGudangExport implements FromArray, WithEvents, WithTitle
                     // Baris tambahan untuk tim bongkar ke-2, ke-3, dst
                     if ($penerima->tims->count() > 1) {
                         foreach ($penerima->tims->skip(1) as $tim) {
-                            $extraRow = array_fill(0, $idCols + ($kpCount * 2) + 3, '');
+                            $extraRow = array_fill(0, $idCols + ($kpCount * 2) + 5, '');
                             $extraRow[] = ''; // Spacer
                             $extraRow[] = $tim->nama_tim;
                             $extraRow[] = (float) $tim->jumlah_kg;
