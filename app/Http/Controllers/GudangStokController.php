@@ -4,12 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Exports\KartuStockMutasiExport;
 use App\Exports\StokKeluarExport;
+use App\Models\GudangMutasiStok;
 use App\Models\GudangStok;
 use App\Models\KodePakan;
 use App\Models\Tujuan;
 use App\Services\Datatables\GudangMutasiDatatableService;
 use App\Services\Datatables\GudangStokDatatableService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 use Yajra\DataTables\DataTables;
 
@@ -171,5 +173,79 @@ class GudangStokController extends Controller
             'stok_kg' => $stok ? $stok->stok_kg : 0,
             'stok_karung' => $stok ? $stok->stok_karung : 0,
         ]);
+    }
+
+    public function createManualInput(int $id)
+    {
+        $gudang = Tujuan::where('type', 'gudang')->findOrFail($id);
+        $kodePakans = KodePakan::orderBy('kode')->get();
+
+        return view('pages.gudang.stok.input-manual', compact('gudang', 'kodePakans'));
+    }
+
+    public function storeManualInput(Request $request, int $id)
+    {
+        $request->validate([
+            'kode_pakan_id' => 'required|exists:kode_pakan,id',
+            'tipe' => 'required|in:masuk,keluar',
+            'jumlah_kg' => 'required|numeric|min:0.01',
+            'jumlah_karung' => 'nullable|integer|min:0',
+            'catatan' => 'nullable|string|max:255',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $gudang = Tujuan::where('type', 'gudang')->findOrFail($id);
+            $stok = GudangStok::where('tujuan_id', $gudang->id)
+                ->where('kode_pakan_id', $request->kode_pakan_id)
+                ->lockForUpdate()
+                ->first();
+
+            if (!$stok) {
+                $stok = GudangStok::create([
+                    'tujuan_id' => $gudang->id,
+                    'kode_pakan_id' => $request->kode_pakan_id,
+                    'stok_kg' => 0,
+                    'stok_karung' => 0,
+                ]);
+            }
+
+            $jumlah_kg = $request->jumlah_kg;
+            $jumlah_karung = $request->jumlah_karung ?? 0;
+
+            if ($request->tipe === 'masuk') {
+                $stok->stok_kg += $jumlah_kg;
+                $stok->stok_karung += $jumlah_karung;
+            } else {
+                if ($stok->stok_kg < $jumlah_kg) {
+                    throw new \Exception('Stok tidak mencukupi untuk pengeluaran!');
+                }
+                $stok->stok_kg -= $jumlah_kg;
+                $stok->stok_karung = max(0, $stok->stok_karung - $jumlah_karung);
+            }
+            $stok->save();
+
+            GudangMutasiStok::create([
+                'tujuan_id' => $gudang->id,
+                'kode_pakan_id' => $request->kode_pakan_id,
+                'tipe' => $request->tipe,
+                'jumlah_kg' => $jumlah_kg,
+                'jumlah_karung' => $jumlah_karung,
+                'referensi_tipe' => 'input_manual',
+                'referensi_id' => null,
+                'saldo_kg_after' => $stok->stok_kg,
+                'saldo_karung_after' => $stok->stok_karung,
+            ]);
+
+            DB::commit();
+            return redirect()->route('gudang.stok.show', $gudang->id)
+                ->with('success', 'Input manual stok berhasil disimpan!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()
+                ->with('error', $e->getMessage())
+                ->withInput();
+        }
     }
 }

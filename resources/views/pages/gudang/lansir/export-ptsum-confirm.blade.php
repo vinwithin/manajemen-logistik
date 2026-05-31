@@ -18,15 +18,62 @@
                         </div>
                     @endif
 
+                    @if (session('error'))
+                        <div class="alert alert-danger py-2">
+                            {{ session('error') }}
+                        </div>
+                    @endif
+
+                    @if ($errors->any())
+                        <div class="alert alert-danger py-2 small">
+                            <ul class="mb-0 ps-3">
+                                @foreach ($errors->all() as $err)
+                                    <li>{{ $err }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+
                     <form method="GET" action="{{ route('gudang.lansir.export-pdf-ptsum') }}" target="_blank">
 
+                        {{-- Filter Periode --}}
                         <div class="card border-0 bg-light mb-4">
                             <div class="card-body">
                                 <h6 class="fw-bold mb-3">Filter Periode</h6>
                                 <div class="row g-3">
-                                    <div class="col-md-3">
-                                        <label class="form-label small">Gudang <span
-                                                class="text-muted">(opsional)</span></label>
+                                    <div class="col-md-4">
+                                        <label class="form-label small">CV <span class="text-danger">*</span></label>
+                                        <select name="cv_id" id="selectCv" class="form-select form-select-sm" required>
+                                            <option value="">-- Pilih CV --</option>
+                                            @foreach ($userCvs as $cv)
+                                                <option value="{{ $cv->id }}"
+                                                    data-prefix="{{ $cv->no_dokumen_prefix }}"
+                                                    {{ (request('cv_id') ?? session('active_cv')) == $cv->id ? 'selected' : '' }}>
+                                                    {{ $cv->nama_cv }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small">Dari Tanggal <span
+                                                class="text-danger">*</span></label>
+                                        <input type="date" name="from" id="inputFrom"
+                                            class="form-control form-control-sm" value="{{ old('from', request('from')) }}"
+                                            required>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small">Sampai Tanggal <span
+                                                class="text-danger">*</span></label>
+                                        <input type="date" name="to" id="inputTo"
+                                            class="form-control form-control-sm" value="{{ old('to', request('to')) }}"
+                                            required>
+                                    </div>
+                                </div>
+
+                                {{-- Filter Gudang & Supplier & Tujuan --}}
+                                <div class="row g-3 mt-2">
+                                    <div class="col-md-4">
+                                        <label class="form-label small">Gudang <span class="text-muted">(opsional)</span></label>
                                         <select name="gudang_id" class="form-select form-select-sm">
                                             <option value="">-- Semua Gudang --</option>
                                             @foreach ($gudangs as $g)
@@ -37,38 +84,10 @@
                                             @endforeach
                                         </select>
                                     </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label small">CV <span
-                                                class="text-muted">(opsional)</span></label>
-                                        <select name="cv_id" id="selectCv" class="form-select form-select-sm">
-                                            <option value="">-- Semua CV --</option>
-                                            @foreach ($cvList as $cv)
-                                                <option value="{{ $cv->id }}"
-                                                    data-prefix="{{ $cv->no_dokumen_prefix }}"
-                                                    {{ request('cv_id') == $cv->id ? 'selected' : '' }}>
-                                                    {{ $cv->nama_cv }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label small">Dari Tanggal <span
-                                                class="text-danger">*</span></label>
-                                        <input type="date" name="from" id="inputFrom"
-                                            class="form-control form-control-sm" value="{{ request('from') }}" required>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label small">Sampai Tanggal <span
-                                                class="text-danger">*</span></label>
-                                        <input type="date" name="to" id="inputTo"
-                                            class="form-control form-control-sm" value="{{ request('to') }}" required>
-                                    </div>
-                                </div>
-                                <div class="row g-3 mt-2">
-                                    <div class="col-md-6">
+                                    <div class="col-md-4">
                                         <label class="form-label small">Supplier <span
                                                 class="text-muted">(opsional)</span></label>
-                                        <select name="supplier_id" class="form-select form-select-sm">
+                                        <select name="supplier_id" id="selectSupplier" class="form-select form-select-sm">
                                             <option value="">-- Semua Supplier --</option>
                                             @foreach ($suppliers as $s)
                                                 <option value="{{ $s->id }}"
@@ -78,10 +97,10 @@
                                             @endforeach
                                         </select>
                                     </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label small">Tujuan <span
-                                                class="text-muted">(opsional)</span></label>
-                                        <select name="tujuan_id" class="form-select form-select-sm">
+                                    <div class="col-md-4">
+                                        <label class="form-label small">Tujuan<span
+                                                class="text-danger">*</span></label>
+                                        <select name="tujuan_id" id="selectTujuan" class="form-select form-select-sm" required>
                                             <option value="">-- Semua Tujuan --</option>
                                             @foreach ($tujuans as $t)
                                                 <option value="{{ $t->id }}"
@@ -99,26 +118,28 @@
                         <div class="card border-warning mb-4">
                             <div class="card-header bg-warning bg-opacity-10 py-2">
                                 <h6 class="mb-0 small fw-bold">
-                                    <i class="fa fa-file-text-o text-warning"></i> Nomor Surat Kwitansi
+                                    <i class="fa fa-file-text-o text-warning"></i>
+                                    Nomor Surat Kwitansi
                                 </h6>
                             </div>
                             <div class="card-body">
-                                <div class="form-check mb-2">
-                                    <input class="form-check-input" type="checkbox" name="buat_no_surat"
-                                        id="checkBuatNoSurat" value="1" {{ $dokumen ? 'checked' : '' }}>
-                                    <label class="form-check-label fw-semibold" for="checkBuatNoSurat">
-                                        Buat Nomor Surat
-                                    </label>
+                                <div class="mb-2">
+                                    <label class="form-label small">Nomor Surat</label>
+                                    <input type="text" name="no_surat" class="form-control form-control-sm"
+                                        value="{{ $dokumen?->no_surat ?? ($noSuratSuggest ?? '') }}" placeholder="Masukkan nomor surat">
+
+                                    <label class="form-label small">Masukkan Tujuan (Dari Gudang ke .......)</label>
+                                    <input type="text" name="cpi" class="form-control form-control-sm"
+                                        value="{{ $dokumen?->cpi }}" placeholder="Masukkan tujuan">
+
                                     <div class="text-muted small mt-1">
-                                        Jika dicentang, nomor surat akan di-generate otomatis dan muncul di kwitansi PDF.
-                                        Nomor increment per CV per tahun.
                                         @if ($dokumen)
                                             <span class="text-success ms-1">
                                                 <i class="fa fa-check-circle"></i>
                                                 Tersimpan: <strong>{{ $dokumen->no_surat }}</strong> (urutan
                                                 #{{ $dokumen->urutan }})
                                             </span>
-                                        @elseif ($noSuratSuggest && $cvId && $from)
+                                        @elseif ($noSuratSuggest && $cvId && $from && $to)
                                             <span class="text-info ms-1">
                                                 <i class="fa fa-info-circle"></i>
                                                 Nomor berikutnya: <strong>{{ $noSuratSuggest }}</strong>
@@ -139,6 +160,9 @@
                             <div class="alert alert-info py-2 small">
                                 <i class="fa fa-info-circle"></i>
                                 Ditemukan <strong>{{ $lansirCount }}</strong> lansir
+                                @if ($cvNama)
+                                    untuk <strong>{{ $cvNama }}</strong>
+                                @endif
                                 @if (request('from') && request('to'))
                                     periode {{ date('d/m/Y', strtotime(request('from'))) }} &ndash;
                                     {{ date('d/m/Y', strtotime(request('to'))) }}
@@ -161,22 +185,28 @@
     </div>
 
     <script>
+        // Preview jumlah lansir
         document.getElementById('btnPreview').addEventListener('click', function() {
+            var cvId = document.getElementById('selectCv').value;
             var from = document.getElementById('inputFrom').value;
             var to = document.getElementById('inputTo').value;
+            var gudangId = document.querySelector('[name=gudang_id]').value;
+            var supplierId = document.getElementById('selectSupplier').value;
+            var tujuanId = document.getElementById('selectTujuan').value;
+
             if (!from || !to) {
-                alertify.warning('Isi tanggal dari dan sampai.');
+                alert('Isi Dari Tanggal dan Sampai Tanggal terlebih dahulu.');
                 return;
             }
-            var params = new URLSearchParams({
-                from: from,
-                to: to,
-                gudang_id: document.querySelector('[name=gudang_id]').value,
-                cv_id: document.getElementById('selectCv').value,
-                supplier_id: document.querySelector('[name=supplier_id]').value,
-                tujuan_id: document.querySelector('[name=tujuan_id]').value,
-            });
-            window.location.href = '{{ route('gudang.lansir.export-pdf-ptsum-confirm') }}?' + params.toString();
+
+            var url = '{{ route('gudang.lansir.export-pdf-ptsum-confirm') }}?cv_id=' + cvId +
+                '&from=' + from + '&to=' + to;
+
+            if (gudangId) url += '&gudang_id=' + gudangId;
+            if (supplierId) url += '&supplier_id=' + supplierId;
+            if (tujuanId) url += '&tujuan_id=' + tujuanId;
+
+            window.location.href = url;
         });
     </script>
 @endsection

@@ -126,6 +126,7 @@ class RekapLansirGudangExport implements FromArray, WithEvents, WithTitle
         $no = 1;
         foreach ($this->headers as $header) {
             foreach ($header->kendaraans as $kendaraan) {
+                
                 foreach ($kendaraan->penerimas as $penerima) {
                     $row = [
                         $no++,
@@ -133,7 +134,7 @@ class RekapLansirGudangExport implements FromArray, WithEvents, WithTitle
                         $header->no_lansir,
                         $header->gudang?->nama ?? '-',
                         $kendaraan->no_polisi,
-                        $kendaraan->no_surat_jalan ?? '-',
+                        $penerima->no_surat_jalan ?? '-',
                         $penerima->nama_penerima,
                         $penerima->tujuan?->nama ?? '-',
                     ];
@@ -416,49 +417,60 @@ class RekapLansirGudangExport implements FromArray, WithEvents, WithTitle
 
                 foreach ($headers as $header) {
                     foreach ($header->kendaraans as $kendaraan) {
-                        // Hitung total baris termasuk extra tim
-                        $totalRows = $kendaraan->penerimas->sum(fn ($p) => max(1, $p->tims->count()));
-                        $start = $currentRow;
-                        $end = $currentRow + $totalRows - 1;
-
-                        // Merge kolom identitas A-H jika > 1 baris
-                        if ($totalRows > 1) {
-                            for ($c = 1; $c <= $idCols; $c++) {
-                                $cl = $this->getColumnLetter($c);
-                                $sheet->mergeCells("{$cl}{$start}:{$cl}{$end}");
-                                $sheet->getStyle("{$cl}{$start}")
-                                    ->getAlignment()
-                                    ->setVertical(Alignment::VERTICAL_CENTER)
-                                    ->setHorizontal(Alignment::HORIZONTAL_CENTER);
-                            }
-                        }
-
                         $fill = $colors[$colorIndex % 2];
-                        for ($r = $start; $r <= $end; $r++) {
-                            // Kolom identitas: selalu abu
-                            $sheet->getStyle("A{$r}:{$lastIdentitasCol}{$r}")->applyFromArray([
-                                'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FFF3F4F6']],
-                                'font' => ['name' => 'Arial', 'size' => 10],
-                                'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
-                            ]);
+                        
+                        foreach ($kendaraan->penerimas as $penerima) {
+                            // Hitung total baris untuk penerima ini termasuk extra tim
+                            $penerimaRows = max(1, $penerima->tims->count());
+                            $start = $currentRow;
+                            $end = $currentRow + $penerimaRows - 1;
 
-                            // Kolom data: alternating per kendaraan
-                            $sheet->getStyle("{$nextDataCol}{$r}:{$ketLtr}{$r}")->applyFromArray(['fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => $fill]],
-                                'font' => ['name' => 'Arial', 'size' => 10],
-                                'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
-                            ]);
+                            // Merge kolom identitas A-G (NO, TANGGAL, No Lansir, GUDANG, No. POLISI, No. SJ, PENERIMA, TUJUAN? Wait, NO: merge only NO, TANGGAL, No Lansir, GUDANG, No. POLISI (kolom 1-5), dan leave No. SJ, PENERIMA, TUJUAN (6-8) per penerima
+                            if ($penerimaRows > 1) {
+                                for ($c = 1; $c <= 5; $c++) {
+                                    $cl = $this->getColumnLetter($c);
+                                    $sheet->mergeCells("{$cl}{$start}:{$cl}{$end}");
+                                    $sheet->getStyle("{$cl}{$start}")
+                                        ->getAlignment()
+                                        ->setVertical(Alignment::VERTICAL_CENTER)
+                                        ->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                                }
+                            }
 
-                            // Tim Bongkar: hijau muda
-                            $sheet->getStyle("{$timStartLtr}{$r}:{$timEndLtr}{$r}")->applyFromArray([
-                                'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FFD1FAE5']],
-                                'font' => ['name' => 'Arial', 'size' => 10],
-                                'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
-                            ]);
+                            for ($r = $start; $r <= $end; $r++) {
+                                // Kolom identitas 1-5: selalu abu
+                                $sheet->getStyle("A{$r}:E{$r}")->applyFromArray([
+                                    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FFF3F4F6']],
+                                    'font' => ['name' => 'Arial', 'size' => 10],
+                                    'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
+                                ]);
+                                
+                                // Kolom identitas 6-8 (No. SJ, PENERIMA, TUJUAN): juga abu tapi tidak di-merge
+                                $sheet->getStyle("F{$r}:H{$r}")->applyFromArray([
+                                    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FFF3F4F6']],
+                                    'font' => ['name' => 'Arial', 'size' => 10],
+                                    'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
+                                ]);
 
-                            $sheet->getRowDimension($r)->setRowHeight(20);
+                                // Kolom data: alternating per kendaraan
+                                $sheet->getStyle("{$nextDataCol}{$r}:{$ketLtr}{$r}")->applyFromArray(['fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => $fill]],
+                                    'font' => ['name' => 'Arial', 'size' => 10],
+                                    'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
+                                ]);
+
+                                // Tim Bongkar: hijau muda
+                                $sheet->getStyle("{$timStartLtr}{$r}:{$timEndLtr}{$r}")->applyFromArray([
+                                    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FFD1FAE5']],
+                                    'font' => ['name' => 'Arial', 'size' => 10],
+                                    'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
+                                ]);
+
+                                $sheet->getRowDimension($r)->setRowHeight(20);
+                            }
+
+                            $currentRow += $penerimaRows;
                         }
-
-                        $currentRow += $totalRows;
+                        
                         $colorIndex++;
                     }
                 }

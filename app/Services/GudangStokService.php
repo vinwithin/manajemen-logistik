@@ -270,7 +270,6 @@ class GudangStokService
                     'lansir_header_id' => $header->id,
                     'no_polisi' => strtoupper(trim($kendaraanData['no_polisi'])),
                     'nama_sopir' => $kendaraanData['nama_sopir'] ?? null,
-                    'no_surat_jalan' => $kendaraanData['no_surat_jalan'] ?? null,
                     'created_by' => Auth::id(),
                 ]);
 
@@ -287,6 +286,7 @@ class GudangStokService
                         'kendaraan_id' => $kendaraan->id,
                         'nama_penerima' => $penerimaData['nama_penerima'],
                         'tujuan_id' => $penerimaData['tujuan_id'] ?? null,
+                        'no_surat_jalan' => $penerimaData['no_surat_jalan'] ?? null,
                     ]);
 
                     // Loop pakan per penerima

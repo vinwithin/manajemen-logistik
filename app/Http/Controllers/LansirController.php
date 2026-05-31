@@ -19,32 +19,36 @@ class LansirController extends Controller
 
             $query = PoPenerima::with([
                 'kendaraan.po.cv',
+                'kendaraan.po',
                 'kendaraan.supplier',
                 'tujuan',
                 'lansirs',
                 'pakans.kodePakan',
                 'penerima'
             ])
-               
+
                 ->whereHas('lansirs') // Hanya penerima yang memiliki lansir
                 ->whereHas('kendaraan.po', function ($q) use ($activeCvId) {
                     if ($activeCvId) {
                         $q->where('cv_id', $activeCvId);
                     }
                 })
-                 ->whereHas('penerima', function ($q) use ($tujuans) {
+                ->whereHas('penerima', function ($q) use ($tujuans) {
                     $q->whereIn('tujuan_id', $tujuans->pluck('id'));
                 })
+                ->join('po_kendaraan', 'po_kendaraan.id', '=', 'po_penerima.po_kendaraan_id')
+                ->join('purchase_orders', 'purchase_orders.id', '=', 'po_kendaraan.po_id')
+                ->orderBy('purchase_orders.created_at', 'desc')
                 ->select('po_penerima.*');
 
             return DataTables::of($query)
-                ->addColumn('no_po', fn ($q) => $q->kendaraan->po->no_po ?? '-')
-                ->addColumn('tanggal_po', fn ($q) => $q->kendaraan->po->tanggal_po?->format('d/m/Y') ?? '-')
-                ->addColumn('cv_name', fn ($q) => $q->kendaraan->po->cv?->nama_cv ?? '-')
-                ->addColumn('no_polisi', fn ($q) => $q->kendaraan->no_polisi ?? '-')
-                ->addColumn('tujuan_nama', fn ($q) => $q->tujuan?->nama ?? '-')
-                ->addColumn('berat', fn ($q) => $q->total_kg)
-                ->addColumn('jumlah_trip', fn ($q) => $q->lansirs->count().' trip')
+                ->addColumn('no_po', fn($q) => $q->kendaraan->po->no_po ?? '-')
+                ->addColumn('tanggal_po', fn($q) => $q->kendaraan->po->tanggal_po?->format('d/m/Y') ?? '-')
+                ->addColumn('cv_name', fn($q) => $q->kendaraan->po->cv?->nama_cv ?? '-')
+                ->addColumn('no_polisi', fn($q) => $q->kendaraan->no_polisi ?? '-')
+                ->addColumn('tujuan_nama', fn($q) => $q->tujuan?->nama ?? '-')
+                ->addColumn('berat', fn($q) => $q->total_kg)
+                ->addColumn('jumlah_trip', fn($q) => $q->lansirs->count() . ' trip')
                 ->addColumn('action', function ($q) {
                     $url = route('po-penerima.lansir-page', encrypt($q->id));
 

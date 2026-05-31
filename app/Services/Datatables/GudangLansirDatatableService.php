@@ -11,8 +11,8 @@ class GudangLansirDatatableService
     public function getData($request)
     {
         $query = GudangLansirHeader::select('gudang_lansir_header.*')
-            ->with(['gudang', 'kendaraans.penerimas.pakans.kodePakan', 'kendaraans.penerimas.tujuan']);
-        Log::info($query->get());
+            ->with(['gudang', 'kendaraans.penerimas.pakans.kodePakan', 'kendaraans.penerimas.tujuan'])
+            ->latest();
 
         if ($request->filled('gudang_id')) {
             $query->where('gudang_id', $request->gudang_id);

@@ -175,7 +175,7 @@ class KartuStockMutasiExport implements FromArray, WithEvents, WithTitle
 
             if ($isMasuk) {
                 // Masuk: dari PO penerima
-                $platMobil = $m->poPenerima?->kendaraan?->no_polisi ?? '-';
+                $platMobil = $m->poPenerima?->kendaraan?->no_polisi ?? 'Input Manual';
                 $po = $m->poPenerima?->kendaraan?->po;
                 $tglDoCpi = $po
                     ? (($po->tanggal_po?->format('d/m/Y') ?? '').' / '.($po->no_po ?? ''))
@@ -189,7 +189,7 @@ class KartuStockMutasiExport implements FromArray, WithEvents, WithTitle
 
                 $platMobil = $kendaraan?->no_polisi ?? '-';
                 $tglDoCpi = '-';
-                $noSj = $kendaraan?->no_surat_jalan ?? '-';
+                $noSj = $ $m->gudangLansirPakan?->penerima?->no_surat_jalan ?? '-';
                 $penerima = $m->gudangLansirPakan?->penerima?->nama_penerima ?? '-';
             }
 

@@ -91,6 +91,9 @@
                                 @if ($penerima->tujuan)
                                     <span class="text-muted small">→ {{ $penerima->tujuan->nama }}</span>
                                 @endif
+                                @if ($penerima->no_surat_jalan)
+                                    <span class="badge bg-light text-dark">SJ: {{ $penerima->no_surat_jalan }}</span>
+                                @endif
                                 @if ($penerima->status === 'dalam_perjalanan')
                                     <span class="badge bg-warning text-dark">Dalam Perjalanan</span>
                                 @elseif ($penerima->status === 'tiba')
@@ -106,7 +109,7 @@
                                     karung</span>
 
                                 @if ($penerima->status === 'dalam_perjalanan')
-                                    <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal"
+                                    <button type="button" class="btn btn-info" data-bs-toggle="modal"
                                         data-bs-target="#modalTiba{{ $penerima->id }}">
                                         <i class="fa fa-check"></i> Tiba
                                     </button>
@@ -116,7 +119,7 @@
                                         method="POST" class="d-inline">
                                         @csrf
                                         <input type="hidden" name="status" value="selesai">
-                                        <button type="submit" class="btn btn-sm btn-success"
+                                        <button type="submit" class="btn btn-success"
                                             onclick="return confirm('Tandai penerima ini sebagai Selesai?')">
                                             <i class="fa fa-check-circle"></i> Selesai
                                         </button>

@@ -6,7 +6,11 @@ use App\Exceptions\InsufficientStockException;
 use App\Exports\RekapLansirGudangExport;
 use App\Models\Cv;
 use App\Models\GudangLansirHeader;
+use App\Models\GudangLansirKendaraan;
+use App\Models\GudangLansirPakan;
 use App\Models\GudangLansirPenerima;
+use App\Models\GudangLansirTim;
+use App\Models\GudangMutasiStok;
 use App\Models\GudangStok;
 use App\Models\KodePakan;
 use App\Models\Penerima;
@@ -19,6 +23,8 @@ use App\Services\GudangStokService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 
 class GudangLansirController extends Controller
@@ -88,6 +94,246 @@ class GudangLansirController extends Controller
         return view('pages.gudang.lansir.create', compact('gudangs', 'tujuans', 'kodePakans', 'gudangId', 'stokList', 'poPenerimaList', 'penerimaList', 'cvList'));
     }
 
+    public function edit(string $id)
+    {
+        try {
+            $header = GudangLansirHeader::with([
+                'kendaraans.penerimas.pakans.kodePakan',
+                'kendaraans.penerimas.tims',
+                'kendaraans.penerimas.tujuan',
+            ])->findOrFail(decrypt($id));
+
+            $gudangs = Tujuan::where('type', 'gudang')->where('is_aktif', true)->orderBy('nama')->get();
+            $tujuans = Tujuan::where('is_aktif', true)->orderBy('nama')->get();
+            $kodePakans = KodePakan::orderBy('kode')->get();
+
+            $stokList = collect();
+            $gudangId = $header->gudang_id;
+            if ($gudangId) {
+                $stokList = GudangStok::where('tujuan_id', $gudangId)
+                    ->with('kodePakan')
+                    ->get();
+            }
+
+            $poPenerimaList = PoPenerima::with(['kendaraan.po', 'pakans.kodePakan', 'tujuan'])
+                ->where('status', 'tiba')
+                ->whereHas('tujuan', fn($q) => $q->where('type', 'gudang'))
+                ->when($gudangId, fn($q) => $q->where('tujuan_id', $gudangId))
+                ->where(function($q) use ($header) {
+                    $q->whereDoesntHave('gudangLansirs')
+                        ->orWhereHas('gudangLansirs', function($q2) use ($header) {
+                            $q2->whereHas('kendaraan', fn($q3) => $q3->where('lansir_header_id', $header->id));
+                        });
+                })
+                ->orderBy('tiba_at', 'desc')
+                ->get();
+
+            $penerimaList = Penerima::with('tujuan')
+                ->where('is_aktif', true)
+                ->orderBy('nama')
+                ->get()
+                ->map(fn($p) => [
+                    'id' => $p->id,
+                    'nama' => $p->nama,
+                    'tujuan_id' => $p->tujuan_id,
+                    'tujuan_nama' => $p->tujuan?->nama ?? '',
+                    'ongkos_angkut' => (float) $p->ongkos_angkut,
+                    'ongkos_bongkar' => (float) $p->ongkos_bongkar,
+                ]);
+
+            $cvList = Cv::where('is_aktif', true)->orderBy('nama_cv')->get();
+
+            return view('pages.gudang.lansir.sunting', compact('header', 'gudangs', 'tujuans', 'kodePakans', 'gudangId', 'stokList', 'poPenerimaList', 'penerimaList', 'cvList'));
+        } catch (Exception $e) {
+            return redirect()->route('gudang.lansir.index')->with('error', 'Data lansir tidak ditemukan: ' . $e->getMessage());
+        }
+    }
+
+    public function update(Request $request, string $id)
+    {
+        $request->validate([
+            'gudang_id' => 'required|exists:tujuan,id',
+            'cv_id' => 'nullable|exists:cv,id',
+            'tanggal_lansir' => 'required|date',
+            'catatan' => 'nullable|string',
+            'kendaraans' => 'required|array|min:1',
+            'kendaraans.*.no_polisi' => 'required|string|max:20',
+            'kendaraans.*.nama_sopir' => 'nullable|string|max:255',
+            'kendaraans.*.penerimas' => 'required|array|min:1',
+            'kendaraans.*.penerimas.*.nama_penerima' => 'required|string|max:255',
+            'kendaraans.*.penerimas.*.tujuan_id' => 'nullable|exists:tujuan,id',
+            'kendaraans.*.penerimas.*.no_surat_jalan' => 'nullable|string|max:100',
+            'kendaraans.*.penerimas.*.pakans' => 'required|array|min:1',
+            'kendaraans.*.penerimas.*.pakans.*.kode_pakan_id' => 'required|exists:kode_pakan,id',
+            'kendaraans.*.penerimas.*.pakans.*.jumlah_kg' => 'required|numeric|min:0.01',
+        ]);
+
+        try {
+            $header = GudangLansirHeader::with([
+                'kendaraans.penerimas.pakans',
+            ])->findOrFail(decrypt($id));
+
+            DB::transaction(function () use ($request, $header) {
+                $gudangId = $header->gudang_id;
+
+                // 1. Reverse semua stok yang keluar
+                foreach ($header->kendaraans as $kendaraan) {
+                    foreach ($kendaraan->penerimas as $penerima) {
+                        foreach ($penerima->pakans as $pakan) {
+                            // Kembalikan stok ke gudang
+                            $stok = GudangStok::where('tujuan_id', $gudangId)
+                                ->where('kode_pakan_id', $pakan->kode_pakan_id)
+                                ->lockForUpdate()
+                                ->first();
+                            
+                            if ($stok) {
+                                $stok->stok_kg += $pakan->jumlah_kg;
+                                $stok->stok_karung += $pakan->jumlah_karung;
+                                $stok->save();
+                            } else {
+                                GudangStok::create([
+                                    'tujuan_id' => $gudangId,
+                                    'kode_pakan_id' => $pakan->kode_pakan_id,
+                                    'stok_kg' => $pakan->jumlah_kg,
+                                    'stok_karung' => $pakan->jumlah_karung,
+                                ]);
+                            }
+
+                            // Hapus mutasi yang lama
+                            GudangMutasiStok::where('gudang_lansir_pakan_id', $pakan->id)->delete();
+                        }
+                    }
+                }
+
+                // 2. Hapus semua data lama (tims → pakans → penerimas → kendaraans)
+                foreach ($header->kendaraans as $kendaraan) {
+                    foreach ($kendaraan->penerimas as $penerima) {
+                        $penerima->tims()->delete();
+                        $penerima->pakans()->delete();
+                    }
+                    $kendaraan->penerimas()->delete();
+                }
+                $header->kendaraans()->delete();
+
+                // 3. Update header
+                $header->update([
+                    'gudang_id' => $request->gudang_id,
+                    'cv_id' => $request->cv_id ?? null,
+                    'tanggal_lansir' => $request->tanggal_lansir,
+                    'catatan' => $request->catatan ?? null,
+                ]);
+
+                // 4. Re-create semua data baru dengan logic yang sama seperti store
+                $newGudangId = $request->gudang_id;
+
+                foreach ($request->kendaraans ?? [] as $kendaraanData) {
+                    if (empty(trim($kendaraanData['no_polisi'] ?? ''))) {
+                        continue;
+                    }
+
+                    $kendaraan = GudangLansirKendaraan::create([
+                        'lansir_header_id' => $header->id,
+                        'no_polisi' => strtoupper(trim($kendaraanData['no_polisi'])),
+                        'nama_sopir' => $kendaraanData['nama_sopir'] ?? null,
+                        'created_by' => Auth::user()->id,
+                    ]);
+
+                    $totalKgKendaraan = 0;
+                    $totalKarungKendaraan = 0;
+
+                    foreach ($kendaraanData['penerimas'] ?? [] as $penerimaData) {
+                        if (empty(trim($penerimaData['nama_penerima'] ?? ''))) {
+                            continue;
+                        }
+
+                        $penerima = GudangLansirPenerima::create([
+                            'kendaraan_id' => $kendaraan->id,
+                            'nama_penerima' => $penerimaData['nama_penerima'],
+                            'tujuan_id' => $penerimaData['tujuan_id'] ?? null,
+                            'no_surat_jalan' => $penerimaData['no_surat_jalan'] ?? null,
+                        ]);
+
+                        foreach ($penerimaData['pakans'] ?? [] as $pakanData) {
+                            if (empty($pakanData['kode_pakan_id']) || empty($pakanData['jumlah_kg'])) {
+                                continue;
+                            }
+
+                            $kodePakanId = $pakanData['kode_pakan_id'];
+                            $jumlahKg = (float) $pakanData['jumlah_kg'];
+                            $jumlahKarung = (int) ($pakanData['jumlah_karung'] ?? 0);
+
+                            $stok = GudangStok::where('tujuan_id', $newGudangId)
+                                ->where('kode_pakan_id', $kodePakanId)
+                                ->lockForUpdate()
+                                ->first();
+
+                            $stokKgTersedia = $stok ? (float) $stok->stok_kg : 0.0;
+
+                            if ($jumlahKg > $stokKgTersedia) {
+                                throw new InsufficientStockException($stokKgTersedia);
+                            }
+
+                            $lansirPakan = GudangLansirPakan::create([
+                                'penerima_id' => $penerima->id,
+                                'kode_pakan_id' => $kodePakanId,
+                                'jumlah_kg' => $jumlahKg,
+                                'jumlah_karung' => $jumlahKarung,
+                                'ongkos_oa' => $pakanData['ongkos_oa'] ?? 0,
+                                'harga_pt_sum' => $pakanData['harga_pt_sum'] ?? 0,
+                                'keterangan' => $pakanData['keterangan'] ?? null,
+                            ]);
+
+                            $stok->stok_kg = $stok->stok_kg - $jumlahKg;
+                            $stok->stok_karung = max(0, $stok->stok_karung - $jumlahKarung);
+                            $stok->save();
+
+                            GudangMutasiStok::create([
+                                'tujuan_id' => $newGudangId,
+                                'kode_pakan_id' => $kodePakanId,
+                                'tipe' => 'keluar',
+                                'jumlah_kg' => $jumlahKg,
+                                'jumlah_karung' => $jumlahKarung,
+                                'referensi_tipe' => 'lansir_gudang_header',
+                                'referensi_id' => $header->id,
+                                'gudang_lansir_pakan_id' => $lansirPakan->id,
+                                'saldo_kg_after' => $stok->stok_kg,
+                                'saldo_karung_after' => $stok->stok_karung,
+                            ]);
+
+                            $totalKgKendaraan += $jumlahKg;
+                            $totalKarungKendaraan += $jumlahKarung;
+                        }
+
+                        foreach ($penerimaData['tims'] ?? [] as $timData) {
+                            if (empty(trim($timData['nama_tim'] ?? ''))) {
+                                continue;
+                            }
+                            GudangLansirTim::create([
+                                'penerima_id' => $penerima->id,
+                                'nama_tim' => trim($timData['nama_tim']),
+                                'jumlah_kg' => $timData['jumlah_kg'] ?? 0,
+                                'upah_per_kg' => $timData['upah_per_kg'] ?? null,
+                                'keterangan' => $timData['keterangan'] ?? null,
+                            ]);
+                        }
+                    }
+
+                    $kendaraan->update([
+                        'total_kg' => $totalKgKendaraan,
+                        'total_karung' => $totalKarungKendaraan,
+                    ]);
+                }
+            });
+
+            return redirect()->route('gudang.lansir.show', encrypt($header->id))
+                ->with('success', 'Lansir gudang berhasil diperbarui!');
+        } catch (InsufficientStockException $e) {
+            return redirect()->back()->with('error', 'Stok tidak mencukupi: ' . $e->getMessage())->withInput();
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', 'Gagal memperbarui: ' . $e->getMessage())->withInput();
+        }
+    }
+
     public function store(Request $request)
     {
         $request->validate([
@@ -98,10 +344,10 @@ class GudangLansirController extends Controller
             'kendaraans' => 'required|array|min:1',
             'kendaraans.*.no_polisi' => 'required|string|max:20',
             'kendaraans.*.nama_sopir' => 'nullable|string|max:255',
-            'kendaraans.*.no_surat_jalan' => 'nullable|string|max:100',
             'kendaraans.*.penerimas' => 'required|array|min:1',
             'kendaraans.*.penerimas.*.nama_penerima' => 'required|string|max:255',
             'kendaraans.*.penerimas.*.tujuan_id' => 'nullable|exists:tujuan,id',
+            'kendaraans.*.penerimas.*.no_surat_jalan' => 'nullable|string|max:100',
             'kendaraans.*.penerimas.*.pakans' => 'required|array|min:1',
             'kendaraans.*.penerimas.*.pakans.*.kode_pakan_id' => 'required|exists:kode_pakan,id',
             'kendaraans.*.penerimas.*.pakans.*.jumlah_kg' => 'required|numeric|min:0.01',
@@ -265,25 +511,26 @@ class GudangLansirController extends Controller
     public function exportPdfPtSumConfirm(Request $request)
     {
         $gudangs = Tujuan::where('type', 'gudang')->where('is_aktif', true)->orderBy('nama')->get();
-        $cvList = Cv::where('is_aktif', true)->orderBy('nama_cv')->get();
+        $userCvs = Cv::where('is_aktif', true)->orderBy('nama_cv')->get();
         $suppliers = Supplier::orderBy('nama')->get();
         $tujuans = Tujuan::where('is_aktif', true)->orderBy('nama')->get();
 
+        $cvId = $request->cv_id ?? session('active_cv');
         $from = $request->from;
         $to = $request->to;
         $gudangId = $request->gudang_id;
-        $cvId = $request->cv_id;
         $supplierId = $request->supplier_id;
         $tujuanId = $request->tujuan_id;
         $lansirCount = null;
-        $noSuratSuggest = null;
+        $cvNama = null;
         $dokumen = null;
+        $noSuratSuggest = null;
 
-        if ($from && $to) {
-            $query = GudangLansirHeader::whereDate('tanggal_lansir', '>=', $from)
+        if ($cvId && $from && $to) {
+            $query = GudangLansirHeader::where('cv_id', $cvId)
+                ->whereDate('tanggal_lansir', '>=', $from)
                 ->whereDate('tanggal_lansir', '<=', $to)
-                ->when($gudangId, fn($q) => $q->where('gudang_id', $gudangId))
-                ->when($cvId, fn($q) => $q->where('cv_id', $cvId));
+                ->when($gudangId, fn($q) => $q->where('gudang_id', $gudangId));
 
             // Filter supplier: cek dari poPenerima -> kendaraan -> po -> supplier
             if ($supplierId) {
@@ -303,97 +550,110 @@ class GudangLansirController extends Controller
 
             $lansirCount = $query->count();
 
-            if ($cvId) {
-                $cv = Cv::find($cvId);
+            $cv = Cv::find($cvId);
+            $cvNama = $cv?->nama_cv;
 
-                $dokumen = PoPeriodeDokumen::where('cv_id', $cvId)
-                    ->where('dari', $from)
-                    ->where('sampai', $to)
-                    ->where('tipe', 'gudang_ptsum')
-                    ->first();
+            $dokumen = PoPeriodeDokumen::where('cv_id', $cvId)
+                ->where('dari', $from)
+                ->where('sampai', $to)
+                ->where('tipe', 'gudang_ptsum')
+                ->first();
 
-                if (! $dokumen && $cv) {
-                    $generated = PoPeriodeDokumen::generateNoSurat($cv, 'gudang_ptsum', $from);
-                    $noSuratSuggest = $generated['no_surat'];
-                }
-            } else {
-                // Tanpa CV: generate preview sederhana
-                $bulanRomawi = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
-                $bulan = $bulanRomawi[(int) date('n', strtotime($from)) - 1];
-                $tahun = date('Y', strtotime($from));
-                $urutan = PoPeriodeDokumen::where('tipe', 'gudang_ptsum')
-                    ->whereYear('dari', $tahun)->max('urutan') ?? 0;
-                $noSuratSuggest = ($urutan + 1) . '-GL/' . $bulan . '/' . $tahun;
+            if (! $dokumen && $cv) {
+                $generated = PoPeriodeDokumen::generateNoSurat($cv, 'gudang_ptsum', $from);
+                $noSuratSuggest = $generated['no_surat'];
             }
         }
 
         return view('pages.gudang.lansir.export-ptsum-confirm', compact(
             'gudangs',
-            'cvList',
+            'userCvs',
             'suppliers',
             'tujuans',
+            'cvId',
             'from',
             'to',
             'gudangId',
-            'cvId',
             'supplierId',
             'tujuanId',
             'lansirCount',
-            'noSuratSuggest',
-            'dokumen'
+            'cvNama',
+            'dokumen',
+            'noSuratSuggest'
         ));
     }
 
     public function exportPdfPtSum(Request $request)
     {
-        $request->validate(['from' => 'required|date', 'to' => 'required|date']);
+        $request->validate([
+            'from' => 'required|date',
+            'to' => 'required|date|after_or_equal:from',
+            'tujuan_id' => 'required|integer',
+        ], [
+            'from.required' => 'Tanggal awal periode wajib diisi.',
+            'to.required' => 'Tanggal akhir periode wajib diisi.',
+            'to.after_or_equal' => 'Tanggal akhir harus sama atau setelah tanggal awal.',
+        ]);
 
+        $cvId = $request->cv_id ?? session('active_cv');
         $from = $request->from;
         $to = $request->to;
         $gudangId = $request->gudang_id;
-        $cvId = $request->cv_id;
         $supplierId = $request->supplier_id;
         $tujuanId = $request->tujuan_id;
-        $buatNoSurat = $request->boolean('buat_no_surat'); // checkbox
+        $noSuratInput = $request->no_surat;
+        $cpi = $request->cpi;
+
+        if (! $cvId) {
+            return redirect()->route('gudang.lansir.export-ptsum-confirm')
+                ->with('error', 'Pilih CV terlebih dahulu.');
+        }
+
+        $cv = Cv::find($cvId);
         $noSurat = null;
 
-        // Simpan / ambil nomor surat jika checkbox dicentang
-        if ($buatNoSurat && $from && $to) {
-            $cv = $cvId ? Cv::find($cvId) : null;
+        $tujuan = Tujuan::findOrFail($tujuanId);
+        $tujuanTypeMap = [
+            'co_farm' => 'CFJ',
+            'rent_farm' => 'RFJ',
+            'gudang' => 'GJ',
+            'direct' => 'DRC',
+        ];
+        $tujuanType = $tujuanTypeMap[$tujuan->type] ?? 'DRC';
 
-            if ($cv) {
-                // Gunakan database transaction dan locking untuk menghindari race condition
-                $dokumen = \DB::transaction(function () use ($cvId, $from, $to, $cv, $request) {
-                    // Cek apakah sudah ada dokumen untuk periode ini
-                    $existing = PoPeriodeDokumen::where('cv_id', $cvId)
-                        ->where('dari', $from)
-                        ->where('sampai', $to)
-                        ->where('tipe', 'gudang_ptsum')
-                        ->first();
+        if ($noSuratInput && $from && $to && $cv) {
+            $dokumen = \DB::transaction(function () use ($cvId, $from, $to, $cv, $request, $noSuratInput, $cpi) {
+                $existing = PoPeriodeDokumen::where('cv_id', $cvId)
+                    ->where('dari', $from)
+                    ->where('sampai', $to)
+                    ->where('tipe', 'gudang_ptsum')
+                    ->first();
 
-                    if ($existing) {
-                        // Jika sudah ada, gunakan dokumen yang sudah ada
-                        return $existing;
-                    }
-
-                    // Generate nomor surat baru (selalu increment)
-                    $generated = PoPeriodeDokumen::generateNoSurat($cv, 'gudang_ptsum', $from);
-
-                    // Buat dokumen baru
-                    return PoPeriodeDokumen::create([
-                        'cv_id' => $cvId,
-                        'dari' => $from,
-                        'sampai' => $to,
-                        'tipe' => 'gudang_ptsum',
-                        'urutan' => $generated['urutan'],
-                        'no_surat' => $generated['no_surat'],
+                if ($existing) {
+                    $existing->update([
+                        'no_surat' => $noSuratInput,
+                        'cpi' => $cpi,
                         'catatan' => $request->catatan,
-                        'created_by' => auth()->id(),
                     ]);
-                });
+                    return $existing;
+                }
 
-                $noSurat = $dokumen->no_surat;
-            }
+                $generated = PoPeriodeDokumen::generateNoSurat($cv, 'gudang_ptsum', $from);
+
+                return PoPeriodeDokumen::create([
+                    'cv_id' => $cvId,
+                    'dari' => $from,
+                    'sampai' => $to,
+                    'tipe' => 'gudang_ptsum',
+                    'urutan' => $generated['urutan'],
+                    'cpi' => $cpi,
+                    'no_surat' => $noSuratInput,
+                    'catatan' => $request->catatan,
+                    'created_by' => auth()->id(),
+                ]);
+            });
+
+            $noSurat = $dokumen->no_surat;
         }
 
         $query = GudangLansirHeader::with([
@@ -407,7 +667,6 @@ class GudangLansirController extends Controller
             ->when($gudangId, fn($q) => $q->where('gudang_id', $gudangId))
             ->when($cvId, fn($q) => $q->where('cv_id', $cvId));
 
-        // Filter supplier
         if ($supplierId) {
             $query->whereHas(
                 'kendaraans.penerimas.poPenerima.kendaraan',
@@ -415,7 +674,6 @@ class GudangLansirController extends Controller
             );
         }
 
-        // Filter tujuan
         if ($tujuanId) {
             $query->whereHas(
                 'kendaraans.penerimas',
@@ -424,16 +682,20 @@ class GudangLansirController extends Controller
         }
 
         $headers = $query->orderBy('tanggal_lansir')->get();
+        $tujuanNama = $cpi ?? Tujuan::find($tujuanId)->nama;
 
         $pdf = Pdf::loadView(
             'pdf.gudang-lansir-ptsum',
-            compact('headers', 'from', 'to', 'noSurat')
+            compact('headers', 'from', 'to', 'noSurat', 'tujuanNama')
         )
             ->setPaper('legal', 'landscape')
             ->setOption('margin-top', 10)->setOption('margin-bottom', 10)
             ->setOption('margin-left', 10)->setOption('margin-right', 10);
 
-        return $pdf->stream('lansir-gudang-ptsum-' . now()->format('Ymd') . '.pdf');
+        $cvNama = $headers->first()?->cv?->nama_cv ?? 'CV';
+        $filename = 'Lansir-Gudang-PTSum-' . str_replace(' ', '-', $cvNama) . '-' . now()->format('Ymd') . '.pdf';
+
+        return $pdf->download($filename);
     }
 
     public function exportPdfSupplierConfirm(Request $request)

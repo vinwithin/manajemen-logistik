@@ -14,7 +14,6 @@ class GudangLansirKendaraan extends Model
         'lansir_header_id',
         'no_polisi',
         'nama_sopir',
-        'no_surat_jalan',
         'total_kg',
         'total_karung',
         'created_by',

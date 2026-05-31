@@ -124,6 +124,8 @@ Route::post('/purchase-order/penerima/{penerimaId}/update-tanggal-tiba', [Purcha
         Route::get('/stok', [GudangStokController::class, 'index'])->name('stok.index')->middleware('can:gudang-stok.view');
         Route::get('/stok/saldo', [GudangStokController::class, 'saldo'])->name('stok.saldo')->middleware('can:gudang-stok.view');
         Route::get('/stok/{id}', [GudangStokController::class, 'show'])->name('stok.show')->middleware('can:gudang-stok.view');
+        Route::get('/stok/{id}/input-manual', [GudangStokController::class, 'createManualInput'])->name('stok.input-manual')->middleware('can:gudang-stok.view');
+        Route::post('/stok/{id}/input-manual', [GudangStokController::class, 'storeManualInput'])->name('stok.store-manual')->middleware('can:gudang-stok.view');
         Route::get('/mutasi', [GudangStokController::class, 'mutasi'])->name('mutasi.index')->middleware('can:gudang-stok.view');
         Route::get('/mutasi/export', [GudangStokController::class, 'mutasiExport'])->name('mutasi.export')->middleware('can:gudang-stok.view');
         Route::get('/mutasi/export-keluar', [GudangStokController::class, 'stokKeluarExport'])->name('mutasi.export-keluar')->middleware('can:gudang-stok.view');

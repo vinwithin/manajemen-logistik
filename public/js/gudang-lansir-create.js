@@ -108,19 +108,14 @@ function tambahKendaraan() {
             </div>
             <div class="card-body">
                 <div class="row g-3 mb-4">
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <label class="form-label">No. Polisi <span class="text-danger">*</span></label>
                         <input type="text" name="kendaraans[${ki}][no_polisi]" class="form-control text-uppercase"
                             placeholder="B 1234 XY" required>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <label class="form-label">Nama Sopir</label>
                         <input type="text" name="kendaraans[${ki}][nama_sopir]" class="form-control"
-                            placeholder="Opsional">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">No. Surat Jalan</label>
-                        <input type="text" name="kendaraans[${ki}][no_surat_jalan]" class="form-control"
                             placeholder="Opsional">
                     </div>
                 </div>
@@ -192,7 +187,11 @@ function tambahPenerima(kendaraanIdx) {
                             ${penerimaOptions}
                         </select>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-3">
+                        <label class="form-label small">No. Surat Jalan</label>
+                        <input type="text" name="kendaraans[${kendaraanIdx}][penerimas][${penerimaIdx}][no_surat_jalan]" class="form-control form-control-sm" placeholder="Opsional">
+                    </div>
+                    <div class="col-md-3">
                         <label class="form-label small">Tujuan</label>
                         <input type="hidden" name="kendaraans[${kendaraanIdx}][penerimas][${penerimaIdx}][tujuan_id]" class="input-tujuan-id" value="">
                         <input type="text" class="form-control form-control-sm bg-light input-tujuan-display" placeholder="Otomatis dari penerima" readonly>

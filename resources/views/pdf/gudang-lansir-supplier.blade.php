@@ -284,22 +284,17 @@
                         @endphp
 
                         <tr class="{{ $rowClass }} isi">
-                            @if ($isFirstPenerima)
-                                <td class="td-no" rowspan="{{ $penerimaCount }}" style="vertical-align:middle;">
-                                    {{ $no++ }}</td>
-                                <td rowspan="{{ $penerimaCount }}" style="vertical-align:middle;">
-                                    {{ $header->tanggal_lansir->translatedFormat('d F Y') }}</td>
-                                <td class="td-center" style="vertical-align:middle;">
-                                    {{ $kodePakanStr !== '' ? $kodePakanStr : '—' }}</td>
-                                <td rowspan="{{ $penerimaCount }}" style="vertical-align:middle;">
-                                    {{ $kendaraan->no_surat_jalan ?? '-' }}</td>
-                                <td rowspan="{{ $penerimaCount }}" style="vertical-align:middle;">
-                                    {{ $kendaraan->no_polisi }}</td>
-                                @php $isFirstPenerima = false; @endphp
-                            @else
-                                <td class="td-center">
-                                    {{ $kodePakanStr !== '' ? $kodePakanStr : '—' }}</td>
-                            @endif
+                            <td class="td-no" style="vertical-align:middle;">
+                                {{ $no++ }}</td>
+                            <td style="vertical-align:middle;">
+                                {{ $header->tanggal_lansir->translatedFormat('d F Y') }}</td>
+                            <td class="td-center" style="vertical-align:middle;">
+                                {{ $kodePakanStr !== '' ? $kodePakanStr : '—' }}</td>
+                            <td style="vertical-align:middle;">
+                                {{ $penerima->no_surat_jalan ?? '-' }}</td>
+                            <td style="vertical-align:middle;">
+                                {{ $kendaraan->no_polisi }}</td>
+
                             <td class="td-center">{{ Str::upper($penerima->nama_penerima ?? '-') }}</td>
                             <td class="td-center">{{ Str::upper($penerima->tujuan?->nama ?? '-') }}</td>
 

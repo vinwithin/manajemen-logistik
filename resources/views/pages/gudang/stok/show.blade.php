@@ -7,9 +7,14 @@
                 <h5 class="mb-1 fw-bold"><i class="fa fa-archive text-primary"></i> Gudang {{ $gudang->nama }}</h5>
                 <span class="text-muted small">Stok per kode pakan</span>
             </div>
-            <a href="{{ route('gudang.stok.index') }}" class="btn btn-sm btn-secondary">
-                <i class="fa fa-arrow-left"></i> Kembali
-            </a>
+            <div class="d-flex gap-2">
+                <a href="{{ route('gudang.stok.input-manual', $gudang->id) }}" class="btn btn-sm btn-primary">
+                    <i class="fa fa-plus-circle"></i> Input Manual
+                </a>
+                <a href="{{ route('gudang.stok.index') }}" class="btn btn-sm btn-secondary">
+                    <i class="fa fa-arrow-left"></i> Kembali
+                </a>
+            </div>
         </div>
     </div>
 

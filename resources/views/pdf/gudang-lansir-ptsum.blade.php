@@ -328,36 +328,60 @@
             $cvLogoBase64 = 'data:image/' . $type . ';base64,' . base64_encode($data);
         }
         $cvNama = $cv?->nama_cv ?? '-';
+        $cvCode = $cv?->code ?? '-';
         $cvAlamat = $cv?->alamat ?? '-';
         $cvNamaBank = $cv?->nama_bank ?? '-';
         $cvNoRek = $cv?->no_rekening ?? '-';
         $cvAtasNama = $cv?->atas_nama_rekening ?? $cvNama;
         $cvPimpinan = $cv?->nama_pimpinan ?? '';
         $cvPrefix = $cv?->no_dokumen_prefix ?? '';
-        $bulanRomawi = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
-        $bulanNow = $bulanRomawi[(int) now()->format('n') - 1];
-        $noKwitansi =
-            $noSurat ?? ($cvPrefix ? $cvPrefix . '/' . $bulanNow . '/' . now()->format('Y') : now()->format('Y/m'));
+        $noKwitansi = $noSurat ?? ($cvPrefix ? $cvPrefix . '/' . now()->format('III/Y') : now()->format('Y/m'));
         $logoInisial = strtoupper(substr(preg_replace('/^CV\.?\s*/i', '', $cvNama), 0, 2));
+        
+        $top = 14;
+        $logoWidth = 170;
+        $logoHeight = 50;
+        
+        if ($cv) {
+            $namaCvLower = strtolower(trim($cvCode));
+            
+            if (str_contains($namaCvLower, 'tr')) {
+                $top = 20;
+                $logoWidth = 200;
+                $logoHeight = 70;
+            } elseif (str_contains($namaCvLower, 'hrz')) {
+                $top = 0;
+                $logoWidth = 200;
+                $logoHeight = 40;
+            } elseif (str_contains($namaCvLower, 'htg')) {
+                $top = 14;
+                $logoWidth = 200;
+                $logoHeight = 70;
+            } elseif (str_contains($namaCvLower, 'hnn')) {
+                $top = 14;
+                $logoWidth = 200;
+                $logoHeight = 70;
+            }
+        }
     @endphp
 
     {{-- Header dengan Logo --}}
-    <div style="position: relative; margin-bottom: 15px;">
+    <div style="position: relative; margin-bottom: 0px;">
         @if ($cvLogo && Storage::disk('public')->exists($cvLogo))
             <div style="position: absolute; left: -25px; top: -45px;">
                 <img src="{{ $cvLogoBase64 }}"
-                    style="width: 200px; height: 70px; object-fit: contain; display: block; margin: 0; padding: 0;"
+                    style="width: {{ $logoWidth }}px; height: {{ $logoHeight }}px; object-fit: contain; display: block; margin: 0; padding: 0;"
                     alt="Logo CV">
             </div>
         @endif
 
-        <div style="position: absolute; left: -52px; top: 20px;">
-            <!-- <div style="font-weight: bold; font-size: 10px; margin-top: 2px; margin-bottom: 0;">{{ $cvNama }}
+        <div style="position: absolute; left: -52px; top: {{ $top }}px;">
+            <!-- <div style="font-weight: bold; font-size: 12px; margin-top: 2px; margin-bottom: 0;">{{ $cvNama }}
             </div> -->
-            <div style="font-size: 9px; padding-top: 0; margin-top: 0; color:rgb(123, 123, 239); font-style: italic;">
+            <div style="font-size: 11px; padding-top: 0; margin-top: 0; color:rgb(123, 123, 239); font-style: italic;">
                 {{ $cvAlamat }}</div>
         </div>
-        <div style="position: absolute; right: -25px; top: -25px; font-size:9px; color:#555; font-weight:bold;">
+        <div style="position: absolute; right: -25px; top: -25px; font-size:11px; color:#555; font-weight:bold;">
             No. {{ $noKwitansi }}
         </div>
 
@@ -440,22 +464,17 @@
                         @endphp
 
                         <tr class="{{ $rowClass }} isi">
-                            @if ($isFirstPenerima)
-                                <td class="td-no" rowspan="{{ $penerimaCount }}" style="vertical-align:middle;">
+                                <td class="td-no" style="vertical-align:middle;">
                                     {{ $no++ }}</td>
-                                <td rowspan="{{ $penerimaCount }}" style="vertical-align:middle;">
+                                <td style="vertical-align:middle;">
                                     {{ $header->tanggal_lansir->translatedFormat('d F Y') }}</td>
                                 <td class="td-center" style="vertical-align:middle;">
                                     {{ $kodePakanStr !== '' ? $kodePakanStr : '—' }}</td>
-                                <td rowspan="{{ $penerimaCount }}" style="vertical-align:middle;">
-                                    {{ $kendaraan->no_surat_jalan ?? '-' }}</td>
-                                <td rowspan="{{ $penerimaCount }}" style="vertical-align:middle;">
+                                <td style="vertical-align:middle;">
+                                    {{ $penerima->no_surat_jalan ?? '-' }}</td>
+                                <td style="vertical-align:middle;">
                                     {{ $kendaraan->no_polisi }}</td>
-                                @php $isFirstPenerima = false; @endphp
-                            @else
-                                <td class="td-center">
-                                    {{ $kodePakanStr !== '' ? $kodePakanStr : '—' }}</td>
-                            @endif
+                         
                             <td class="td-center">{{ Str::upper($penerima->nama_penerima ?? '-') }}</td>
                             <td class="td-center">{{ Str::upper($penerima->tujuan?->nama ?? '-') }}</td>
 
@@ -548,7 +567,7 @@
                     <td class="kwit-label">Untuk pembayaran</td>
                     <td class="kwit-colon">:</td>
                     <td class="kwit-value">
-                        Pembayaran Angkutan Pakan dari Gudang ke Kandang<br>
+                        Pembayaran Angkutan Pakan dari Gudang ke {{ $tujuanNama }}<br>
                         Periode :
                         @if ($from && $to)
                             @php

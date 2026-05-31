@@ -90,7 +90,7 @@
                         </div>
 
                         {{-- Source dari PO (Optional) --}}
-                        @if ($poPenerimaList->count() > 0)
+                        {{-- @if ($poPenerimaList->count() > 0)
                             <div class="card mb-4 border-info">
                                 <div class="card-header bg-info bg-opacity-10 py-2">
                                     <h6 class="fw-bold mb-0 text-info">
@@ -152,7 +152,7 @@
                                     </div>
                                 </div>
                             </div>
-                        @endif
+                        @endif --}}
 
                         {{-- Daftar Kendaraan --}}
                         <div class="mb-4">

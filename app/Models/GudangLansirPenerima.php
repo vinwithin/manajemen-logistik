@@ -20,6 +20,7 @@ class GudangLansirPenerima extends Model
         'tiba_at',
         'validasi_oleh',
         'no_do',
+        'no_surat_jalan',
     ];
 
     protected $casts = [
