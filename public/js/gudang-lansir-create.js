@@ -273,7 +273,7 @@ function tambahPakan(kendaraanIdx, penerimaIdx) {
 
     const kodePakanOptions = kodePakanList.map(kp => {
         // Cari stok untuk kode pakan ini
-        const stok = stokData.find(s => s.kode_pakan_id === kp.id);
+        const stok = stokData.find(s => Number(s.kode_pakan_id) === Number(kp.id));
         const stokKg = stok ? parseFloat(stok.stok_kg) : 0;
         const disabled = stokKg <= 0 ? 'disabled' : '';
         const stokText = stokKg > 0 ? stokKg.toLocaleString('id-ID') : '0';
