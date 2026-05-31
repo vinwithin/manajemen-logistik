@@ -44,7 +44,7 @@ class RugiLabaExport implements FromArray, WithEvents, WithTitle
         $rows[] = ['', '- Rent Farm',    $fmt($d['pembelian']['rent_farm'])];
         $rows[] = ['', '- Tr Kerinci',    $fmt($d['pembelian']['tr_kerinci'])];
         // $rows[] = ['', '- Cab. Bungo',   0];
-        $rows[] = ['', '- Transper Pakan', 0];
+        $rows[] = ['', '- Transper Pakan', $fmt($d['pembelian']['transper_pakan'])];
         $rows[] = ['', 'TOTAL',          $fmt($d['totalPembelian'])];
         $rows[] = [];
 
@@ -56,7 +56,7 @@ class RugiLabaExport implements FromArray, WithEvents, WithTitle
         $rows[] = ['', '- Rent Farm',    $fmt($d['penjualan']['rent_farm'])];
         $rows[] = ['', '- Tr Kerinci',    $fmt($d['penjualan']['tr_kerinci'])];
         // $rows[] = ['', '- Cab. Bungo',   0];
-        $rows[] = ['', '- Transper Pakan', 0];
+        $rows[] = ['', '- Transper Pakan', $fmt($d['penjualan']['transper_pakan'])];
         $rows[] = ['', 'TOTAL',          $fmt($d['totalPenjualan'])];
         $rows[] = [];
 

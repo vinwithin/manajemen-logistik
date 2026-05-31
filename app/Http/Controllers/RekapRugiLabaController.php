@@ -320,14 +320,16 @@ class RekapRugiLabaController extends Controller
             ->whereDate('gudang_lansir_header.tanggal_lansir', '<=', $sampai)
             ->get();
 
+        $pakans = $pakansPo->merge($pakansGudang);
+
+
         // Pembelian: hanya dari PO
-        foreach ($pakansPo as $p) {
+        foreach ($pakans as $p) {
             $type = in_array($p->tujuan_type ?? 'direct', $types) ? ($p->tujuan_type ?? 'direct') : 'direct';
             $pembelian[$type] += (float) $p->jumlah_kg * (float) ($p->ongkos_oa ?? 0);
         }
 
         // Penjualan: dari PO dan Gudang
-        $pakans = $pakansPo->merge($pakansGudang);
         foreach ($pakans as $p) {
             $type = in_array($p->tujuan_type ?? 'direct', $types) ? ($p->tujuan_type ?? 'direct') : 'direct';
             $penjualan[$type] += (float) $p->jumlah_kg * (float) ($p->harga_pt_sum ?? 0);
