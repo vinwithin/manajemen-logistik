@@ -7,6 +7,7 @@
             'direct' => 'Direct PIR',
             'co_farm' => 'Co Farm',
             'rent_farm' => 'Rent Farm',
+            'transper_pakan' => 'Transper Pakan',
         ];
         $fmt = fn($v) => number_format((float) $v, 0, ',', '.');
     @endphp
@@ -95,11 +96,7 @@
                                 <td class="text-end">{{ $fmt($data['penjualan'][$type]) }}</td>
                             </tr>
                         @endforeach
-                        <tr>
-                            <td></td>
-                            <td class="ps-4 text-muted">- Transper Pakan</td>
-                            <td class="text-end">0</td>
-                        </tr>
+                       
                         <tr class="table-light">
                             <td></td>
                             <td class="text-center fw-bold">TOTAL</td>

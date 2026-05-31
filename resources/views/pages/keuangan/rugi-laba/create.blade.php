@@ -10,6 +10,7 @@
             'direct' => 'Direct PIR',
             'co_farm' => 'Co Farm',
             'rent_farm' => 'Rent Farm',
+            'transper_pakan' => 'Transper Pakan',
         ];
     @endphp
 

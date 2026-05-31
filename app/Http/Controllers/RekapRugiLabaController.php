@@ -287,7 +287,7 @@ class RekapRugiLabaController extends Controller
 
         $dari   = "{$tahun}-" . str_pad($bulan, 2, '0', STR_PAD_LEFT) . '-01';
         $sampai = date('Y-m-t', strtotime($dari));
-        $types  = ['gudang', 'direct', 'co_farm', 'rent_farm', 'tr_kerinci'];
+        $types  = ['gudang', 'direct', 'co_farm', 'rent_farm', 'tr_kerinci', 'transper_pakan'];
 
         $pembelian = array_fill_keys($types, 0);
         $penjualan = array_fill_keys($types, 0);
@@ -309,7 +309,7 @@ class RekapRugiLabaController extends Controller
 
         // Data dari Gudang Lansir 
         $pakansGudang = DB::table('gudang_lansir_pakan')
-            ->select('gudang_lansir_pakan.jumlah_kg', 'gudang_lansir_pakan.ongkos_oa', 'gudang_lansir_pakan.harga_pt_sum', 'tujuan.type as tujuan_type')
+            ->select('gudang_lansir_pakan.jumlah_kg', 'gudang_lansir_pakan.ongkos_oa', 'gudang_lansir_pakan.harga_pt_sum',  DB::raw("'transper_pakan' as tujuan_type"))
             ->join('gudang_lansir_penerima', 'gudang_lansir_penerima.id', '=', 'gudang_lansir_pakan.penerima_id')
             ->join('gudang_lansir_kendaraan', 'gudang_lansir_kendaraan.id', '=', 'gudang_lansir_penerima.kendaraan_id')
             ->join('gudang_lansir_header', 'gudang_lansir_header.id', '=', 'gudang_lansir_kendaraan.lansir_header_id')
@@ -354,7 +354,7 @@ class RekapRugiLabaController extends Controller
             ->whereDate('purchase_orders.tanggal_po', '<=', $sampai)
             ->sum(DB::raw('COALESCE(po_lansir_tim.berat, 0) * COALESCE(po_lansir_tim.upah, 0)'));
 
-            // ->sum(DB::raw('COALESCE(po_lansir_tim.upah, 0)'));
+        // ->sum(DB::raw('COALESCE(po_lansir_tim.upah, 0)'));
 
         // Mobil lokal otomatis
         $mobilGudang = DB::table('gudang_lansir_pakan')
