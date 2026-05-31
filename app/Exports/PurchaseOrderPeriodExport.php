@@ -11,6 +11,7 @@ use Maatwebsite\Excel\Concerns\WithTitle;
 use Maatwebsite\Excel\Events\AfterSheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use App\Traits\WithUserTujuan;
+use Illuminate\Support\Facades\Log;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 
@@ -174,7 +175,6 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                     $namaTujuan = $penerima !== null
                         ? ($penerima->tujuan?->nama ?? '')
                         : ($kendaraan->tujuan?->nama ?? '');
-
                     $row = [
                         $no++,
                         $po->tanggal_po->translatedFormat('d F Y'),
@@ -186,7 +186,7 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                     ];
 
                     if ($penerima !== null) {
-
+                        // ── Generate row pertama dengan identitas (pakan, dll) ──
                         // Jumlah Karung per kode pakan
                         foreach ($this->kodePakanList as $kp) {
                             $pakan = $penerima->pakans->firstWhere('kode_pakan_id', $kp->id);
@@ -216,46 +216,114 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                         $row[] = $po->cv?->nama_cv ?? '';
 
                         // Keterangan: tipe tujuan penerima (kosong jika tidak ada)
-                        $lansir = $penerima->lansirs->first();
                         $row[] = $penerima->penerima?->tujuan?->type ?? '';
 
-                        // ── LANSIR MOBIL DATA ─────────────────────────────────
-                        if ($lansir && $lansir->mobils->count() > 0) {
-                            $firstMobil = $lansir->mobils->first();
-                            $row[] = ''; // Spacer
-                            $row[] = $lansir->tanggal_lansir->translatedFormat('d F Y') ?? '';
-                            $row[] = $firstMobil->no_polisi ?? '';
-                            $row[] = $firstMobil->nama_sopir ?? '';
-                            $row[] = $firstMobil->berat ?? '';
-                            $row[] = $firstMobil->jumlah_karung ?? '';
-                            $row[] = number_format($firstMobil->ongkos, '0', ',', '.') ?? '';
-                            $row[] = (float) ($firstMobil->berat ?? 0) * (float) ($firstMobil->ongkos ?? 0);
-                        } else {
-                            $row[] = ''; // Spacer
-                            $row[] = ''; // Spacer
-                            $row[] = '';
-                            $row[] = '';
-                            $row[] = '';
-                            $row[] = '';
-                            $row[] = '';
-                            $row[] = '';
+                        // Simpan row pertama dengan identitas untuk nanti
+                        $rowWithIdentitas = $row;
+
+                        // ── Loop SEMUA lansir penerima ──
+                        $lansirs = $penerima->lansirs;
+                        $isFirstLansir = true;
+
+                        foreach ($lansirs as $lansir) {
+                            if ($isFirstLansir) {
+                                // Pakai row dengan identitas untuk lansir pertama
+                                $currentRow = $rowWithIdentitas;
+                                $isFirstLansir = false;
+                            } else {
+                                // Untuk lansir selanjutnya, identitas kosong
+                                $currentRow = array_fill(0, $idCols + ($kpCount * 2) + 4, '');
+                            }
+
+                            // ── LANSIR MOBIL DATA ─────────────────────────────────
+                            if ($lansir && $lansir->mobils->count() > 0) {
+                                $firstMobil = $lansir->mobils->first();
+                                $currentRow[] = ''; // Spacer
+                                $currentRow[] = $lansir->tanggal_lansir->translatedFormat('d F Y') ?? '';
+                                $currentRow[] = $firstMobil->no_polisi ?? '';
+                                $currentRow[] = $firstMobil->nama_sopir ?? '';
+                                $currentRow[] = $firstMobil->berat ?? '';
+                                $currentRow[] = $firstMobil->jumlah_karung ?? '';
+                                $currentRow[] = number_format($firstMobil->ongkos, '0', ',', '.') ?? '';
+                                $currentRow[] = (float) ($firstMobil->berat ?? 0) * (float) ($firstMobil->ongkos ?? 0);
+                            } else {
+                                $currentRow[] = ''; // Spacer
+                                $currentRow[] = ''; // Spacer
+                                $currentRow[] = '';
+                                $currentRow[] = '';
+                                $currentRow[] = '';
+                                $currentRow[] = '';
+                                $currentRow[] = '';
+                                $currentRow[] = '';
+                            }
+
+                            // ── TIM BONGKAR DATA ──────────────────────────────────
+                            if ($lansir && $lansir->tims->count() > 0) {
+                                $firstTim = $lansir->tims->first();
+                                $totalBerat = $lansir->mobils->sum('berat');
+                                $currentRow[] = ''; // Spacer
+                                $currentRow[] = $firstTim->nama_tim ?? '';
+                                $currentRow[] = $firstTim->berat ?? $totalBerat;
+                                $currentRow[] = $firstTim->upah ?? '';
+                                $currentRow[] = (float) ($firstTim->berat ?? $totalBerat) * (float) ($firstTim->upah ?? 0);
+                            } else {
+                                $currentRow[] = ''; // Spacer
+                                $currentRow[] = '';
+                                $currentRow[] = '';
+                                $currentRow[] = '';
+                                $currentRow[] = '';
+                            }
+
+                            $rows[] = $currentRow;
+
+                            // ── Extra mobils/tims untuk lansir ini ──
+                            $extraMobils = $lansir->mobils->slice(1)->values();
+                            $extraTims = $lansir->tims->slice(1)->values();
+                            $extraCount = max($extraMobils->count(), $extraTims->count());
+
+                            for ($ei = 0; $ei < $extraCount; $ei++) {
+                                $extraRow = array_fill(0, $idCols + ($kpCount * 2) + 4, '');
+
+                                // Mobil lansir extra
+                                $mobil = $extraMobils->get($ei);
+                                $extraRow[] = ''; // Spacer
+                                $extraRow[] = $lansir->tanggal_lansir->format('d/m/Y') ?? '';
+                                $extraRow[] = $mobil ? ($mobil->no_polisi ?? '') : '';
+                                $extraRow[] = $mobil ? ($mobil->nama_sopir ?? '') : '';
+                                $extraRow[] = $mobil ? ($mobil->berat ?? '') : '';
+                                $extraRow[] = $mobil ? ($mobil->jumlah_karung ?? '') : '';
+                                $extraRow[] = $mobil ? (number_format($mobil->ongkos, '0', ',', '.') ?? '') : '';
+                                $extraRow[] = $mobil ? (float) ($mobil->berat ?? 0) * (float) ($mobil->ongkos ?? 0) : '';
+
+                                // Tim bongkar extra
+                                $tim = $extraTims->get($ei);
+                                $extraRow[] = ''; // Spacer
+                                $extraRow[] = $tim ? ($tim->nama_tim ?? '') : '';
+                                $extraRow[] = $tim ? ($tim->berat ?? '') : '';
+                                $extraRow[] = $tim ? ($tim->upah ?? '') : '';
+                                $extraRow[] = $tim ? (float) ($tim->berat ?? 0) * (float) ($tim->upah ?? 0) : '';
+
+                                $rows[] = $extraRow;
+                            }
                         }
 
-                        // ── TIM BONGKAR DATA ──────────────────────────────────
-                        if ($lansir && $lansir->tims->count() > 0) {
-                            $firstTim = $lansir->tims->first();
-                            $totalBerat = $lansir->mobils->sum('berat');
-                            $row[] = ''; // Spacer
-                            $row[] = $firstTim->nama_tim ?? '';
-                            $row[] = $firstTim->berat ?? $totalBerat;
-                            $row[] = $firstTim->upah ?? '';
-                            $row[] = (float) ($firstTim->berat ?? $totalBerat) * (float) ($firstTim->upah ?? 0);
-                        } else {
-                            $row[] = ''; // Spacer
-                            $row[] = '';
-                            $row[] = '';
-                            $row[] = '';
-                            $row[] = '';
+                        // Jika tidak ada lansir sama sekali, tambahkan row dengan identitas saja
+                        if ($lansirs->count() === 0) {
+                            // Tambahkan kolom lansir & tim kosong
+                            $rowWithIdentitas[] = '';
+                            $rowWithIdentitas[] = '';
+                            $rowWithIdentitas[] = '';
+                            $rowWithIdentitas[] = '';
+                            $rowWithIdentitas[] = '';
+                            $rowWithIdentitas[] = '';
+                            $rowWithIdentitas[] = '';
+                            $rowWithIdentitas[] = '';
+                            $rowWithIdentitas[] = '';
+                            $rowWithIdentitas[] = '';
+                            $rowWithIdentitas[] = '';
+                            $rowWithIdentitas[] = '';
+                            $rowWithIdentitas[] = '';
+                            $rows[] = $rowWithIdentitas;
                         }
                     } else {
                         // Kendaraan belum punya penerima: muatan & OA dari level kendaraan
@@ -306,39 +374,7 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                         $row[] = '';
                         $row[] = '';
                         $row[] = '';
-                    }
-                    $rows[] = $row;
-
-                    if ($penerima !== null && $lansir) {
-                        $extraMobils = $lansir->mobils->slice(1)->values();
-                        $extraTims = $lansir->tims->slice(1)->values();
-                        $extraCount = max($extraMobils->count(), $extraTims->count());
-
-                        for ($ei = 0; $ei < $extraCount; $ei++) {
-                            $extraRow = array_fill(0, $idCols + ($kpCount * 2) + 4, '');
-
-                            // Mobil lansir extra
-                            $mobil = $extraMobils->get($ei);
-                            $extraRow[] = ''; // Spacer
-                            $extraRow[] = $lansir->tanggal_lansir->format('d/m/Y') ?? '';
-
-                            $extraRow[] = $mobil ? ($mobil->no_polisi ?? '') : '';
-                            $extraRow[] = $mobil ? ($mobil->nama_sopir ?? '') : '';
-                            $extraRow[] = $mobil ? ($mobil->berat ?? '') : '';
-                            $extraRow[] = $mobil ? ($mobil->jumlah_karung ?? '') : '';
-                            $extraRow[] = $mobil ? (number_format($mobil->ongkos, '0', ',', '.') ?? '') : '';
-                            $extraRow[] = $mobil ? (float) ($mobil->berat ?? 0) * (float) ($mobil->ongkos ?? 0) : '';
-
-                            // Tim bongkar extra
-                            $tim = $extraTims->get($ei);
-                            $extraRow[] = ''; // Spacer
-                            $extraRow[] = $tim ? ($tim->nama_tim ?? '') : '';
-                            $extraRow[] = $tim ? ($tim->berat ?? '') : '';
-                            $extraRow[] = $tim ? ($tim->upah ?? '') : '';
-                            $extraRow[] = $tim ? (float) ($tim->berat ?? 0) * (float) ($tim->upah ?? 0) : '';
-
-                            $rows[] = $extraRow;
-                        }
+                        $rows[] = $row;
                     }
                 }
             }
@@ -585,13 +621,18 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
 
                         if ($kendaraan->penerimas->count() > 0) {
                             foreach ($kendaraan->penerimas as $penerima) {
-                                $totalRows++;
-                                $lansir = $penerima->lansirs->first();
-                                if ($lansir) {
-                                    $totalRows += max(
-                                        $lansir->mobils->count() - 1,
-                                        $lansir->tims->count() - 1
-                                    );
+                                // Hitung total baris untuk penerima ini
+                                $lansirs = $penerima->lansirs;
+                                if ($lansirs->count() > 0) {
+                                    foreach ($lansirs as $lansir) {
+                                        $totalRows++; // 1 baris untuk lansir ini
+                                        // Tambah baris untuk extra mobils/tims
+                                        $extraMobils = $lansir->mobils->slice(1)->values();
+                                        $extraTims = $lansir->tims->slice(1)->values();
+                                        $totalRows += max($extraMobils->count(), $extraTims->count());
+                                    }
+                                } else {
+                                    $totalRows += 1; // Tidak ada lansir, cuma 1 baris identitas
                                 }
                             }
                         } else {
@@ -617,14 +658,22 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                         $penerimaRow = $currentRow;
                         if ($kendaraan->penerimas->count() > 0) {
                             foreach ($kendaraan->penerimas as $penerima) {
-                                $penerimaRows = 1;
-                                $lansir = $penerima->lansirs->first();
-                                if ($lansir) {
-                                    $penerimaRows += max(
-                                        $lansir->mobils->count() - 1,
-                                        $lansir->tims->count() - 1
-                                    );
+                                $penerimaRows = 0;
+
+                                // Hitung total baris untuk penerima ini
+                                $lansirs = $penerima->lansirs;
+                                if ($lansirs->count() > 0) {
+                                    foreach ($lansirs as $lansir) {
+                                        $penerimaRows++; // 1 baris untuk lansir ini
+                                        // Tambah baris untuk extra mobils/tims
+                                        $extraMobils = $lansir->mobils->slice(1)->values();
+                                        $extraTims = $lansir->tims->slice(1)->values();
+                                        $penerimaRows += max($extraMobils->count(), $extraTims->count());
+                                    }
+                                } else {
+                                    $penerimaRows = 1; // Tidak ada lansir, cuma 1 baris identitas
                                 }
+
                                 if ($penerimaRows > 1) {
                                     $penerimaEnd = $penerimaRow + $penerimaRows - 1;
                                     $sheet->mergeCells("{$tujuanColLetter}{$penerimaRow}:{$tujuanColLetter}{$penerimaEnd}");
