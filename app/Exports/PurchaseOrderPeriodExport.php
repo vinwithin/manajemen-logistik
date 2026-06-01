@@ -49,16 +49,16 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
             'kendaraans.penerimas.lansirs.mobils',
             'kendaraans.penerimas.lansirs.tims',
         ])
-         ->where(function ($q) use ($tujuans) {
-                        $q->whereHas('kendaraans.penerimas.penerima', function ($q) use ($tujuans) {
-                            $q->whereIn('tujuan_id', $tujuans->pluck('id'));
-                        })
-                        ->orWhereDoesntHave('kendaraans.penerimas')
-                        ->orWhereHas('kendaraans.penerimas', function ($q) {
-                            $q->whereDoesntHave('penerima');               // penerima orphan
-                        });
-                    })
-                    ->where('status', '!=', 'batal')->orderBy('tanggal_po', 'asc')->orderBy('no_po', 'asc');
+            ->where(function ($q) use ($tujuans) {
+                $q->whereHas('kendaraans.penerimas.penerima', function ($q) use ($tujuans) {
+                    $q->whereIn('tujuan_id', $tujuans->pluck('id'));
+                })
+                    ->orWhereDoesntHave('kendaraans.penerimas')
+                    ->orWhereHas('kendaraans.penerimas', function ($q) {
+                        $q->whereDoesntHave('penerima');               // penerima orphan
+                    });
+            })
+            ->where('status', '!=', 'batal')->orderBy('tanggal_po', 'asc')->orderBy('no_po', 'asc');
 
         if ($from) {
             $query->whereDate('tanggal_po', '>=', $from);
@@ -353,10 +353,10 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
 
                         $row[] = ($ongkosAngkut !== null && $ongkosAngkut !== '') ? $ongkosAngkut : '';
                         $row[] = $totalOaKendaraan > 0 ? $totalOaKendaraan : '';
-                        
+
                         // CV
                         $row[] = $po->cv?->nama_cv ?? '';
-                        
+
                         $row[] = 'Belum ada penerima';
 
                         $row[] = '';
@@ -620,19 +620,23 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
 
                         if ($kendaraan->penerimas->count() > 0) {
                             foreach ($kendaraan->penerimas as $penerima) {
-                                $totalRows++;
-                                $lansir = $penerima->lansirs->first();
-                                if ($lansir) {
-                                    $totalRows += max(
-                                        $lansir->mobils->count() - 1,
-                                        $lansir->tims->count() - 1
-                                    );
+                                // Hitung total baris untuk penerima ini
+                                $lansirs = $penerima->lansirs;
+                                if ($lansirs->count() > 0) {
+                                    foreach ($lansirs as $lansir) {
+                                        $totalRows++; // 1 baris untuk lansir ini
+                                        // Tambah baris untuk extra mobils/tims
+                                        $extraMobils = $lansir->mobils->slice(1)->values();
+                                        $extraTims = $lansir->tims->slice(1)->values();
+                                        $totalRows += max($extraMobils->count(), $extraTims->count());
+                                    }
+                                } else {
+                                    $totalRows += 1; 
                                 }
                             }
                         } else {
                             $totalRows = 1;
                         }
-
                         $kendaraanStart = $currentRow;
                         $kendaraanEnd = $currentRow + $totalRows - 1;
 
