@@ -36,7 +36,6 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
         $tujuans = $this->getUserTujuan();
 
 
-
         $query = PurchaseOrder::with([
             'cv',
             'kendaraans' => function ($q) {
@@ -621,18 +620,13 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
 
                         if ($kendaraan->penerimas->count() > 0) {
                             foreach ($kendaraan->penerimas as $penerima) {
-                                // Hitung total baris untuk penerima ini
-                                $lansirs = $penerima->lansirs;
-                                if ($lansirs->count() > 0) {
-                                    foreach ($lansirs as $lansir) {
-                                        $totalRows++; // 1 baris untuk lansir ini
-                                        // Tambah baris untuk extra mobils/tims
-                                        $extraMobils = $lansir->mobils->slice(1)->values();
-                                        $extraTims = $lansir->tims->slice(1)->values();
-                                        $totalRows += max($extraMobils->count(), $extraTims->count());
-                                    }
-                                } else {
-                                    $totalRows += 1; // Tidak ada lansir, cuma 1 baris identitas
+                                $totalRows++;
+                                $lansir = $penerima->lansirs->first();
+                                if ($lansir) {
+                                    $totalRows += max(
+                                        $lansir->mobils->count() - 1,
+                                        $lansir->tims->count() - 1
+                                    );
                                 }
                             }
                         } else {

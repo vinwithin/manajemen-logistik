@@ -657,6 +657,16 @@ class PurchaseOrderController extends Controller
             'kendaraan.*.penerima.*.pakans.*.harga_pt_sum.min' => 'Harga PT Sum tidak boleh kurang dari 0.',
         ]);
 
+        // Validasi cv melebihi batas omzet
+        if ($request->cv_id) {
+            $cv = Cv::find($request->cv_id);
+            if ($cv && $cv->isMelebihiBatas()) {
+                return redirect()->back()
+                    ->with('error', 'CV yang dipilih sudah melebihi batas omzet tahunan dan tidak dapat dipilih.')
+                    ->withInput();
+            }
+        }
+
         // dd($request->all());
 
         DB::beginTransaction();
@@ -942,9 +952,16 @@ class PurchaseOrderController extends Controller
             'kendaraan.*.penerima.*.pakans.*.harga_pt_sum.min' => 'Harga PT Sum tidak boleh kurang dari 0.',
         ]);
 
+        $po = PurchaseOrder::findOrFail($id);
+            $cv = Cv::find($request->cv_id);
+            if ($cv && $cv->isMelebihiBatas()) {
+                return redirect()->back()
+                    ->with('error', 'CV yang dipilih sudah melebihi batas omzet tahunan dan tidak dapat dipilih.')
+                    ->withInput();
+            }
+
         DB::beginTransaction();
         try {
-            $po = PurchaseOrder::findOrFail($id);
 
             if ($po->isLocked()) {
                 return redirect()->back()->with('error', 'PO sudah terkunci.');

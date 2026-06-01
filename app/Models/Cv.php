@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use App\Traits\WithUserTujuan;
+
 
 class Cv extends Model
 {
@@ -12,7 +14,7 @@ class Cv extends Model
 
     protected $fillable = ['nama_cv', 'code', 'is_aktif', 'alamat', 'nama_bank', 'no_rekening', 'atas_nama_rekening', 'nama_pimpinan', 'no_dokumen_prefix', 'logo'];
 
-    const BATAS_OMZET = 4_800_000_000; // Rp 48 juta per tahun
+    const BATAS_OMZET = 4_600_000_000; // Rp 46 m per tahun
 
     public function purchaseOrders()
     {
@@ -55,12 +57,14 @@ class Cv extends Model
 
     public static function withOmzet(?int $year = null): Collection
     {
+
         $year = $year ?? now()->year;
 
         $omzetsPo = DB::table('po_penerima_pakan')
             ->join('po_penerima',   'po_penerima.id',   '=', 'po_penerima_pakan.po_penerima_id')
             ->join('po_kendaraan',  'po_kendaraan.id',  '=', 'po_penerima.po_kendaraan_id')
             ->join('purchase_orders', 'purchase_orders.id', '=', 'po_kendaraan.po_id')
+            ->where('po_kendaraan.status', '!=', 'batal')
             ->whereYear('purchase_orders.tanggal_po', $year)
             ->selectRaw('purchase_orders.cv_id, SUM(po_penerima_pakan.jumlah_kg * COALESCE(po_penerima_pakan.harga_pt_sum, 0)) as omzet')
             ->groupBy('purchase_orders.cv_id')

@@ -7,7 +7,7 @@
         </a>
     </div>
 
-    @php $batas = 48_000_000; @endphp
+    @php $batas = 4_600_000_000; @endphp
 
     <div class="row g-3">
         @forelse($cvList as $cv)
@@ -59,7 +59,7 @@
 
                         @if ($cv->melebihi_batas)
                             <div class="alert alert-danger py-1 px-2 mt-2 mb-0 small">
-                                ⚠️ Omzet melebihi batas Rp 48jt/tahun. Jangan gunakan CV ini untuk PO baru.
+                                ⚠️ Omzet melebihi batas Rp 4,6m/tahun. Jangan gunakan CV ini untuk PO baru.
                             </div>
                         @elseif($persen >= 80)
                             <div class="alert alert-warning py-1 px-2 mt-2 mb-0 small">
