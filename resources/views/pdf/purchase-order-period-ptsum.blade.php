@@ -390,7 +390,7 @@
                         alt="Logo CV">
                 @endif
                 <div
-                    style="font-size: 12px; color: black; font-style: italic; line-height: 1.4; word-wrap: break-word; text-align:start; width:100%; margin:0;">
+                    style="font-size: 11px; color: black; font-style: italic; line-height: 1.4; word-wrap: break-word; text-align:start; width:100%; margin:0;">
                     {{ $cvAlamat }}
                 </div>
             </td>
