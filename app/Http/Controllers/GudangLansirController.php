@@ -70,8 +70,8 @@ class GudangLansirController extends Controller
 
         $poPenerimaList = PoPenerima::with(['kendaraan.po', 'pakans.kodePakan', 'tujuan'])
             ->where('status', 'tiba')
-            ->whereHas('tujuan', fn($q) => $q->where('type', 'gudang'))
-            ->when($gudangId, fn($q) => $q->where('tujuan_id', $gudangId))
+            ->whereHas('tujuan', fn ($q) => $q->where('type', 'gudang'))
+            ->when($gudangId, fn ($q) => $q->where('tujuan_id', $gudangId))
             ->whereDoesntHave('gudangLansirs') // Belum dilansir
             ->orderBy('tiba_at', 'desc')
             ->get();
@@ -80,7 +80,7 @@ class GudangLansirController extends Controller
             ->where('is_aktif', true)
             ->orderBy('nama')
             ->get()
-            ->map(fn($p) => [
+            ->map(fn ($p) => [
                 'id' => $p->id,
                 'nama' => $p->nama,
                 'tujuan_id' => $p->tujuan_id,
@@ -117,12 +117,12 @@ class GudangLansirController extends Controller
 
             $poPenerimaList = PoPenerima::with(['kendaraan.po', 'pakans.kodePakan', 'tujuan'])
                 ->where('status', 'tiba')
-                ->whereHas('tujuan', fn($q) => $q->where('type', 'gudang'))
-                ->when($gudangId, fn($q) => $q->where('tujuan_id', $gudangId))
-                ->where(function($q) use ($header) {
+                ->whereHas('tujuan', fn ($q) => $q->where('type', 'gudang'))
+                ->when($gudangId, fn ($q) => $q->where('tujuan_id', $gudangId))
+                ->where(function ($q) use ($header) {
                     $q->whereDoesntHave('gudangLansirs')
-                        ->orWhereHas('gudangLansirs', function($q2) use ($header) {
-                            $q2->whereHas('kendaraan', fn($q3) => $q3->where('lansir_header_id', $header->id));
+                        ->orWhereHas('gudangLansirs', function ($q2) use ($header) {
+                            $q2->whereHas('kendaraan', fn ($q3) => $q3->where('lansir_header_id', $header->id));
                         });
                 })
                 ->orderBy('tiba_at', 'desc')
@@ -132,7 +132,7 @@ class GudangLansirController extends Controller
                 ->where('is_aktif', true)
                 ->orderBy('nama')
                 ->get()
-                ->map(fn($p) => [
+                ->map(fn ($p) => [
                     'id' => $p->id,
                     'nama' => $p->nama,
                     'tujuan_id' => $p->tujuan_id,
@@ -145,7 +145,7 @@ class GudangLansirController extends Controller
 
             return view('pages.gudang.lansir.sunting', compact('header', 'gudangs', 'tujuans', 'kodePakans', 'gudangId', 'stokList', 'poPenerimaList', 'penerimaList', 'cvList'));
         } catch (Exception $e) {
-            return redirect()->route('gudang.lansir.index')->with('error', 'Data lansir tidak ditemukan: ' . $e->getMessage());
+            return redirect()->route('gudang.lansir.index')->with('error', 'Data lansir tidak ditemukan: '.$e->getMessage());
         }
     }
 
@@ -185,7 +185,7 @@ class GudangLansirController extends Controller
                                 ->where('kode_pakan_id', $pakan->kode_pakan_id)
                                 ->lockForUpdate()
                                 ->first();
-                            
+
                             if ($stok) {
                                 $stok->stok_kg += $pakan->jumlah_kg;
                                 $stok->stok_karung += $pakan->jumlah_karung;
@@ -328,9 +328,9 @@ class GudangLansirController extends Controller
             return redirect()->route('gudang.lansir.show', encrypt($header->id))
                 ->with('success', 'Lansir gudang berhasil diperbarui!');
         } catch (InsufficientStockException $e) {
-            return redirect()->back()->with('error', 'Stok tidak mencukupi: ' . $e->getMessage())->withInput();
+            return redirect()->back()->with('error', 'Stok tidak mencukupi: '.$e->getMessage())->withInput();
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'Gagal memperbarui: ' . $e->getMessage())->withInput();
+            return redirect()->back()->with('error', 'Gagal memperbarui: '.$e->getMessage())->withInput();
         }
     }
 
@@ -365,14 +365,14 @@ class GudangLansirController extends Controller
             $header = $this->gudangStokService->prosesLansirGudangNested($request->all());
 
             return redirect()->route('gudang.lansir.show', encrypt($header->id))
-                ->with('success', 'Lansir gudang berhasil disimpan. No Lansir: ' . $header->no_lansir);
+                ->with('success', 'Lansir gudang berhasil disimpan. No Lansir: '.$header->no_lansir);
         } catch (InsufficientStockException $e) {
             return redirect()->back()
-                ->with('error', 'Stok tidak mencukupi. Tersedia: ' . $e->getMessage() . ' kg')
+                ->with('error', 'Stok tidak mencukupi. Tersedia: '.$e->getMessage().' kg')
                 ->withInput();
         } catch (Exception $e) {
             return redirect()->back()
-                ->with('error', 'Gagal menyimpan: ' . $e->getMessage())
+                ->with('error', 'Gagal menyimpan: '.$e->getMessage())
                 ->withInput();
         }
     }
@@ -394,9 +394,9 @@ class GudangLansirController extends Controller
 
             // Kode pakan unik untuk kolom pivot (dari semua kendaraan)
             $kodePakanList = $header->kendaraans
-                ->flatMap(fn($k) => $k->penerimas)
-                ->flatMap(fn($p) => $p->pakans)
-                ->map(fn($pk) => $pk->kodePakan)
+                ->flatMap(fn ($k) => $k->penerimas)
+                ->flatMap(fn ($p) => $p->pakans)
+                ->map(fn ($pk) => $pk->kodePakan)
                 ->filter()
                 ->unique('id')
                 ->sortBy('kode')
@@ -424,7 +424,7 @@ class GudangLansirController extends Controller
                 $buktiPath = null;
                 if ($request->hasFile('bukti_tiba')) {
                     $file = $request->file('bukti_tiba');
-                    $filename = 'bukti_tiba_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                    $filename = 'bukti_tiba_'.time().'_'.uniqid().'.'.$file->getClientOriginalExtension();
                     $buktiPath = $file->storeAs('bukti_tiba', $filename, 'public');
                 }
 
@@ -450,7 +450,7 @@ class GudangLansirController extends Controller
 
             return redirect()->back()->with('error', 'Status tidak valid.');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'Gagal update status: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal update status: '.$e->getMessage());
         }
     }
 
@@ -468,7 +468,7 @@ class GudangLansirController extends Controller
                     'tujuan_id' => $poPenerima->tujuan_id,
                     'tujuan_nama' => $poPenerima->tujuan->nama,
                     'tiba_at' => $poPenerima->tiba_at?->format('d/m/Y H:i'),
-                    'pakans' => $poPenerima->pakans->map(fn($p) => [
+                    'pakans' => $poPenerima->pakans->map(fn ($p) => [
                         'kode_pakan_id' => $p->kode_pakan_id,
                         'kode' => $p->kodePakan->kode,
                         'nama' => $p->kodePakan->nama,
@@ -482,7 +482,7 @@ class GudangLansirController extends Controller
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data tidak ditemukan: ' . $e->getMessage(),
+                'message' => 'Data tidak ditemukan: '.$e->getMessage(),
             ], 404);
         }
     }
@@ -495,10 +495,10 @@ class GudangLansirController extends Controller
 
         $filename = 'rekap-lansir-gudang';
         if ($from) {
-            $filename .= '-' . $from;
+            $filename .= '-'.$from;
         }
         if ($to) {
-            $filename .= '-sd-' . $to;
+            $filename .= '-sd-'.$to;
         }
         $filename .= '.xlsx';
 
@@ -521,34 +521,41 @@ class GudangLansirController extends Controller
         $gudangId = $request->gudang_id;
         $supplierId = $request->supplier_id;
         $tujuanId = $request->tujuan_id;
+        $selectedKendaraanIds = $request->kendaraan_ids ? array_filter(explode(',', $request->kendaraan_ids)) : [];
         $lansirCount = null;
         $cvNama = null;
         $dokumen = null;
         $noSuratSuggest = null;
+        $kendaraanList = collect();
 
         if ($cvId && $from && $to) {
             $query = GudangLansirHeader::where('cv_id', $cvId)
                 ->whereDate('tanggal_lansir', '>=', $from)
                 ->whereDate('tanggal_lansir', '<=', $to)
-                ->when($gudangId, fn($q) => $q->where('gudang_id', $gudangId));
-
-            // Filter supplier: cek dari poPenerima -> kendaraan -> po -> supplier
-            if ($supplierId) {
-                $query->whereHas(
-                    'kendaraans.penerimas.poPenerima.kendaraan',
-                    fn($q) => $q->where('supplier_id', $supplierId)
-                );
-            }
+                ->when($gudangId, fn ($q) => $q->where('gudang_id', $gudangId));
 
             // Filter tujuan: cek dari penerimas
             if ($tujuanId) {
                 $query->whereHas(
                     'kendaraans.penerimas',
-                    fn($q) => $q->where('tujuan_id', $tujuanId)
+                    fn ($q) => $q->where('tujuan_id', $tujuanId)
                 );
             }
 
             $lansirCount = $query->count();
+
+            // Ambil daftar kendaraan untuk filter plat mobil
+            $kendaraanList = GudangLansirKendaraan::whereHas('lansirHeader', function ($q) use ($cvId, $from, $to, $gudangId, $tujuanId) {
+                $q->where('cv_id', $cvId)
+                    ->whereDate('tanggal_lansir', '>=', $from)
+                    ->whereDate('tanggal_lansir', '<=', $to)
+                    ->when($gudangId, fn ($q2) => $q2->where('gudang_id', $gudangId))
+                    ->when($tujuanId, fn ($q) => $q->whereHas('kendaraans.penerimas', fn ($q2) => $q2->where('tujuan_id', $tujuanId)));
+
+            })
+                ->with('lansirHeader')
+                ->orderBy('no_polisi')
+                ->get(['id', 'no_polisi', 'lansir_header_id']);
 
             $cv = Cv::find($cvId);
             $cvNama = $cv?->nama_cv;
@@ -579,7 +586,9 @@ class GudangLansirController extends Controller
             'lansirCount',
             'cvNama',
             'dokumen',
-            'noSuratSuggest'
+            'noSuratSuggest',
+            'kendaraanList',
+            'selectedKendaraanIds'
         ));
     }
 
@@ -603,6 +612,9 @@ class GudangLansirController extends Controller
         $tujuanId = $request->tujuan_id;
         $noSuratInput = $request->no_surat;
         $cpi = $request->cpi;
+        $kendaraanIds = $request->kendaraan_ids
+            ? array_filter(array_map('intval', explode(',', $request->kendaraan_ids)))
+            : [];
 
         if (! $cvId) {
             return redirect()->route('gudang.lansir.export-ptsum-confirm')
@@ -635,6 +647,7 @@ class GudangLansirController extends Controller
                         'cpi' => $cpi,
                         'catatan' => $request->catatan,
                     ]);
+
                     return $existing;
                 }
 
@@ -664,24 +677,38 @@ class GudangLansirController extends Controller
             'kendaraans.penerimas.poPenerima.kendaraan.po.cv',
         ])->whereDate('tanggal_lansir', '>=', $from)
             ->whereDate('tanggal_lansir', '<=', $to)
-            ->when($gudangId, fn($q) => $q->where('gudang_id', $gudangId))
-            ->when($cvId, fn($q) => $q->where('cv_id', $cvId));
+            ->when($gudangId, fn ($q) => $q->where('gudang_id', $gudangId))
+            ->when($cvId, fn ($q) => $q->where('cv_id', $cvId));
 
         if ($supplierId) {
             $query->whereHas(
                 'kendaraans.penerimas.poPenerima.kendaraan',
-                fn($q) => $q->where('supplier_id', $supplierId)
+                fn ($q) => $q->where('supplier_id', $supplierId)
             );
         }
 
         if ($tujuanId) {
             $query->whereHas(
                 'kendaraans.penerimas',
-                fn($q) => $q->where('tujuan_id', $tujuanId)
+                fn ($q) => $q->where('tujuan_id', $tujuanId)
             );
         }
 
+        // Filter kendaraan spesifik (plat mobil)
+        if (! empty($kendaraanIds)) {
+            $query->whereHas('kendaraans', fn ($q) => $q->whereIn('id', $kendaraanIds));
+        }
+
         $headers = $query->orderBy('tanggal_lansir')->get();
+
+        // Jika ada filter kendaraan, filter kendaraan yang ditampilkan
+        if (! empty($kendaraanIds)) {
+            foreach ($headers as $header) {
+                $header->setRelation('kendaraans', $header->kendaraans->filter(
+                    fn ($k) => in_array($k->id, $kendaraanIds)
+                )->values());
+            }
+        }
         $tujuanNama = $cpi ?? Tujuan::find($tujuanId)->nama;
 
         $pdf = Pdf::loadView(
@@ -693,7 +720,7 @@ class GudangLansirController extends Controller
             ->setOption('margin-left', 10)->setOption('margin-right', 10);
 
         $cvNama = $headers->first()?->cv?->nama_cv ?? 'CV';
-        $filename = 'Lansir-Gudang-PTSum-' . str_replace(' ', '-', $cvNama) . '-' . now()->format('Ymd') . '.pdf';
+        $filename = 'Lansir-Gudang-PTSum-'.str_replace(' ', '-', $cvNama).'-'.now()->format('Ymd').'.pdf';
 
         return $pdf->download($filename);
     }
@@ -716,14 +743,14 @@ class GudangLansirController extends Controller
         if ($from && $to) {
             $query = GudangLansirHeader::whereDate('tanggal_lansir', '>=', $from)
                 ->whereDate('tanggal_lansir', '<=', $to)
-                ->when($gudangId, fn($q) => $q->where('gudang_id', $gudangId))
-                ->when($cvId, fn($q) => $q->where('cv_id', $cvId));
+                ->when($gudangId, fn ($q) => $q->where('gudang_id', $gudangId))
+                ->when($cvId, fn ($q) => $q->where('cv_id', $cvId));
 
             // Filter supplier
             if ($supplierId) {
                 $query->whereHas(
                     'kendaraans.penerimas.poPenerima.kendaraan',
-                    fn($q) => $q->where('supplier_id', $supplierId)
+                    fn ($q) => $q->where('supplier_id', $supplierId)
                 );
             }
 
@@ -731,7 +758,7 @@ class GudangLansirController extends Controller
             if ($tujuanId) {
                 $query->whereHas(
                     'kendaraans.penerimas',
-                    fn($q) => $q->where('tujuan_id', $tujuanId)
+                    fn ($q) => $q->where('tujuan_id', $tujuanId)
                 );
             }
 
@@ -772,14 +799,14 @@ class GudangLansirController extends Controller
             'kendaraans.penerimas.poPenerima.kendaraan.po.cv',
         ])->whereDate('tanggal_lansir', '>=', $from)
             ->whereDate('tanggal_lansir', '<=', $to)
-            ->when($gudangId, fn($q) => $q->where('gudang_id', $gudangId))
-            ->when($cvId, fn($q) => $q->where('cv_id', $cvId));
+            ->when($gudangId, fn ($q) => $q->where('gudang_id', $gudangId))
+            ->when($cvId, fn ($q) => $q->where('cv_id', $cvId));
 
         // Filter supplier
         if ($supplierId) {
             $query->whereHas(
                 'kendaraans.penerimas.poPenerima.kendaraan',
-                fn($q) => $q->where('supplier_id', $supplierId)
+                fn ($q) => $q->where('supplier_id', $supplierId)
             );
         }
 
@@ -787,7 +814,7 @@ class GudangLansirController extends Controller
         if ($tujuanId) {
             $query->whereHas(
                 'kendaraans.penerimas',
-                fn($q) => $q->where('tujuan_id', $tujuanId)
+                fn ($q) => $q->where('tujuan_id', $tujuanId)
             );
         }
 
@@ -801,6 +828,6 @@ class GudangLansirController extends Controller
             ->setOption('margin-top', 10)->setOption('margin-bottom', 10)
             ->setOption('margin-left', 10)->setOption('margin-right', 10);
 
-        return $pdf->stream('lansir-gudang-supplier-' . now()->format('Ymd') . '.pdf');
+        return $pdf->stream('lansir-gudang-supplier-'.now()->format('Ymd').'.pdf');
     }
 }

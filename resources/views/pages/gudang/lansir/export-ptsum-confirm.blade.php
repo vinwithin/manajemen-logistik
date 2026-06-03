@@ -73,7 +73,8 @@
                                 {{-- Filter Gudang & Supplier & Tujuan --}}
                                 <div class="row g-3 mt-2">
                                     <div class="col-md-4">
-                                        <label class="form-label small">Gudang <span class="text-muted">(opsional)</span></label>
+                                        <label class="form-label small">Gudang <span
+                                                class="text-muted">(opsional)</span></label>
                                         <select name="gudang_id" class="form-select form-select-sm">
                                             <option value="">-- Semua Gudang --</option>
                                             @foreach ($gudangs as $g)
@@ -84,23 +85,11 @@
                                             @endforeach
                                         </select>
                                     </div>
+                                   
                                     <div class="col-md-4">
-                                        <label class="form-label small">Supplier <span
-                                                class="text-muted">(opsional)</span></label>
-                                        <select name="supplier_id" id="selectSupplier" class="form-select form-select-sm">
-                                            <option value="">-- Semua Supplier --</option>
-                                            @foreach ($suppliers as $s)
-                                                <option value="{{ $s->id }}"
-                                                    {{ request('supplier_id') == $s->id ? 'selected' : '' }}>
-                                                    {{ $s->nama }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label small">Tujuan<span
-                                                class="text-danger">*</span></label>
-                                        <select name="tujuan_id" id="selectTujuan" class="form-select form-select-sm" required>
+                                        <label class="form-label small">Tujuan<span class="text-danger">*</span></label>
+                                        <select name="tujuan_id" id="selectTujuan" class="form-select form-select-sm"
+                                            required>
                                             <option value="">-- Semua Tujuan --</option>
                                             @foreach ($tujuans as $t)
                                                 <option value="{{ $t->id }}"
@@ -111,6 +100,57 @@
                                         </select>
                                     </div>
                                 </div>
+
+                                {{-- Filter Kendaraan (Plat Mobil) --}}
+                                @if ($kendaraanList->count() > 0)
+                                    <div class="row g-3 mt-2">
+                                        <div class="col-12">
+                                            <label class="form-label small fw-bold">
+                                                <i class="fa fa-truck"></i> Pilih Kendaraan (Plat Mobil)
+                                                <span class="text-muted fw-normal">(opsional — kosongkan untuk semua
+                                                    kendaraan)</span>
+                                            </label>
+                                            <input type="hidden" name="kendaraan_ids" id="inputKendaraanIds"
+                                                value="{{ implode(',', $selectedKendaraanIds) }}">
+                                            <div class="border rounded p-2 bg-white"
+                                                style="max-height: 200px; overflow-y: auto;">
+                                                <div class="mb-1">
+                                                    <button type="button" class="btn btn-xs btn-outline-primary me-1"
+                                                        id="btnPilihSemua">
+                                                        <i class="fa fa-check-square-o"></i> Pilih Semua
+                                                    </button>
+                                                    <button type="button" class="btn btn-xs btn-outline-secondary"
+                                                        id="btnHapusSemua">
+                                                        <i class="fa fa-square-o"></i> Hapus Semua
+                                                    </button>
+                                                </div>
+                                                <div class="row g-1 mt-1">
+                                                    @foreach ($kendaraanList as $k)
+                                                        <div class="col-md-4 col-6">
+                                                            <div class="form-check form-check-sm">
+                                                                <input class="form-check-input kendaraan-check"
+                                                                    type="checkbox" value="{{ $k->id }}"
+                                                                    id="k_{{ $k->id }}"
+                                                                    {{ empty($selectedKendaraanIds) || in_array($k->id, $selectedKendaraanIds) ? 'checked' : '' }}>
+                                                                <label class="form-check-label small"
+                                                                    for="k_{{ $k->id }}">
+                                                                    <strong>{{ $k->no_polisi }}</strong>
+                                                                    <span class="text-muted">·
+                                                                        {{ $k->lansirHeader->no_lansir }}</span>
+                                                                </label>
+                                                            </div>
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+                                            </div>
+                                            <small class="text-muted">
+                                                <span
+                                                    id="countSelected">{{ empty($selectedKendaraanIds) ? $kendaraanList->count() : count($selectedKendaraanIds) }}</span>
+                                                dari {{ $kendaraanList->count() }} kendaraan dipilih
+                                            </small>
+                                        </div>
+                                    </div>
+                                @endif
                             </div>
                         </div>
 
@@ -126,7 +166,8 @@
                                 <div class="mb-2">
                                     <label class="form-label small">Nomor Surat</label>
                                     <input type="text" name="no_surat" class="form-control form-control-sm"
-                                        value="{{ $dokumen?->no_surat ?? ($noSuratSuggest ?? '') }}" placeholder="Masukkan nomor surat">
+                                        value=""
+                                        placeholder="Masukkan nomor surat">
 
                                     <label class="form-label small">Masukkan Tujuan (Dari Gudang ke .......)</label>
                                     <input type="text" name="cpi" class="form-control form-control-sm"
@@ -150,7 +191,8 @@
                                 <div class="mb-2">
                                     <label class="form-label small">Catatan (opsional)</label>
                                     <input type="text" name="catatan" class="form-control form-control-sm"
-                                        value="{{ $dokumen?->catatan }}" placeholder="Catatan tambahan untuk dokumen ini">
+                                        value="{{ $dokumen?->catatan }}"
+                                        placeholder="Catatan tambahan untuk dokumen ini">
                                 </div>
                             </div>
                         </div>
@@ -185,14 +227,49 @@
     </div>
 
     <script>
+        // Sync checkbox ke hidden input
+        function syncKendaraanIds() {
+            var checked = [];
+            document.querySelectorAll('.kendaraan-check:checked').forEach(function(el) {
+                checked.push(el.value);
+            });
+            document.getElementById('inputKendaraanIds').value = checked.join(',');
+            var countEl = document.getElementById('countSelected');
+            if (countEl) countEl.textContent = checked.length;
+        }
+
+        document.querySelectorAll('.kendaraan-check').forEach(function(el) {
+            el.addEventListener('change', syncKendaraanIds);
+        });
+
+        var btnPilihSemua = document.getElementById('btnPilihSemua');
+        if (btnPilihSemua) {
+            btnPilihSemua.addEventListener('click', function() {
+                document.querySelectorAll('.kendaraan-check').forEach(function(el) {
+                    el.checked = true;
+                });
+                syncKendaraanIds();
+            });
+        }
+
+        var btnHapusSemua = document.getElementById('btnHapusSemua');
+        if (btnHapusSemua) {
+            btnHapusSemua.addEventListener('click', function() {
+                document.querySelectorAll('.kendaraan-check').forEach(function(el) {
+                    el.checked = false;
+                });
+                syncKendaraanIds();
+            });
+        }
+
         // Preview jumlah lansir
         document.getElementById('btnPreview').addEventListener('click', function() {
             var cvId = document.getElementById('selectCv').value;
             var from = document.getElementById('inputFrom').value;
             var to = document.getElementById('inputTo').value;
             var gudangId = document.querySelector('[name=gudang_id]').value;
-            var supplierId = document.getElementById('selectSupplier').value;
             var tujuanId = document.getElementById('selectTujuan').value;
+            var kendaraanIds = document.getElementById('inputKendaraanIds')?.value ?? '';
 
             if (!from || !to) {
                 alert('Isi Dari Tanggal dan Sampai Tanggal terlebih dahulu.');
@@ -203,8 +280,8 @@
                 '&from=' + from + '&to=' + to;
 
             if (gudangId) url += '&gudang_id=' + gudangId;
-            if (supplierId) url += '&supplier_id=' + supplierId;
             if (tujuanId) url += '&tujuan_id=' + tujuanId;
+            if (kendaraanIds) url += '&kendaraan_ids=' + encodeURIComponent(kendaraanIds);
 
             window.location.href = url;
         });
