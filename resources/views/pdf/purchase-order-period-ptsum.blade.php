@@ -510,7 +510,7 @@
                                 </td>
 
                                 {{-- Nama Penerima --}}
-                                <td class="td-center">{{ Str::upper($penerima->nama_penerima ?? '-') }}</td>
+                                <td class="td-center">{{ Str::upper($penerima->tujuan?->nama ?? '-') }}</td>
 
 
                                 {{-- Jumlah Kg --}}
