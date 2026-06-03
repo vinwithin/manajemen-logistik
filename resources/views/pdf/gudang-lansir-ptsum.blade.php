@@ -369,10 +369,10 @@
     <table style="width: 100%; border-collapse: collapse; margin-bottom: 8px;">
         <tr>
             {{-- Kiri: Logo + Alamat --}}
-            <td style="width: 28%; vertical-align: top; padding: 0;">
+            <td style="width: 25%; vertical-align: top; padding: 0;">
                 @if ($cvLogo && Storage::disk('public')->exists($cvLogo))
                     <img src="{{ $cvLogoBase64 }}"
-                        style="width: {{ $logoWidth }}px; height: {{ $logoHeight }}px; object-fit: contain; display: block; margin: 0 0 4px 0;"
+                        style="width: {{ $logoWidth }}px; height: {{ $logoHeight }}px; object-fit: contain; display: block; margin: 0;"
                         alt="Logo CV">
                 @endif
                 <div
