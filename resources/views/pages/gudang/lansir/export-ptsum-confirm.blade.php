@@ -85,15 +85,24 @@
                                             @endforeach
                                         </select>
                                     </div>
-                                   
+
                                     <div class="col-md-4">
                                         <label class="form-label small">Tujuan<span class="text-danger">*</span></label>
-                                        <select name="tujuan_id" id="selectTujuan" class="form-select form-select-sm"
+                                        <select name="tujuan_ids" id="selectTujuan" class="form-select form-select-sm"
                                             required>
                                             <option value="">-- Semua Tujuan --</option>
+                                            {{-- Opsi gabungan --}}
+                                            @php $currentTujuanIds = request('tujuan_ids', isset($tujuanIds) ? implode(',', $tujuanIds) : ''); @endphp
+                                            <option value="6,8" {{ $currentTujuanIds === '6,8' ? 'selected' : '' }}>
+                                                ★ Jambi 1 + Jambi 5
+                                            </option>
+                                            <option value="9,10" {{ $currentTujuanIds === '9,10' ? 'selected' : '' }}>
+                                                ★ 34 Dalam + 34 Luar
+                                            </option>
+                                            <option disabled>──────────────</option>
                                             @foreach ($tujuans as $t)
                                                 <option value="{{ $t->id }}"
-                                                    {{ request('tujuan_id') == $t->id ? 'selected' : '' }}>
+                                                    {{ $currentTujuanIds == $t->id ? 'selected' : '' }}>
                                                     {{ $t->nama }}
                                                 </option>
                                             @endforeach
@@ -166,8 +175,7 @@
                                 <div class="mb-2">
                                     <label class="form-label small">Nomor Surat</label>
                                     <input type="text" name="no_surat" class="form-control form-control-sm"
-                                        value=""
-                                        placeholder="Masukkan nomor surat">
+                                        value="" placeholder="Masukkan nomor surat">
 
                                     <label class="form-label small">Masukkan Tujuan (Dari Gudang ke .......)</label>
                                     <input type="text" name="cpi" class="form-control form-control-sm"
@@ -268,7 +276,7 @@
             var from = document.getElementById('inputFrom').value;
             var to = document.getElementById('inputTo').value;
             var gudangId = document.querySelector('[name=gudang_id]').value;
-            var tujuanId = document.getElementById('selectTujuan').value;
+            var tujuanIds = document.getElementById('selectTujuan').value;
             var kendaraanIds = document.getElementById('inputKendaraanIds')?.value ?? '';
 
             if (!from || !to) {
@@ -280,7 +288,7 @@
                 '&from=' + from + '&to=' + to;
 
             if (gudangId) url += '&gudang_id=' + gudangId;
-            if (tujuanId) url += '&tujuan_id=' + tujuanId;
+            if (tujuanIds) url += '&tujuan_ids=' + encodeURIComponent(tujuanIds);
             if (kendaraanIds) url += '&kendaraan_ids=' + encodeURIComponent(kendaraanIds);
 
             window.location.href = url;

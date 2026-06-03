@@ -520,7 +520,9 @@ class GudangLansirController extends Controller
         $to = $request->to;
         $gudangId = $request->gudang_id;
         $supplierId = $request->supplier_id;
-        $tujuanId = $request->tujuan_id;
+        $tujuanIds = $request->tujuan_ids
+            ? array_filter(array_map('intval', explode(',', $request->tujuan_ids)))
+            : [];
         $selectedKendaraanIds = $request->kendaraan_ids ? array_filter(explode(',', $request->kendaraan_ids)) : [];
         $lansirCount = null;
         $cvNama = null;
@@ -534,24 +536,23 @@ class GudangLansirController extends Controller
                 ->whereDate('tanggal_lansir', '<=', $to)
                 ->when($gudangId, fn ($q) => $q->where('gudang_id', $gudangId));
 
-            // Filter tujuan: cek dari penerimas
-            if ($tujuanId) {
+            // Filter tujuan: mendukung multiple ID
+            if (!empty($tujuanIds)) {
                 $query->whereHas(
                     'kendaraans.penerimas',
-                    fn ($q) => $q->where('tujuan_id', $tujuanId)
+                    fn ($q) => $q->whereIn('tujuan_id', $tujuanIds)
                 );
             }
 
             $lansirCount = $query->count();
 
             // Ambil daftar kendaraan untuk filter plat mobil
-            $kendaraanList = GudangLansirKendaraan::whereHas('lansirHeader', function ($q) use ($cvId, $from, $to, $gudangId, $tujuanId) {
+            $kendaraanList = GudangLansirKendaraan::whereHas('lansirHeader', function ($q) use ($cvId, $from, $to, $gudangId, $tujuanIds) {
                 $q->where('cv_id', $cvId)
                     ->whereDate('tanggal_lansir', '>=', $from)
                     ->whereDate('tanggal_lansir', '<=', $to)
                     ->when($gudangId, fn ($q2) => $q2->where('gudang_id', $gudangId))
-                    ->when($tujuanId, fn ($q) => $q->whereHas('kendaraans.penerimas', fn ($q2) => $q2->where('tujuan_id', $tujuanId)));
-
+                    ->when(!empty($tujuanIds), fn ($q2) => $q2->whereHas('kendaraans.penerimas', fn ($q3) => $q3->whereIn('tujuan_id', $tujuanIds)));
             })
                 ->with('lansirHeader')
                 ->orderBy('no_polisi')
@@ -582,7 +583,7 @@ class GudangLansirController extends Controller
             'to',
             'gudangId',
             'supplierId',
-            'tujuanId',
+            'tujuanIds',
             'lansirCount',
             'cvNama',
             'dokumen',
@@ -597,11 +598,12 @@ class GudangLansirController extends Controller
         $request->validate([
             'from' => 'required|date',
             'to' => 'required|date|after_or_equal:from',
-            'tujuan_id' => 'required|integer',
+            'tujuan_ids' => 'required|string',
         ], [
             'from.required' => 'Tanggal awal periode wajib diisi.',
             'to.required' => 'Tanggal akhir periode wajib diisi.',
             'to.after_or_equal' => 'Tanggal akhir harus sama atau setelah tanggal awal.',
+            'tujuan_ids.required' => 'Pilih tujuan terlebih dahulu.',
         ]);
 
         $cvId = $request->cv_id ?? session('active_cv');
@@ -609,7 +611,7 @@ class GudangLansirController extends Controller
         $to = $request->to;
         $gudangId = $request->gudang_id;
         $supplierId = $request->supplier_id;
-        $tujuanId = $request->tujuan_id;
+        $tujuanIds = array_filter(array_map('intval', explode(',', $request->tujuan_ids)));
         $noSuratInput = $request->no_surat;
         $cpi = $request->cpi;
         $kendaraanIds = $request->kendaraan_ids
@@ -624,14 +626,15 @@ class GudangLansirController extends Controller
         $cv = Cv::find($cvId);
         $noSurat = null;
 
-        $tujuan = Tujuan::findOrFail($tujuanId);
+        // Ambil tujuan pertama untuk tipe dokumen
+        $tujuanPrimary = Tujuan::find($tujuanIds[0] ?? null);
         $tujuanTypeMap = [
             'co_farm' => 'CFJ',
             'rent_farm' => 'RFJ',
             'gudang' => 'GJ',
             'direct' => 'DRC',
         ];
-        $tujuanType = $tujuanTypeMap[$tujuan->type] ?? 'DRC';
+        $tujuanType = $tujuanTypeMap[$tujuanPrimary?->type] ?? 'DRC';
 
         if ($noSuratInput && $from && $to && $cv) {
             $dokumen = \DB::transaction(function () use ($cvId, $from, $to, $cv, $request, $noSuratInput, $cpi) {
@@ -647,7 +650,6 @@ class GudangLansirController extends Controller
                         'cpi' => $cpi,
                         'catatan' => $request->catatan,
                     ]);
-
                     return $existing;
                 }
 
@@ -687,10 +689,11 @@ class GudangLansirController extends Controller
             );
         }
 
-        if ($tujuanId) {
+        // Filter tujuan: mendukung multiple ID
+        if (!empty($tujuanIds)) {
             $query->whereHas(
                 'kendaraans.penerimas',
-                fn ($q) => $q->where('tujuan_id', $tujuanId)
+                fn ($q) => $q->whereIn('tujuan_id', $tujuanIds)
             );
         }
 
@@ -701,6 +704,21 @@ class GudangLansirController extends Controller
 
         $headers = $query->orderBy('tanggal_lansir')->get();
 
+        // Filter penerima berdasarkan tujuan jika ada filter
+        if (!empty($tujuanIds)) {
+            foreach ($headers as $header) {
+                foreach ($header->kendaraans as $kendaraan) {
+                    $kendaraan->setRelation('penerimas', $kendaraan->penerimas->filter(
+                        fn ($p) => in_array($p->tujuan_id, $tujuanIds)
+                    )->values());
+                }
+                $header->setRelation('kendaraans', $header->kendaraans->filter(
+                    fn ($k) => $k->penerimas->isNotEmpty()
+                )->values());
+            }
+            $headers = $headers->filter(fn ($h) => $h->kendaraans->isNotEmpty())->values();
+        }
+
         // Jika ada filter kendaraan, filter kendaraan yang ditampilkan
         if (! empty($kendaraanIds)) {
             foreach ($headers as $header) {
@@ -709,9 +727,10 @@ class GudangLansirController extends Controller
                 )->values());
             }
         }
-        $tujuanNama = $cpi ?? Tujuan::find($tujuanId)->nama;
 
-        $pdf = Pdf::loadView(
+        // Nama tujuan untuk dokumen — gabungkan jika multiple
+        $tujuanNamaList = Tujuan::whereIn('id', $tujuanIds)->pluck('nama')->join(' & ');
+        $tujuanNama = $cpi ?? $tujuanNamaList;       $pdf = Pdf::loadView(
             'pdf.gudang-lansir-ptsum',
             compact('headers', 'from', 'to', 'noSurat', 'tujuanNama')
         )

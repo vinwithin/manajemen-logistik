@@ -87,12 +87,21 @@
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label small">Tujuan<span class="text-danger">*</span></label>
-                                        <select name="tujuan_id" id="selectTujuan" class="form-select form-select-sm"
+                                        <select name="tujuan_ids" id="selectTujuan" class="form-select form-select-sm"
                                             required>
                                             <option value="">-- Semua Tujuan --</option>
+                                            {{-- Opsi gabungan --}}
+                                            @php $currentTujuanIds = request('tujuan_ids', isset($tujuanIds) ? implode(',', $tujuanIds) : ''); @endphp
+                                            <option value="6,8" {{ $currentTujuanIds === '6,8' ? 'selected' : '' }}>
+                                                ★ Jambi 1 + Jambi 5
+                                            </option>
+                                            <option value="9,10" {{ $currentTujuanIds === '9,10' ? 'selected' : '' }}>
+                                                ★ 34 Dalam + 34 Luar
+                                            </option>
+                                            <option disabled>──────────────</option>
                                             @foreach ($tujuans as $t)
                                                 <option value="{{ $t->id }}"
-                                                    {{ request('tujuan_id') == $t->id ? 'selected' : '' }}>
+                                                    {{ $currentTujuanIds == $t->id ? 'selected' : '' }}>
                                                     {{ $t->nama }}
                                                 </option>
                                             @endforeach
@@ -164,8 +173,7 @@
                                 <div class="mb-2">
                                     <label class="form-label small">Nomor Surat</label>
                                     <input type="text" name="no_surat" class="form-control form-control-sm"
-                                        value=""
-                                        placeholder="Masukkan nomor surat">
+                                        value="" placeholder="Masukkan nomor surat">
 
                                     <label class="form-label small">Masukkan Tujuan (Dari Pabrik CPI Padang ke
                                         .......)</label>
@@ -279,7 +287,7 @@
                 '&from=' + from + '&to=' + to;
 
             if (supplierId) url += '&supplier_id=' + supplierId;
-            if (tujuanId) url += '&tujuan_id=' + tujuanId;
+            if (tujuanId) url += '&tujuan_ids=' + encodeURIComponent(tujuanId);
             if (kendaraanIds) url += '&kendaraan_ids=' + encodeURIComponent(kendaraanIds);
 
             window.location.href = url;

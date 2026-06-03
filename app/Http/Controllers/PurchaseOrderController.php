@@ -338,7 +338,9 @@ class PurchaseOrderController extends Controller
         $from = $request->from;
         $to = $request->to;
         $supplierId = $request->supplier_id;
-        $tujuanId = $request->tujuan_id;
+        $tujuanIds = $request->tujuan_ids
+            ? array_filter(array_map('intval', explode(',', $request->tujuan_ids)))
+            : [];
         $selectedKendaraanIds = $request->kendaraan_ids ? array_filter(explode(',', $request->kendaraan_ids)) : [];
         $poCount = null;
         $cvNama = null;
@@ -355,8 +357,8 @@ class PurchaseOrderController extends Controller
                 $query->whereHas('kendaraans', fn ($q) => $q->where('supplier_id', $supplierId));
             }
 
-            if ($tujuanId) {
-                $query->whereHas('kendaraans.penerimas', fn ($q) => $q->where('tujuan_id', $tujuanId));
+            if (! empty($tujuanIds)) {
+                $query->whereHas('kendaraans.penerimas', fn ($q) => $q->whereIn('tujuan_id', $tujuanIds));
             }
 
             $poCount = $query->count();
@@ -368,7 +370,7 @@ class PurchaseOrderController extends Controller
                     ->whereDate('tanggal_po', '<=', $to);
             })
                 ->when($supplierId, fn ($q) => $q->where('supplier_id', $supplierId))
-                ->when($tujuanId, fn ($q) => $q->whereHas('penerimas', fn ($q2) => $q2->where('tujuan_id', $tujuanId)))
+                ->when(! empty($tujuanIds), fn ($q) => $q->whereHas('penerimas', fn ($q2) => $q2->whereIn('tujuan_id', $tujuanIds)))
                 ->where('status', '!=', 'batal')
                 ->with('po')
                 ->orderBy('no_polisi')
@@ -396,7 +398,7 @@ class PurchaseOrderController extends Controller
             'from',
             'to',
             'supplierId',
-            'tujuanId',
+            'tujuanIds',
             'poCount',
             'cvNama',
             'dokumen',
@@ -411,19 +413,20 @@ class PurchaseOrderController extends Controller
         $request->validate([
             'from' => 'required|date',
             'to' => 'required|date|after_or_equal:from',
-            'tujuan_id' => 'required|integer',
+            'tujuan_ids' => 'required|string',
         ], [
             'from.required' => 'Tanggal awal periode wajib diisi.',
             'to.required' => 'Tanggal akhir periode wajib diisi.',
             'to.after_or_equal' => 'Tanggal akhir harus sama atau setelah tanggal awal.',
+            'tujuan_ids.required' => 'Pilih tujuan terlebih dahulu.',
         ]);
 
-        // try {
         $cvId = $request->cv_id ?? session('active_cv');
         $from = $request->from;
         $to = $request->to;
         $supplierId = $request->supplier_id;
-        $tujuanId = $request->tujuan_id;
+        // Parse tujuan_ids: bisa "6" (single) atau "6,8" (gabungan)
+        $tujuanIds = array_filter(array_map('intval', explode(',', $request->tujuan_ids)));
         $noSuratInput = $request->no_surat;
         $cpi = $request->cpi;
         $kendaraanIds = $request->kendaraan_ids
@@ -438,19 +441,18 @@ class PurchaseOrderController extends Controller
         $cv = Cv::find($cvId);
         $noSurat = null;
 
-        $tujuan = Tujuan::findOrFail($tujuanId);
+        // Ambil tujuan pertama untuk tipe dokumen
+        $tujuanPrimary = Tujuan::find($tujuanIds[0] ?? null);
         $tujuanTypeMap = [
             'co_farm' => 'CFJ',
             'rent_farm' => 'RFJ',
             'gudang' => 'GJ',
             'direct' => 'DRC',
         ];
-        $tujuanType = $tujuanTypeMap[$tujuan->type] ?? 'DRC';
+        $tujuanType = $tujuanTypeMap[$tujuanPrimary?->type] ?? 'DRC';
 
         if ($noSuratInput && $from && $to && $cv) {
-            // Gunakan database transaction dan locking untuk menghindari race condition
             $dokumen = DB::transaction(function () use ($cvId, $from, $to, $cv, $request, $noSuratInput, $cpi) {
-                // Cek apakah sudah ada dokumen untuk periode ini
                 $existing = PoPeriodeDokumen::where('cv_id', $cvId)
                     ->where('dari', $from)
                     ->where('sampai', $to)
@@ -458,7 +460,6 @@ class PurchaseOrderController extends Controller
                     ->first();
 
                 if ($existing) {
-                    // Update existing dokumen dengan no surat baru
                     $existing->update([
                         'no_surat' => $noSuratInput,
                         'cpi' => $cpi,
@@ -508,9 +509,9 @@ class PurchaseOrderController extends Controller
             $query->whereHas('kendaraans', fn ($q) => $q->where('supplier_id', $supplierId));
         }
 
-        // Filter tujuan
-        if ($tujuanId) {
-            $query->whereHas('kendaraans.penerimas', fn ($q) => $q->where('tujuan_id', $tujuanId));
+        // Filter tujuan (mendukung multiple ID)
+        if (! empty($tujuanIds)) {
+            $query->whereHas('kendaraans.penerimas', fn ($q) => $q->whereIn('tujuan_id', $tujuanIds));
         }
 
         // Filter kendaraan spesifik (plat mobil)
@@ -520,7 +521,24 @@ class PurchaseOrderController extends Controller
 
         $pos = $query->get();
 
-        // Jika ada filter kendaraan, filter penerima per kendaraan yang dipilih saja
+        // Filter penerima berdasarkan tujuan jika ada filter
+        if (! empty($tujuanIds)) {
+            foreach ($pos as $po) {
+                foreach ($po->kendaraans as $kendaraan) {
+                    $kendaraan->setRelation('penerimas', $kendaraan->penerimas->filter(
+                        fn ($p) => in_array($p->tujuan_id, $tujuanIds)
+                    )->values());
+                }
+                // Hapus kendaraan yang tidak punya penerima setelah filter
+                $po->setRelation('kendaraans', $po->kendaraans->filter(
+                    fn ($k) => $k->penerimas->isNotEmpty()
+                )->values());
+            }
+            // Hapus PO yang tidak punya kendaraan setelah filter
+            $pos = $pos->filter(fn ($po) => $po->kendaraans->isNotEmpty())->values();
+        }
+
+        // Jika ada filter kendaraan spesifik, filter kendaraan yang ditampilkan
         if (! empty($kendaraanIds)) {
             foreach ($pos as $po) {
                 $po->setRelation('kendaraans', $po->kendaraans->filter(
@@ -528,7 +546,10 @@ class PurchaseOrderController extends Controller
                 )->values());
             }
         }
-        $tujuanNama = $cpi ?? Tujuan::find($tujuanId)->nama;
+
+        // Nama tujuan untuk dokumen — gabungkan jika multiple
+        $tujuanNamaList = Tujuan::whereIn('id', $tujuanIds)->pluck('nama')->join(' & ');
+        $tujuanNama = $cpi ?? $tujuanNamaList;
 
         $pdf = Pdf::loadView('pdf.purchase-order-period-ptsum', compact('pos', 'from', 'to', 'noSurat', 'tujuanNama'))
             ->setPaper('legal', 'landscape')
