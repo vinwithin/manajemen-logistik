@@ -722,7 +722,7 @@ class GudangLansirController extends Controller
         $cvNama = $headers->first()?->cv?->nama_cv ?? 'CV';
         $filename = 'Lansir-Gudang-PTSum-'.str_replace(' ', '-', $cvNama).'-'.now()->format('Ymd').'.pdf';
 
-        return $pdf->download($filename);
+        return $pdf->stream($filename);
     }
 
     public function exportPdfSupplierConfirm(Request $request)

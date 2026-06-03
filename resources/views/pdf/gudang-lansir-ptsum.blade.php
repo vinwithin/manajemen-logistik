@@ -337,14 +337,14 @@
         $cvPrefix = $cv?->no_dokumen_prefix ?? '';
         $noKwitansi = $noSurat ?? ($cvPrefix ? $cvPrefix . '/' . now()->format('III/Y') : now()->format('Y/m'));
         $logoInisial = strtoupper(substr(preg_replace('/^CV\.?\s*/i', '', $cvNama), 0, 2));
-        
+
         $top = 14;
         $logoWidth = 170;
         $logoHeight = 50;
-        
+
         if ($cv) {
             $namaCvLower = strtolower(trim($cvCode));
-            
+
             if (str_contains($namaCvLower, 'tr')) {
                 $top = 20;
                 $logoWidth = 200;
@@ -366,50 +366,55 @@
     @endphp
 
     {{-- Header dengan Logo --}}
-    <div style="position: relative; margin-bottom: 0px;">
-        @if ($cvLogo && Storage::disk('public')->exists($cvLogo))
-            <div style="position: absolute; left: -25px; top: -45px;">
-                <img src="{{ $cvLogoBase64 }}"
-                    style="width: {{ $logoWidth }}px; height: {{ $logoHeight }}px; object-fit: contain; display: block; margin: 0; padding: 0;"
-                    alt="Logo CV">
-            </div>
-        @endif
-
-        <div style="position: absolute; left: -52px; top: {{ $top }}px;">
-            <!-- <div style="font-weight: bold; font-size: 12px; margin-top: 2px; margin-bottom: 0;">{{ $cvNama }}
-            </div> -->
-            <div style="font-size: 11px; padding-top: 0; margin-top: 0; color:rgb(123, 123, 239); font-style: italic;">
-                {{ $cvAlamat }}</div>
-        </div>
-        <div style="position: absolute; right: -25px; top: -25px; font-size:11px; color:#555; font-weight:bold;">
-            No. {{ $noKwitansi }}
-        </div>
-
-        <div class="doc-title">REKAPITULASI PENGIRIMAN PAKAN</div>
-        <div class="doc-title">PT. SURYA UNGGAS MANDIRI</div>
-        <div class="doc-title">UNIT JAMBI</div>
-        <div class="doc-title">Periode :&nbsp;
-            @if ($from && $to)
-                @php
-                    $periodeFrom = \Illuminate\Support\Carbon::parse($from)->locale('id');
-                    $periodeTo = \Illuminate\Support\Carbon::parse($to)->locale('id');
-                @endphp
-                @if ($periodeFrom->isSameDay($periodeTo))
-                    {{ $periodeFrom->translatedFormat('j F Y') }}
-                @elseif ($periodeFrom->month === $periodeTo->month && $periodeFrom->year === $periodeTo->year)
-                    {{ $periodeFrom->day }} &ndash; {{ $periodeTo->day }} {{ $periodeFrom->translatedFormat('F Y') }}
-                @else
-                    {{ $periodeFrom->translatedFormat('j F Y') }} &ndash; {{ $periodeTo->translatedFormat('j F Y') }}
+    <table style="width: 100%; border-collapse: collapse; margin-bottom: 8px;">
+        <tr>
+            {{-- Kiri: Logo + Alamat --}}
+            <td style="width: 28%; vertical-align: top; padding: 0;">
+                @if ($cvLogo && Storage::disk('public')->exists($cvLogo))
+                    <img src="{{ $cvLogoBase64 }}"
+                        style="width: {{ $logoWidth }}px; height: {{ $logoHeight }}px; object-fit: contain; display: block; margin: 0 0 4px 0;"
+                        alt="Logo CV">
                 @endif
-            @elseif ($from)
-                Dari {{ \Illuminate\Support\Carbon::parse($from)->locale('id')->translatedFormat('j F Y') }}
-            @elseif ($to)
-                Sampai {{ \Illuminate\Support\Carbon::parse($to)->locale('id')->translatedFormat('j F Y') }}
-            @else
-                Semua Periode
-            @endif
-        </div>
-    </div>
+                <div
+                    style="font-size: 12px; color: black; font-style: italic; line-height: 1.4; word-wrap: break-word; text-align:start; width:100%; margin:0;">
+                    {{ $cvAlamat }}
+                </div>
+            </td>
+            {{-- Tengah: Judul --}}
+            <td style="width: 44%; vertical-align: middle; text-align: center; padding: 0;">
+                <div class="doc-title">REKAPITULASI PENGIRIMAN PAKAN</div>
+                <div class="doc-title">PT. SURYA UNGGAS MANDIRI</div>
+                <div class="doc-title">UNIT JAMBI</div>
+                <div class="doc-title">Periode :&nbsp;
+                    @if ($from && $to)
+                        @php
+                            $periodeFrom = \Illuminate\Support\Carbon::parse($from)->locale('id');
+                            $periodeTo = \Illuminate\Support\Carbon::parse($to)->locale('id');
+                        @endphp
+                        @if ($periodeFrom->isSameDay($periodeTo))
+                            {{ $periodeFrom->translatedFormat('j F Y') }}
+                        @elseif ($periodeFrom->month === $periodeTo->month && $periodeFrom->year === $periodeTo->year)
+                            {{ $periodeFrom->day }} &ndash; {{ $periodeTo->day }}
+                            {{ $periodeFrom->translatedFormat('F Y') }}
+                        @else
+                            {{ $periodeFrom->translatedFormat('j F Y') }} &ndash;
+                            {{ $periodeTo->translatedFormat('j F Y') }}
+                        @endif
+                    @elseif ($from)
+                        Dari {{ \Illuminate\Support\Carbon::parse($from)->locale('id')->translatedFormat('j F Y') }}
+                    @elseif ($to)
+                        Sampai {{ \Illuminate\Support\Carbon::parse($to)->locale('id')->translatedFormat('j F Y') }}
+                    @else
+                        Semua Periode
+                    @endif
+                </div>
+            </td>
+            {{-- Kanan: No Surat --}}
+            <td style="width: 28%; vertical-align: top; text-align: center;">
+                <div style="font-size: 10px !important; color: black;">No. {{ $noKwitansi }}</div>
+            </td>
+        </tr>
+    </table>
 
     {{-- Tabel Utama --}}
     <table class="rekap">
@@ -464,17 +469,17 @@
                         @endphp
 
                         <tr class="{{ $rowClass }} isi">
-                                <td class="td-no" style="vertical-align:middle;">
-                                    {{ $no++ }}</td>
-                                <td style="vertical-align:middle;">
-                                    {{ $header->tanggal_lansir->translatedFormat('d F Y') }}</td>
-                                <td class="td-center" style="vertical-align:middle;">
-                                    {{ $kodePakanStr !== '' ? $kodePakanStr : '—' }}</td>
-                                <td style="vertical-align:middle;">
-                                    {{ $penerima->no_surat_jalan ?? '-' }}</td>
-                                <td style="vertical-align:middle;">
-                                    {{ $kendaraan->no_polisi }}</td>
-                         
+                            <td class="td-no" style="vertical-align:middle;">
+                                {{ $no++ }}</td>
+                            <td style="vertical-align:middle;">
+                                {{ $header->tanggal_lansir->translatedFormat('d F Y') }}</td>
+                            <td class="td-center" style="vertical-align:middle;">
+                                {{ $kodePakanStr !== '' ? $kodePakanStr : '—' }}</td>
+                            <td style="vertical-align:middle;">
+                                {{ $penerima->no_surat_jalan ?? '-' }}</td>
+                            <td style="vertical-align:middle;">
+                                {{ $kendaraan->no_polisi }}</td>
+
                             <td class="td-center">{{ Str::upper($penerima->nama_penerima ?? '-') }}</td>
                             <td class="td-center">{{ Str::upper($penerima->tujuan?->nama ?? '-') }}</td>
 
@@ -543,13 +548,13 @@
             <table class="kwit-header-table">
                 <tr>
                     <td
-                        style="padding:0; margin:0; vertical-align:top; text-align:left; white-space: nowrap; width:100%;">
+                        style="padding:0; margin:0; vertical-align:top; text-align:left; width:70%;">
                         <div class="kwit-company-name" style="margin-top: 2px; margin-left:0;">{{ $cvNama }}
                         </div>
                         <div class="kwit-company-sub" style="margin-left: 0;">{{ $cvAlamat }}</div>
                     </td>
                     <td
-                        style="text-align:right; font-size:8px; color:#555; vertical-align:top; white-space: nowrap; font-weight:bold;">
+                        style="text-align:right; font-size:8px; color:#555; vertical-align:top; white-space: nowrap; font-weight:bold; width:30%;">
                         No :&nbsp;&nbsp; {{ $noKwitansi }}
                     </td>
                 </tr>
