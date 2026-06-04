@@ -510,7 +510,13 @@
                                 </td>
 
                                 {{-- Nama Penerima --}}
-                                <td class="td-center">{{ Str::upper($penerima->tujuan?->nama ?? '-') }}</td>
+                                <td class="td-center">
+                                    @if ($penerima->tujuan?->type == 'direct')
+                                        {{ Str::upper($penerima->nama_penerima ?? '-') }}
+                                    @else
+                                        {{ Str::upper($penerima->tujuan?->nama ?? '-') }}
+                                    @endif
+                                </td>
 
 
                                 {{-- Jumlah Kg --}}

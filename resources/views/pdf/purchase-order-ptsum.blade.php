@@ -471,7 +471,13 @@
 
                             </td>
                            
-                            <td class="td-center">{{ Str::upper($penerima->nama_penerima ?? '-') }}</td>
+                            <td class="td-center">
+                                @if ($penerima->tujuan?->type == 'direct')
+                                    {{ Str::upper($penerima->nama_penerima ?? '-') }}
+                                @else
+                                    {{ Str::upper($penerima->tujuan?->nama ?? '-') }}
+                                @endif
+                            </td>
                             <td class="td-kg-val">
                                 {{ $totalKgPakan > 0 ? number_format($totalKgPakan, 0, ',', '.') : '' }}
                             </td>
