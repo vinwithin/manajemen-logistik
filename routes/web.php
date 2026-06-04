@@ -162,6 +162,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/penerima/{id}/update-status', [TransferPakanController::class, 'penerimaUpdateStatus'])->name('penerima.update-status');
         Route::get('/{id}/edit', [TransferPakanController::class, 'edit'])->name('edit');
         Route::put('/{id}', [TransferPakanController::class, 'update'])->name('update');
+        Route::delete('/{id}', [TransferPakanController::class, 'destroy'])->name('destroy');
         Route::get('/{id}', [TransferPakanController::class, 'show'])->name('show');
     });
 

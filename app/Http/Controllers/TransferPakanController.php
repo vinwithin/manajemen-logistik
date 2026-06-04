@@ -699,4 +699,16 @@ class TransferPakanController extends Controller
                 ->withInput();
         }
     }
+
+    public function destroy(string $id)
+    {
+        try {
+            $header = TransferPakanHeader::findOrFail(decrypt($id));
+            $header->delete();
+
+            return redirect()->route('transfer-pakan.index')->with('success', 'Transfer pakan berhasil dihapus.');
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', 'Gagal menghapus transfer pakan: '.$e->getMessage());
+        }
+    }
 }

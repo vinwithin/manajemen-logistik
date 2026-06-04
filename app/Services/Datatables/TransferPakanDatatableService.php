@@ -64,6 +64,7 @@ class TransferPakanDatatableService
             ->addColumn('action', function ($q) {
                 $showUrl = route('transfer-pakan.show', encrypt($q->id));
                 $editUrl = route('transfer-pakan.edit', encrypt($q->id));
+                $deleteUrl = route('transfer-pakan.destroy', encrypt($q->id));
 
                 return "
                     <a href='{$showUrl}' class='btn btn-xs btn-info text-white'>
@@ -72,6 +73,13 @@ class TransferPakanDatatableService
                     <a href='{$editUrl}' class='btn btn-xs btn-warning text-white'>
                         <i class='fa fa-edit'></i> Edit
                     </a>
+                    <form action='{$deleteUrl}' method='POST' style='display: inline;' onsubmit='return confirm(\"Apakah Anda yakin ingin menghapus transfer pakan ini?\")'>
+                        " . csrf_field() . "
+                        " . method_field('DELETE') . "
+                        <button type='submit' class='btn btn-xs btn-danger text-white'>
+                            <i class='fa fa-trash'></i> Hapus
+                        </button>
+                    </form>
                 ";
             })
             ->addIndexColumn()

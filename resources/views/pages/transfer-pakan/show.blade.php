@@ -23,8 +23,18 @@
                     @endif
                 </div>
                 <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <a href="{{ route('transfer-pakan.edit', encrypt($header->id)) }}" class="btn btn-sm btn-warning">
+                        <i class="fa fa-edit"></i> Edit
+                    </a>
+                    <form action="{{ route('transfer-pakan.destroy', encrypt($header->id)) }}" method="POST" style="display: inline;" onsubmit="return confirm('Apakah Anda yakin ingin menghapus transfer pakan ini?')">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn btn-sm btn-danger">
+                            <i class="fa fa-trash"></i> Hapus
+                        </button>
+                    </form>
                     <a href="{{ route('transfer-pakan.export-ptsum-confirm') }}?cv_id={{ $header->cv_id }}"
-                        class="btn btn-sm btn-warning">
+                        class="btn btn-sm btn-primary">
                         <i class="fa fa-file-pdf-o"></i> PDF PT Sum
                     </a>
                     <a href="{{ route('transfer-pakan.index') }}" class="btn btn-sm btn-secondary">
