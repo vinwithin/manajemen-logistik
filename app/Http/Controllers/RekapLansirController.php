@@ -7,6 +7,7 @@ use App\Models\GudangLansirHeader;
 use App\Models\LansirPayment;
 use App\Models\PoPenerimaLansir;
 use App\Models\PurchaseOrder;
+use App\Models\TransferPakanHeader;
 use App\Services\Datatables\RekapLansirDatatableService;
 use App\Services\RekapLansirService;
 use App\Traits\WithUserTujuan;
@@ -73,9 +74,29 @@ class RekapLansirController extends Controller
                     ];
                 });
 
+            $transferPakan = TransferPakanHeader::with(['cv', 'kendaraans'])
+                ->withCount('kendaraans')
+                ->when($activeCvId, fn ($q) => $q->where('cv_id', $activeCvId))
+                ->whereHas('kendaraans.penerimas', function ($q) use ($tujuans) {
+                    $q->whereIn('tujuan_id', $tujuans->pluck('id'));
+                })
+                ->get()
+                ->map(function ($item) {
+                    return [
+                        'id' => encrypt('transfer_'.$item->id),
+                        'tipe' => 'Transfer Pakan',
+                        'no_referensi' => $item->no_transfer ?? '-',
+                        'tanggal_lansir' => $item->tanggal_transfer,
+                        'nama_tujuan' => $item->tujuan?->nama ?? '-',
+                        'cv_name' => $item->cv?->nama_cv ?? '-',
+                        'jumlah_kendaraan' => $item->kendaraans_count ?? 0,
+                        'original_id' => $item->id,
+                    ];
+                });
+
             // Gabungkan dan urutkan berdasarkan tanggal
-            $combined = $poLansir->concat($gudangLansir)
-                ->sortByDesc('tanggal_lansir')
+            $combined = $poLansir->concat($gudangLansir)->concat($transferPakan)
+                ->sortByDesc('created_at')
                 ->values();
 
             return $this->datatableService->getDataFromCollection($combined);
@@ -112,6 +133,11 @@ class RekapLansirController extends Controller
                 $gudangLansirId = (int) str_replace('gudang_', '', $decryptedId);
                 $header = GudangLansirHeader::with(['cv', 'kendaraans.penerimas.pakans', 'kendaraans.penerimas.tims'])->findOrFail($gudangLansirId);
                 $tipe = 'gudang';
+            } elseif (str_starts_with($decryptedId, 'transfer_')) {
+                // Transfer Pakan
+                $transferPakanId = (int) str_replace('transfer_', '', $decryptedId);
+                $header = \App\Models\TransferPakanHeader::with(['cv', 'kendaraans.penerimas.pakans', 'kendaraans.penerimas.tims'])->findOrFail($transferPakanId);
+                $tipe = 'transfer';
 
             } else {
                 // Fallback untuk backward compatibility (jika ada ID lama tanpa prefix)
@@ -133,13 +159,21 @@ class RekapLansirController extends Controller
                 ->where('tipe', LansirPayment::TIPE_MOBIL)->first();
             $paymentTim = LansirPayment::where('po_id', $header->id)
                 ->where('tipe', LansirPayment::TIPE_TIM)->first();
-        } else {
+        } elseif ($tipe === 'gudang') {
             // Untuk Gudang Lansir
             [$rekapMobil, $rekapTim, $grandTotalMobil, $grandTotalTim] = $this->prepareGudangLansirData($header);
             
             $paymentMobil = LansirPayment::where('gudang_lansir_header_id', $header->id)
                 ->where('tipe', LansirPayment::TIPE_MOBIL)->first();
             $paymentTim = LansirPayment::where('gudang_lansir_header_id', $header->id)
+                ->where('tipe', LansirPayment::TIPE_TIM)->first();
+        } elseif ($tipe === 'transfer') {
+            // Untuk Transfer Pakan
+            [$rekapMobil, $rekapTim, $grandTotalMobil, $grandTotalTim] = $this->prepareTransferPakanData($header);
+            
+            $paymentMobil = LansirPayment::where('transfer_pakan_header_id', $header->id)
+                ->where('tipe', LansirPayment::TIPE_MOBIL)->first();
+            $paymentTim = LansirPayment::where('transfer_pakan_header_id', $header->id)
                 ->where('tipe', LansirPayment::TIPE_TIM)->first();
         }
 
@@ -198,11 +232,58 @@ class RekapLansirController extends Controller
         return [$rekapMobil, $rekapTim, $grandTotalMobil, $grandTotalTim];
     }
 
+    private function prepareTransferPakanData(\App\Models\TransferPakanHeader $transferPakan): array
+    {
+        $rekapMobil = collect();
+        $rekapTim = collect();
+        $grandTotalMobil = 0;
+        $grandTotalTim = 0;
+
+        foreach ($transferPakan->kendaraans as $kendaraan) {
+            foreach ($kendaraan->penerimas as $penerima) {
+                // Data untuk mobil (gunakan data pakan)
+                $totalOngkos = 0;
+                foreach ($penerima->pakans as $pakan) {
+                    $totalOngkos += $pakan->jumlah_kg * $pakan->ongkos_oa;
+                }
+
+                $rekapMobil->push((object)[
+                    'kendaraan' => $kendaraan,
+                    'penerima' => $penerima,
+                    'pakans' => $penerima->pakans,
+                    'total_ongkos' => $totalOngkos,
+                    'tanggal_lansir' => $transferPakan->tanggal_transfer,
+                ]);
+
+                $grandTotalMobil += $totalOngkos;
+
+                // Data untuk tim
+                $totalUpah = 0;
+                foreach ($penerima->tims as $tim) {
+                    $totalUpah += $tim->total_upah;
+                }
+
+                $rekapTim->push((object)[
+                    'kendaraan' => $kendaraan,
+                    'penerima' => $penerima,
+                    'tims' => $penerima->tims,
+                    'total_berat' => $penerima->total_kg,
+                    'total_upah' => $totalUpah,
+                    'tanggal_lansir' => $transferPakan->tanggal_transfer,
+                ]);
+
+                $grandTotalTim += $totalUpah;
+            }
+        }
+
+        return [$rekapMobil, $rekapTim, $grandTotalMobil, $grandTotalTim];
+    }
+
     public function bayar(Request $request, string $id): RedirectResponse
     {
         $request->validate([
             'tipe' => 'required|in:mobil,tim',
-            'tipe_lansir' => 'required|in:po,gudang',
+            'tipe_lansir' => 'required|in:po,gudang,transfer',
             'tanggal_bayar' => 'required|date',
             'catatan' => 'nullable|string|max:500',
         ]);
@@ -214,8 +295,10 @@ class RekapLansirController extends Controller
             
             if ($tipeLansir === 'po') {
                 $data = PurchaseOrder::findOrFail($decryptedId);
-            } else {
+            } elseif ($tipeLansir === 'gudang') {
                 $data = GudangLansirHeader::findOrFail($decryptedId);
+            } elseif ($tipeLansir === 'transfer') {
+                $data = \App\Models\TransferPakanHeader::findOrFail($decryptedId);
             }
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Data lansir tidak ditemukan.');
@@ -228,9 +311,15 @@ class RekapLansirController extends Controller
                 if ($tipeLansir === 'po') {
                     $attributes['po_id'] = $data->id;
                     $attributes['gudang_lansir_header_id'] = null;
-                } else {
+                    $attributes['transfer_pakan_header_id'] = null;
+                } elseif ($tipeLansir === 'gudang') {
                     $attributes['gudang_lansir_header_id'] = $data->id;
                     $attributes['po_id'] = null;
+                    $attributes['transfer_pakan_header_id'] = null;
+                } elseif ($tipeLansir === 'transfer') {
+                    $attributes['transfer_pakan_header_id'] = $data->id;
+                    $attributes['po_id'] = null;
+                    $attributes['gudang_lansir_header_id'] = null;
                 }
                 
                 LansirPayment::updateOrCreate(

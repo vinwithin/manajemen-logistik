@@ -9,7 +9,7 @@ class LansirPayment extends Model
 {
     protected $table = 'lansir_payments';
 
-    protected $fillable = ['po_id', 'gudang_lansir_header_id', 'tipe', 'status', 'tanggal_bayar', 'catatan', 'dibayar_oleh'];
+    protected $fillable = ['po_id', 'gudang_lansir_header_id', 'transfer_pakan_header_id', 'tipe', 'status', 'tanggal_bayar', 'catatan', 'dibayar_oleh'];
 
     protected $casts = ['tanggal_bayar' => 'date'];
 
@@ -29,6 +29,11 @@ class LansirPayment extends Model
     public function gudangLansirHeader(): BelongsTo
     {
         return $this->belongsTo(GudangLansirHeader::class, 'gudang_lansir_header_id');
+    }
+
+    public function transferPakanHeader(): BelongsTo
+    {
+        return $this->belongsTo(TransferPakanHeader::class, 'transfer_pakan_header_id');
     }
 
     public function isSudahBayar(): bool

@@ -1,13 +1,13 @@
 <?php
 
-use App\Http\Controllers\LaporanPembayaranController;
-use App\Http\Controllers\LaporanPoController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GpsAssignmentController;
-use App\Http\Controllers\IdtrackController;
 use App\Http\Controllers\GudangLansirController;
 use App\Http\Controllers\GudangStokController;
+use App\Http\Controllers\IdtrackController;
 use App\Http\Controllers\LansirController;
+use App\Http\Controllers\LaporanPembayaranController;
+use App\Http\Controllers\LaporanPoController;
 use App\Http\Controllers\Master\CvController;
 use App\Http\Controllers\Master\KodePakanController;
 use App\Http\Controllers\Master\PenerimaController;
@@ -22,6 +22,7 @@ use App\Http\Controllers\RekapOaController;
 use App\Http\Controllers\RekapPoController;
 use App\Http\Controllers\RekapRugiLabaController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\TransferPakanController;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Route;
 
@@ -73,7 +74,7 @@ Route::middleware('auth')->group(function () {
 
     Route::resource('/purchase-order', PurchaseOrderController::class)->middleware(['can:po.view']);
     Route::post('/purchase-order/penerima/{penerimaId}/status', [PurchaseOrderController::class, 'penerimaUpdateStatus'])->name('po-penerima.update-status')->middleware('can:po.edit');
-Route::post('/purchase-order/penerima/{penerimaId}/update-tanggal-tiba', [PurchaseOrderController::class, 'penerimaUpdateTanggalTiba'])->name('po-penerima.update-tanggal-tiba')->middleware('can:po.edit');
+    Route::post('/purchase-order/penerima/{penerimaId}/update-tanggal-tiba', [PurchaseOrderController::class, 'penerimaUpdateTanggalTiba'])->name('po-penerima.update-tanggal-tiba')->middleware('can:po.edit');
     Route::post('/purchase-order/kendaraan/{kendaraanId}/status', [PurchaseOrderController::class, 'kendaraanUpdateStatus'])->name('po-kendaraan.update-status')->middleware('can:po.edit');
     Route::get('/purchase-order/penerima/{penerimaId}/lansir', [PurchaseOrderController::class, 'penerimaLansirPage'])->name('po-penerima.lansir-page')->middleware('can:lansir.create');
     Route::post('/purchase-order/penerima/{penerimaId}/lansir', [PurchaseOrderController::class, 'penerimaStoreLansir'])->name('po-penerima.lansir-store')->middleware('can:lansir.create');
@@ -150,33 +151,48 @@ Route::post('/purchase-order/penerima/{penerimaId}/update-tanggal-tiba', [Purcha
         Route::get('/rekap-po/export', [RekapPoController::class, 'export'])->name('export')->middleware('can:report.po.export');
     });
 
+    // Transfer Pakan
+    Route::prefix('transfer-pakan')->name('transfer-pakan.')->group(function () {
+        Route::get('/', [TransferPakanController::class, 'index'])->name('index');
+        Route::get('/create', [TransferPakanController::class, 'create'])->name('create');
+        Route::post('/', [TransferPakanController::class, 'store'])->name('store');
+        Route::get('/export-pdf-ptsum-confirm', [TransferPakanController::class, 'exportPdfPtSumConfirm'])->name('export-ptsum-confirm');
+        Route::get('/export-pdf-ptsum', [TransferPakanController::class, 'exportPdfPtSum'])->name('export-ptsum');
+        Route::get('/export-rekap', [TransferPakanController::class, 'exportRekap'])->name('export-rekap');
+        Route::post('/penerima/{id}/update-status', [TransferPakanController::class, 'penerimaUpdateStatus'])->name('penerima.update-status');
+        Route::get('/{id}/edit', [TransferPakanController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [TransferPakanController::class, 'update'])->name('update');
+        Route::get('/{id}', [TransferPakanController::class, 'show'])->name('show');
+    });
+
     // Rekap Lansir
     Route::prefix('keuangan/rekap-lansir')->name('rekap-lansir.')->group(function () {
-        Route::get('/',            [RekapLansirController::class, 'index'])->name('index')->middleware('can:rekap-lansir.view');
-        Route::get('/{id}',        [RekapLansirController::class, 'show'])->name('show')->middleware('can:rekap-lansir.view');
+        Route::get('/', [RekapLansirController::class, 'index'])->name('index')->middleware('can:rekap-lansir.view');
+        Route::get('/{id}', [RekapLansirController::class, 'show'])->name('show')->middleware('can:rekap-lansir.view');
         Route::post('/{id}/bayar', [RekapLansirController::class, 'bayar'])->name('bayar')->middleware('can:rekap-lansir.bayar');
         Route::get('/{id}/export', [RekapLansirController::class, 'export'])->name('export')->middleware('can:report.payment.export');
     });
 
     // Idtrack API helpers
     Route::prefix('idtrack')->name('idtrack.')->group(function () {
-        Route::get('/markers',                          [IdtrackController::class, 'markers'])->name('markers')->middleware('can:gps.view');
-        Route::post('/kendaraan/{id}/set-spj',          [IdtrackController::class, 'setSPJForKendaraan'])->name('set-spj')->middleware('can:gps.manage');
+        Route::get('/markers', [IdtrackController::class, 'markers'])->name('markers')->middleware('can:gps.view');
+        Route::post('/kendaraan/{id}/set-spj', [IdtrackController::class, 'setSPJForKendaraan'])->name('set-spj')->middleware('can:gps.manage');
     });
 
     // GPS Assignment (Idtrack)
-    Route::prefix('gps')->name('gps.')->group(function () {        Route::get('/',                                           [GpsAssignmentController::class, 'trackingMap'])->name('map')->middleware('can:gps.view');
-        Route::get('/devices',                                    [GpsAssignmentController::class, 'devices'])->name('devices')->middleware('can:gps.view');
-        Route::get('/all-positions',                              [GpsAssignmentController::class, 'allPositions'])->name('all-positions')->middleware('can:gps.view');
-        Route::get('/position-by-nopol',                          [GpsAssignmentController::class, 'positionByNopol'])->name('position-by-nopol')->middleware('can:gps.view');
-        Route::get('/check-geofence',                             [GpsAssignmentController::class, 'checkGeofence'])->name('check-geofence')->middleware('can:gps.view');
-        Route::post('/kendaraan/{id}/assign',                     [GpsAssignmentController::class, 'assignKendaraan'])->name('kendaraan.assign')->middleware('can:gps.manage');
-        Route::delete('/kendaraan/{id}/unassign',                 [GpsAssignmentController::class, 'unassignKendaraan'])->name('kendaraan.unassign')->middleware('can:gps.manage');
-        Route::get('/kendaraan/{id}/position',                    [GpsAssignmentController::class, 'positionKendaraan'])->name('kendaraan.position')->middleware('can:gps.view');
-        Route::get('/kendaraan/{id}/history',                     [GpsAssignmentController::class, 'historyKendaraan'])->name('kendaraan.history')->middleware('can:gps.view');
-        Route::post('/lansir-mobil/{id}/assign',                  [GpsAssignmentController::class, 'assignLansirMobil'])->name('lansir-mobil.assign')->middleware('can:gps.manage');
-        Route::delete('/lansir-mobil/{id}/unassign',              [GpsAssignmentController::class, 'unassignLansirMobil'])->name('lansir-mobil.unassign')->middleware('can:gps.manage');
-        Route::get('/lansir-mobil/{id}/position',                 [GpsAssignmentController::class, 'positionLansirMobil'])->name('lansir-mobil.position')->middleware('can:gps.view');
+    Route::prefix('gps')->name('gps.')->group(function () {
+        Route::get('/', [GpsAssignmentController::class, 'trackingMap'])->name('map')->middleware('can:gps.view');
+        Route::get('/devices', [GpsAssignmentController::class, 'devices'])->name('devices')->middleware('can:gps.view');
+        Route::get('/all-positions', [GpsAssignmentController::class, 'allPositions'])->name('all-positions')->middleware('can:gps.view');
+        Route::get('/position-by-nopol', [GpsAssignmentController::class, 'positionByNopol'])->name('position-by-nopol')->middleware('can:gps.view');
+        Route::get('/check-geofence', [GpsAssignmentController::class, 'checkGeofence'])->name('check-geofence')->middleware('can:gps.view');
+        Route::post('/kendaraan/{id}/assign', [GpsAssignmentController::class, 'assignKendaraan'])->name('kendaraan.assign')->middleware('can:gps.manage');
+        Route::delete('/kendaraan/{id}/unassign', [GpsAssignmentController::class, 'unassignKendaraan'])->name('kendaraan.unassign')->middleware('can:gps.manage');
+        Route::get('/kendaraan/{id}/position', [GpsAssignmentController::class, 'positionKendaraan'])->name('kendaraan.position')->middleware('can:gps.view');
+        Route::get('/kendaraan/{id}/history', [GpsAssignmentController::class, 'historyKendaraan'])->name('kendaraan.history')->middleware('can:gps.view');
+        Route::post('/lansir-mobil/{id}/assign', [GpsAssignmentController::class, 'assignLansirMobil'])->name('lansir-mobil.assign')->middleware('can:gps.manage');
+        Route::delete('/lansir-mobil/{id}/unassign', [GpsAssignmentController::class, 'unassignLansirMobil'])->name('lansir-mobil.unassign')->middleware('can:gps.manage');
+        Route::get('/lansir-mobil/{id}/position', [GpsAssignmentController::class, 'positionLansirMobil'])->name('lansir-mobil.position')->middleware('can:gps.view');
     });
 
     require __DIR__.'/datatables.php';

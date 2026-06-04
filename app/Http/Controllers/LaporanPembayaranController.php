@@ -8,6 +8,7 @@ use App\Models\OaPayment;
 use App\Models\PoKendaraan;
 use App\Models\PoPenerima;
 use App\Models\PurchaseOrder;
+use App\Models\TransferPakanHeader;
 use App\Services\RekapLansirService;
 use App\Traits\WithUserTujuan;
 use Illuminate\Http\Request;
@@ -181,7 +182,40 @@ class LaporanPembayaranController extends Controller
             )
         );
 
-        // ── 4. Grafik: total tagihan per bulan (OA PO + Lansir Gudang) ─
+        // ── 4. Transfer Pakan (informatif) ─────────────────────────────
+        $transferQuery = TransferPakanHeader::with([
+            'cv',
+            'kendaraans.penerimas.pakans',
+            'kendaraans.penerimas.tims',
+        ])
+            ->whereHas('kendaraans.penerimas', function ($q) use ($tujuans) {
+                $q->whereIn('tujuan_id', $tujuans->pluck('id'));
+            })
+            ->whereDate('tanggal_transfer', '>=', $dari)
+            ->whereDate('tanggal_transfer', '<=', $sampai);
+
+        if ($cvId) {
+            $transferQuery->where('cv_id', $cvId);
+        }
+
+        $transferHeaders = $transferQuery->get();
+
+        $transferTotalOa = $transferHeaders->sum(
+            fn($h) => $h->kendaraans->sum(
+                fn($k) => $k->penerimas->sum(
+                    fn($p) => $p->pakans->sum(fn($pk) => $pk->jumlah_kg * ($pk->ongkos_oa ?? 0))
+                )
+            )
+        );
+        $transferTotalAngkut = $transferHeaders->sum(
+            fn($h) => $h->kendaraans->sum(
+                fn($k) => $k->penerimas->sum(
+                    fn($p) => $p->tims->sum('total_upah')
+                )
+            )
+        );
+
+        // ── 5. Grafik: total tagihan per bulan (OA PO + Lansir Gudang + Transfer Pakan) ─
         $tahun = $request->tahun ?? now()->year;
 
         $chartOaPerBulan = DB::table('po_penerima_pakan as pk')
@@ -197,25 +231,74 @@ class LaporanPembayaranController extends Controller
             ->groupBy('bulan')
             ->pluck('total', 'bulan');
 
-        $chartGudangPerBulan = DB::table('gudang_lansir_header as h')
+        // Hitung total OA dan total angkut secara terpisah untuk menghindari Cartesian product
+        $chartGudangOaPerBulan = DB::table('gudang_lansir_header as h')
             ->join('gudang_lansir_kendaraan as k', 'k.lansir_header_id', '=', 'h.id')
             ->join('gudang_lansir_penerima as p', 'p.kendaraan_id', '=', 'k.id')
-            ->join('gudang_lansir_pakan as pk', 'pk.penerima_id', '=', 'p.id')
-            ->join('gudang_lansir_tim as tim', 'tim.penerima_id', '=', 'p.id')
-            ->selectRaw('MONTH(h.tanggal_lansir) as bulan, SUM(pk.jumlah_kg * pk.ongkos_oa + tim.jumlah_kg * tim.upah_per_kg) as total')
+            ->leftJoin('gudang_lansir_pakan as pk', 'pk.penerima_id', '=', 'p.id')
+            ->selectRaw('MONTH(h.tanggal_lansir) as bulan, SUM(COALESCE(pk.jumlah_kg, 0) * COALESCE(pk.ongkos_oa, 0)) as total')
             ->whereYear('h.tanggal_lansir', $tahun)
-            ->whereIn('p.tujuan_id', $tujuanIds) // Filter tujuan
+            ->whereIn('p.tujuan_id', $tujuanIds)
             ->when($cvId, fn($q) => $q->where('h.cv_id', $cvId))
             ->groupBy('bulan')
             ->pluck('total', 'bulan');
+
+        $chartGudangAngkutPerBulan = DB::table('gudang_lansir_header as h')
+            ->join('gudang_lansir_kendaraan as k', 'k.lansir_header_id', '=', 'h.id')
+            ->join('gudang_lansir_penerima as p', 'p.kendaraan_id', '=', 'k.id')
+            ->leftJoin('gudang_lansir_tim as tim', 'tim.penerima_id', '=', 'p.id')
+            ->selectRaw('MONTH(h.tanggal_lansir) as bulan, SUM(COALESCE(tim.jumlah_kg, 0) * COALESCE(tim.upah_per_kg, 0)) as total')
+            ->whereYear('h.tanggal_lansir', $tahun)
+            ->whereIn('p.tujuan_id', $tujuanIds)
+            ->when($cvId, fn($q) => $q->where('h.cv_id', $cvId))
+            ->groupBy('bulan')
+            ->pluck('total', 'bulan');
+
+        // Gabungkan kedua total
+        $chartGudangPerBulan = [];
+        for ($m = 1; $m <= 12; $m++) {
+            $chartGudangPerBulan[$m] = ($chartGudangOaPerBulan[$m] ?? 0) + ($chartGudangAngkutPerBulan[$m] ?? 0);
+        }
+        $chartGudangPerBulan = collect($chartGudangPerBulan);
+
+        // Lakukan hal yang sama untuk Transfer Pakan
+        $chartTransferOaPerBulan = DB::table('transfer_pakan_header as h')
+            ->join('transfer_pakan_kendaraan as k', 'k.header_id', '=', 'h.id')
+            ->join('transfer_pakan_penerima as p', 'p.kendaraan_id', '=', 'k.id')
+            ->leftJoin('transfer_pakan_pakan as pk', 'pk.penerima_id', '=', 'p.id')
+            ->selectRaw('MONTH(h.tanggal_transfer) as bulan, SUM(COALESCE(pk.jumlah_kg, 0) * COALESCE(pk.ongkos_oa, 0)) as total')
+            ->whereYear('h.tanggal_transfer', $tahun)
+            ->whereIn('p.tujuan_id', $tujuanIds)
+            ->when($cvId, fn($q) => $q->where('h.cv_id', $cvId))
+            ->groupBy('bulan')
+            ->pluck('total', 'bulan');
+
+        $chartTransferAngkutPerBulan = DB::table('transfer_pakan_header as h')
+            ->join('transfer_pakan_kendaraan as k', 'k.header_id', '=', 'h.id')
+            ->join('transfer_pakan_penerima as p', 'p.kendaraan_id', '=', 'k.id')
+            ->leftJoin('transfer_pakan_tim as tim', 'tim.penerima_id', '=', 'p.id')
+            ->selectRaw('MONTH(h.tanggal_transfer) as bulan, SUM(COALESCE(tim.jumlah_kg, 0) * COALESCE(tim.upah_per_kg, 0)) as total')
+            ->whereYear('h.tanggal_transfer', $tahun)
+            ->whereIn('p.tujuan_id', $tujuanIds)
+            ->when($cvId, fn($q) => $q->where('h.cv_id', $cvId))
+            ->groupBy('bulan')
+            ->pluck('total', 'bulan');
+
+        $chartTransferPerBulan = [];
+        for ($m = 1; $m <= 12; $m++) {
+            $chartTransferPerBulan[$m] = ($chartTransferOaPerBulan[$m] ?? 0) + ($chartTransferAngkutPerBulan[$m] ?? 0);
+        }
+        $chartTransferPerBulan = collect($chartTransferPerBulan);
 
         $namaBulan = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
         $chartLabels = $namaBulan;
         $chartOa = [];
         $chartGudang = [];
+        $chartTransfer = [];
         for ($m = 1; $m <= 12; $m++) {
             $chartOa[] = (float) ($chartOaPerBulan[$m] ?? 0);
             $chartGudang[] = (float) ($chartGudangPerBulan[$m] ?? 0);
+            $chartTransfer[] = (float) ($chartTransferPerBulan[$m] ?? 0);
         }
 
         // ── Dropdown filter ───────────────────────────────────────────
@@ -243,10 +326,15 @@ class LaporanPembayaranController extends Controller
             'gudangTotalOa',
             'gudangTotalAngkut',
             'gudangHeaders',
+            // Summary Transfer Pakan
+            'transferTotalOa',
+            'transferTotalAngkut',
+            'transferHeaders',
             // Grafik
             'chartLabels',
             'chartOa',
             'chartGudang',
+            'chartTransfer',
             // Filter
             'cvList',
             'tahunList'

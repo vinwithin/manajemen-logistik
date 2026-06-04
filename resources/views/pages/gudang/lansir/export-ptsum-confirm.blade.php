@@ -181,20 +181,7 @@
                                     <input type="text" name="cpi" class="form-control form-control-sm"
                                         value="{{ $dokumen?->cpi }}" placeholder="Masukkan tujuan">
 
-                                    <div class="text-muted small mt-1">
-                                        @if ($dokumen)
-                                            <span class="text-success ms-1">
-                                                <i class="fa fa-check-circle"></i>
-                                                Tersimpan: <strong>{{ $dokumen->no_surat }}</strong> (urutan
-                                                #{{ $dokumen->urutan }})
-                                            </span>
-                                        @elseif ($noSuratSuggest && $cvId && $from && $to)
-                                            <span class="text-info ms-1">
-                                                <i class="fa fa-info-circle"></i>
-                                                Nomor berikutnya: <strong>{{ $noSuratSuggest }}</strong>
-                                            </span>
-                                        @endif
-                                    </div>
+                                   
                                 </div>
                                 <div class="mb-2">
                                     <label class="form-label small">Catatan (opsional)</label>

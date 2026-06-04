@@ -89,6 +89,10 @@ class permissionSeeder extends Seeder
             ['name' => 'gudang-stok.view',      'menu_id' => 60],
             ['name' => 'gudang-stok.lansir',    'menu_id' => 61],
 
+            // Transfer Pakan
+            ['name' => 'transfer-pakan.view',   'menu_id' => 90],
+            ['name' => 'transfer-pakan.create', 'menu_id' => 91],
+
             ['name' => 'gps.view',      'menu_id' => 70],
             ['name' => 'gps.manage',    'menu_id' => 70],
         ];
@@ -136,6 +140,8 @@ class permissionSeeder extends Seeder
             'report.payment.export',
             'gudang-stok.view',
             'gudang-stok.lansir',
+            'transfer-pakan.view',
+            'transfer-pakan.create',
             'gps.view',
             'gps.manage',
         ]);

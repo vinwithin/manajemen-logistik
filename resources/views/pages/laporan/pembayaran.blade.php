@@ -57,7 +57,7 @@
     <div class="row g-3 mb-4">
 
         {{-- OA Payment --}}
-        <div class="col-12 col-md-4">
+        <div class="col-12 col-md-3">
             <div class="card h-100 border-0 shadow-sm">
                 <div class="card-header bg-primary bg-opacity-10 p-3">
                     <h6 class="mb-0 fw-bold text-primary small">
@@ -96,7 +96,7 @@
         </div>
 
         {{-- Lansir PO --}}
-        <div class="col-12 col-md-4">
+        <div class="col-12 col-md-3">
             <div class="card h-100 border-0 shadow-sm">
                 <div class="card-header bg-info bg-opacity-10 p-3">
                     <h6 class="mb-0 fw-bold text-info small">
@@ -122,7 +122,7 @@
         </div>
 
         {{-- Lansir Gudang --}}
-        <div class="col-12 col-md-4">
+        <div class="col-12 col-md-3">
             <div class="card h-100 border-0 shadow-sm">
                 <div class="card-header bg-warning bg-opacity-10 p-3">
                     <h6 class="mb-0 fw-bold text-warning small">
@@ -152,6 +152,43 @@
                 </div>
                 <div class="card-footer bg-transparent py-2 text-end">
                     <a href="{{ route('gudang.lansir.index') }}" class="small text-warning">
+                        Lihat Detail <i class="fa fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        {{-- Transfer Pakan --}}
+        <div class="col-12 col-md-3">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-header bg-success bg-opacity-10 p-3">
+                    <h6 class="mb-0 fw-bold text-success small">
+                        <i class="fa fa-exchange"></i> Transfer Pakan
+                        <span class="badge bg-secondary fw-normal ms-1" style="font-size:9px;">Informatif</span>
+                    </h6>
+                </div>
+                <div class="card-body p-2">
+                    <div class="row g-2 text-center">
+                        <div class="col-6">
+                            <div class="text-muted" style="font-size:11px;">Ongkos OA</div>
+                            <div class="fw-bold text-success">Rp {{ number_format($transferTotalOa, 0, ',', '.') }}</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-muted" style="font-size:11px;">Upah Angkut</div>
+                            <div class="fw-bold" style="color:#15803d;">Rp
+                                {{ number_format($transferTotalAngkut, 0, ',', '.') }}</div>
+                        </div>
+                        <div class="col-12">
+                            <div class="text-muted" style="font-size:11px;">Total Keseluruhan</div>
+                            <div class="fw-bold fs-5 text-dark">Rp
+                                {{ number_format($transferTotalOa + $transferTotalAngkut, 0, ',', '.') }}</div>
+                            <div class="text-muted" style="font-size:11px;">dari {{ $transferHeaders->count() }} transfer
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent py-2 text-end">
+                    <a href="{{ route('transfer-pakan.index') }}" class="small text-success">
                         Lihat Detail <i class="fa fa-arrow-right"></i>
                     </a>
                 </div>
@@ -189,6 +226,13 @@
                         data: @json($chartGudang),
                         backgroundColor: 'rgba(234, 88, 12, 0.7)',
                         borderColor: 'rgba(234, 88, 12, 1)',
+                        borderWidth: 1,
+                    },
+                    {
+                        label: 'Ongkos Transfer Pakan',
+                        data: @json($chartTransfer),
+                        backgroundColor: 'rgba(34, 197, 94, 0.7)',
+                        borderColor: 'rgba(34, 197, 94, 1)',
                         borderWidth: 1,
                     }
                 ]

@@ -6,6 +6,7 @@ use App\Models\Cv;
 use App\Models\PurchaseOrder;
 use App\Models\Supplier;
 use App\Models\GudangLansirHeader;
+use App\Models\TransferPakanHeader;
 use App\Traits\WithUserTujuan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -153,12 +154,66 @@ class LaporanPoController extends Controller
             )
         );
 
+        // Data Transfer Pakan
+        $transferQuery = TransferPakanHeader::with(['kendaraans.penerimas.pakans'])
+            ->whereHas('kendaraans.penerimas', function ($q) use ($tujuanIds) {
+                $q->whereIn('tujuan_id', $tujuanIds);
+            })
+            ->whereBetween('tanggal_transfer', [$dari, $sampai]);
+
+        if ($cvId) {
+            $transferQuery->where('cv_id', $cvId);
+        }
+
+        $transferPakans = $transferQuery->get();
+
+        $totalPoTransfer       = $transferPakans->count();
+        $totalKendaraanTransfer = $transferPakans->sum(
+            fn($tp) =>
+            $tp->kendaraans->filter(
+                fn($k) =>
+                $k->penerimas->contains(
+                    fn($p) =>
+                    $tujuanIds->contains($p->tujuan_id)
+                )
+            )->count()
+        );
+
+        $totalVolumeTransfer   = $transferPakans->sum(
+            fn($tp) =>
+            $tp->kendaraans->sum(
+                fn($k) =>
+                $k->penerimas
+                    ->filter(fn($p) => $tujuanIds->contains($p->tujuan_id))
+                    ->sum('total_kg')
+            )
+        );
+        $totalPtSumTransfer = $transferPakans->sum(
+            fn($tp) =>
+            $tp->kendaraans->sum(
+                fn($k) =>
+                $k->penerimas
+                    ->filter(fn($p) => $tujuanIds->contains($p->tujuan_id))
+                    ->sum(fn($p) => $p->pakans->sum(fn($pakan) => $pakan->jumlah_kg * $pakan->harga_pt_sum))
+            )
+        );
+
+        $totalOaTransfer       = $transferPakans->sum(
+            fn($tp) =>
+            $tp->kendaraans->sum(
+                fn($k) =>
+                $k->penerimas
+                    ->filter(fn($p) => $tujuanIds->contains($p->tujuan_id))
+                    ->sum(fn($p) => $p->pakans->sum(fn($pakan) => $pakan->jumlah_kg * $pakan->ongkos_oa))
+            )
+        );
+
         // Jumlahkan semua
-        $totalPo       = $totalPoPo + $totalPoGudang;
-        $totalKendaraan = $totalKendaraanPo + $totalKendaraanGudang;
-        $totalVolume   = $totalVolumePo + $totalVolumeGudang;
-        $totalPtSum    = $totalPtSumPo + $totalPtSumGudang;
-        $totalOa       = $totalOaPo + $totalOaGudang;
+        $totalPo       = $totalPoPo + $totalPoGudang + $totalPoTransfer;
+        $totalKendaraan = $totalKendaraanPo + $totalKendaraanGudang + $totalKendaraanTransfer;
+        $totalVolume   = $totalVolumePo + $totalVolumeGudang + $totalVolumeTransfer;
+        $totalPtSum    = $totalPtSumPo + $totalPtSumGudang + $totalPtSumTransfer;
+        $totalOa       = $totalOaPo + $totalOaGudang + $totalOaTransfer;
 
         // ── Data grafik: volume per bulan dalam tahun yang dipilih ────
         $chartData = PurchaseOrder::select(

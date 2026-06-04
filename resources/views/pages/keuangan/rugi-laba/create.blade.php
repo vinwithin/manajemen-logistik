@@ -10,9 +10,12 @@
             'direct' => 'Direct PIR',
             'co_farm' => 'Co Farm',
             'rent_farm' => 'Rent Farm',
-            'transper_pakan' => 'Transper Pakan',
+            'gudang_ke_peternak' => 'Gudang Ke Peternak',
+            'transfer_pakan' => 'Transfer Pakan',
         ];
     @endphp
+
+
 
     <div class="row">
         <div class="col-12">

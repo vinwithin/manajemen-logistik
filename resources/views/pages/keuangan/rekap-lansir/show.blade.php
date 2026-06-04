@@ -8,6 +8,8 @@
                     Rekap Lansir — 
                     @if($tipe === 'po')
                         {{ $header->no_po }}
+                    @elseif($tipe === 'transfer')
+                        {{ $header->no_transfer }}
                     @else
                         {{ $header->no_lansir }}
                     @endif
@@ -16,6 +18,8 @@
                     {{ $header->cv?->nama_cv ?? '-' }} &nbsp;·&nbsp; 
                     @if($tipe === 'po')
                         {{ $header->tanggal_po->format('d M Y') }}
+                    @elseif($tipe === 'transfer')
+                        {{ $header->tanggal_transfer->format('d M Y') }}
                     @else
                         {{ $header->tanggal_lansir->format('d M Y') }}
                     @endif

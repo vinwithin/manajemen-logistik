@@ -4,8 +4,8 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="fa fa-file-pdf-o text-danger"></i> Export PDF Periode — PT Sum</h5>
-                    <a href="{{ route('purchase-order.index') }}" class="btn btn-sm btn-secondary">
+                    <h5 class="mb-0"><i class="fa fa-file-pdf-o text-warning"></i> Export PDF Transfer Pakan — PT Sum</h5>
+                    <a href="{{ route('transfer-pakan.index') }}" class="btn btn-sm btn-secondary">
                         <i class="fa fa-arrow-left"></i> Kembali
                     </a>
                 </div>
@@ -26,7 +26,7 @@
 
                     @if ($errors->any())
                         <div class="alert alert-danger py-2 small">
-                            <ul class="mb-0 ps-3">
+                            <ul class="mb-0 mt-1 ps-3">
                                 @foreach ($errors->all() as $err)
                                     <li>{{ $err }}</li>
                                 @endforeach
@@ -34,7 +34,7 @@
                         </div>
                     @endif
 
-                    <form method="GET" action="{{ route('purchase-order.export-pdf-ptsum') }}" target="_blank">
+                    <form method="GET" action="{{ route('transfer-pakan.export-ptsum') }}" target="_blank">
 
                         {{-- Filter Periode --}}
                         <div class="card border-0 bg-light mb-4">
@@ -45,7 +45,7 @@
                                         <label class="form-label small">CV <span class="text-danger">*</span></label>
                                         <select name="cv_id" id="selectCv" class="form-select form-select-sm" required>
                                             <option value="">-- Pilih CV --</option>
-                                            @foreach ($userCvs as $cv)
+                                            @foreach (\App\Models\Cv::withOmzet() as $cv)
                                                 <option value="{{ $cv->id }}"
                                                     data-prefix="{{ $cv->no_dokumen_prefix }}"
                                                     {{ (request('cv_id') ?? session('active_cv')) == $cv->id ? 'selected' : '' }}>
@@ -70,33 +70,20 @@
                                     </div>
                                 </div>
 
-                                {{-- Filter Supplier & Tujuan --}}
+                                {{-- Filter Tujuan --}}
                                 <div class="row g-3 mt-2">
-                                    <div class="col-md-6">
-                                        <label class="form-label small">Supplier <span
-                                                class="text-muted">(opsional)</span></label>
-                                        <select name="supplier_id" id="selectSupplier" class="form-select form-select-sm">
-                                            <option value="">-- Semua Supplier --</option>
-                                            @foreach ($suppliers as $s)
-                                                <option value="{{ $s->id }}"
-                                                    {{ request('supplier_id') == $s->id ? 'selected' : '' }}>
-                                                    {{ $s->nama }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label small">Tujuan<span class="text-danger">*</span></label>
+                                    <div class="col-md-12">
+                                        <label class="form-label small">Tujuan <span class="text-danger">*</span></label>
                                         <select name="tujuan_ids" id="selectTujuan" class="form-select form-select-sm"
                                             required>
                                             <option value="">-- Semua Tujuan --</option>
                                             {{-- Opsi gabungan --}}
                                             @php $currentTujuanIds = request('tujuan_ids', isset($tujuanIds) ? implode(',', $tujuanIds) : ''); @endphp
                                             <option value="6,8" {{ $currentTujuanIds === '6,8' ? 'selected' : '' }}>
-                                                ★ Jambi 1 + Jambi 5
+                                                ★ Jambi 1 & Jambi 5
                                             </option>
                                             <option value="9,10" {{ $currentTujuanIds === '9,10' ? 'selected' : '' }}>
-                                                ★ 34 Dalam + 34 Luar
+                                                ★ 34 Dalam & 34 Luar
                                             </option>
                                             <option disabled>──────────────</option>
                                             @foreach ($tujuans as $t)
@@ -143,7 +130,7 @@
                                                                 <label class="form-check-label"
                                                                     for="k_{{ $k->id }}">
                                                                     <strong>{{ $k->no_polisi }}</strong>
-                                                                    <span class="text-muted">· {{ $k->po->no_po }}</span>
+                                                                    <span class="text-muted">· {{ $k->header->no_transfer }}</span>
                                                                 </label>
                                                             </div>
                                                         </div>
@@ -175,27 +162,25 @@
                                     <input type="text" name="no_surat" class="form-control form-control-sm"
                                         value="" placeholder="Masukkan nomor surat">
 
-                                    <label class="form-label small">Masukkan Tujuan (Dari Pabrik CPI Padang ke
-                                        .......)</label>
+                                    <label class="form-label small">Masukkan Tujuan (Dari Gudang ke .......)</label>
                                     <input type="text" name="cpi" class="form-control form-control-sm"
                                         value="{{ $dokumen?->cpi }}" placeholder="Masukkan tujuan">
 
-                        
+                                   
                                 </div>
                                 <div class="mb-2">
                                     <label class="form-label small">Catatan (opsional)</label>
                                     <input type="text" name="catatan" class="form-control form-control-sm"
-                                        value="{{ $dokumen?->catatan }}"
-                                        placeholder="Catatan tambahan untuk dokumen ini">
+                                        value="{{ $dokumen?->catatan }}" placeholder="Catatan tambahan untuk dokumen ini">
                                 </div>
                             </div>
                         </div>
 
                         {{-- Preview info --}}
-                        @if ($poCount !== null)
+                        @if ($transferCount !== null)
                             <div class="alert alert-info py-2 small">
                                 <i class="fa fa-info-circle"></i>
-                                Ditemukan <strong>{{ $poCount }}</strong> PO
+                                Ditemukan <strong>{{ $transferCount }}</strong> transfer pakan
                                 @if ($cvNama)
                                     untuk <strong>{{ $cvNama }}</strong>
                                 @endif
@@ -207,11 +192,11 @@
                         @endif
 
                         <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-danger">
+                            <button type="submit" class="btn btn-warning">
                                 <i class="fa fa-file-pdf-o"></i> Export PDF
                             </button>
                             <button type="button" class="btn btn-outline-secondary" id="btnPreview">
-                                <i class="fa fa-search"></i> Preview Jumlah PO
+                                <i class="fa fa-search"></i> Preview Jumlah
                             </button>
                         </div>
                     </form>
@@ -224,7 +209,7 @@
         // Sync checkbox ke hidden input
         function syncKendaraanIds() {
             var checked = [];
-            document.querySelectorAll('.kendaraan-check:checked').forEach(function(el) {
+            document.querySelectorAll('.kendaraan-check:checked').forEach(function (el) {
                 checked.push(el.value);
             });
             document.getElementById('inputKendaraanIds').value = checked.join(',');
@@ -232,14 +217,14 @@
             if (countEl) countEl.textContent = checked.length;
         }
 
-        document.querySelectorAll('.kendaraan-check').forEach(function(el) {
+        document.querySelectorAll('.kendaraan-check').forEach(function (el) {
             el.addEventListener('change', syncKendaraanIds);
         });
 
         var btnPilihSemua = document.getElementById('btnPilihSemua');
         if (btnPilihSemua) {
-            btnPilihSemua.addEventListener('click', function() {
-                document.querySelectorAll('.kendaraan-check').forEach(function(el) {
+            btnPilihSemua.addEventListener('click', function () {
+                document.querySelectorAll('.kendaraan-check').forEach(function (el) {
                     el.checked = true;
                 });
                 syncKendaraanIds();
@@ -248,20 +233,19 @@
 
         var btnHapusSemua = document.getElementById('btnHapusSemua');
         if (btnHapusSemua) {
-            btnHapusSemua.addEventListener('click', function() {
-                document.querySelectorAll('.kendaraan-check').forEach(function(el) {
+            btnHapusSemua.addEventListener('click', function () {
+                document.querySelectorAll('.kendaraan-check').forEach(function (el) {
                     el.checked = false;
                 });
                 syncKendaraanIds();
             });
         }
 
-        // Preview jumlah PO
-        document.getElementById('btnPreview').addEventListener('click', function() {
+        // Preview jumlah
+        document.getElementById('btnPreview').addEventListener('click', function () {
             var cvId = document.getElementById('selectCv').value;
             var from = document.getElementById('inputFrom').value;
             var to = document.getElementById('inputTo').value;
-            var supplierId = document.getElementById('selectSupplier').value;
             var tujuanId = document.getElementById('selectTujuan').value;
             var kendaraanIds = document.getElementById('inputKendaraanIds')?.value ?? '';
 
@@ -270,10 +254,9 @@
                 return;
             }
 
-            var url = '{{ route('purchase-order.export-ptsum-confirm') }}?cv_id=' + cvId +
+            var url = '{{ route('transfer-pakan.export-ptsum-confirm') }}?cv_id=' + cvId +
                 '&from=' + from + '&to=' + to;
 
-            if (supplierId) url += '&supplier_id=' + supplierId;
             if (tujuanId) url += '&tujuan_ids=' + encodeURIComponent(tujuanId);
             if (kendaraanIds) url += '&kendaraan_ids=' + encodeURIComponent(kendaraanIds);
 

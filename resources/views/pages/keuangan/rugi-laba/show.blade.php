@@ -7,7 +7,8 @@
             'direct' => 'Direct PIR',
             'co_farm' => 'Co Farm',
             'rent_farm' => 'Rent Farm',
-            'transper_pakan' => 'Transper Pakan',
+            'gudang_ke_peternak' => 'Gudang Ke Peternak',
+            'transfer_pakan' => 'Transfer Pakan',
         ];
         $fmt = fn($v) => number_format((float) $v, 0, ',', '.');
     @endphp
