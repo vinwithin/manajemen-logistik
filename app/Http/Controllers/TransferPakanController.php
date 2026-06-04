@@ -85,6 +85,42 @@ class TransferPakanController extends Controller
             'kendaraans.*.penerimas.*.pakans.*.jumlah_kg' => 'required|numeric|min:0.01',
             'kendaraans.*.penerimas.*.pakans.*.ongkos_oa' => 'nullable|numeric|min:0',
             'kendaraans.*.penerimas.*.pakans.*.harga_pt_sum' => 'nullable|numeric|min:0',
+        ], [
+            'no_transfer.required' => 'Nomor transfer wajib diisi.',
+            'no_transfer.unique' => 'Nomor transfer sudah digunakan.',
+            'no_transfer.max' => 'Nomor transfer tidak boleh lebih dari 100 karakter.',
+            'cv_id.required' => 'CV wajib dipilih.',
+            'cv_id.exists' => 'CV yang dipilih tidak valid.',
+            'tanggal_transfer.required' => 'Tanggal transfer wajib diisi.',
+            'tanggal_transfer.date' => 'Format tanggal transfer tidak valid.',
+            'pengirim_id.required' => 'Pengirim wajib dipilih.',
+            'pengirim_id.exists' => 'Pengirim yang dipilih tidak valid.',
+            'nama_pengirim.max' => 'Nama pengirim tidak boleh lebih dari 255 karakter.',
+            'tujuan_id.exists' => 'Tujuan yang dipilih tidak valid.',
+            'kendaraans.required' => 'Data kendaraan wajib diisi.',
+            'kendaraans.array' => 'Format data kendaraan tidak valid.',
+            'kendaraans.min' => 'Minimal harus ada 1 kendaraan.',
+            'kendaraans.*.no_polisi.required' => 'No. polisi kendaraan wajib diisi.',
+            'kendaraans.*.no_polisi.max' => 'No. polisi tidak boleh lebih dari 20 karakter.',
+            'kendaraans.*.nama_sopir.max' => 'Nama sopir tidak boleh lebih dari 255 karakter.',
+            'kendaraans.*.penerimas.required' => 'Data penerima wajib diisi.',
+            'kendaraans.*.penerimas.min' => 'Minimal harus ada 1 penerima per kendaraan.',
+            'kendaraans.*.penerimas.*.nama_penerima.required' => 'Nama penerima wajib diisi.',
+            'kendaraans.*.penerimas.*.nama_penerima.max' => 'Nama penerima tidak boleh lebih dari 255 karakter.',
+            'kendaraans.*.penerimas.*.penerima_id.exists' => 'Penerima yang dipilih tidak valid.',
+            'kendaraans.*.penerimas.*.tujuan_id.exists' => 'Tujuan yang dipilih tidak valid.',
+            'kendaraans.*.penerimas.*.no_surat_jalan.max' => 'No. surat jalan tidak boleh lebih dari 100 karakter.',
+            'kendaraans.*.penerimas.*.pakans.required' => 'Data pakan wajib diisi.',
+            'kendaraans.*.penerimas.*.pakans.min' => 'Minimal harus ada 1 jenis pakan per penerima.',
+            'kendaraans.*.penerimas.*.pakans.*.kode_pakan_id.required' => 'Kode pakan wajib dipilih.',
+            'kendaraans.*.penerimas.*.pakans.*.kode_pakan_id.exists' => 'Kode pakan yang dipilih tidak valid.',
+            'kendaraans.*.penerimas.*.pakans.*.jumlah_kg.required' => 'Jumlah kg wajib diisi.',
+            'kendaraans.*.penerimas.*.pakans.*.jumlah_kg.numeric' => 'Jumlah kg harus berupa angka.',
+            'kendaraans.*.penerimas.*.pakans.*.jumlah_kg.min' => 'Jumlah kg minimal 0.01.',
+            'kendaraans.*.penerimas.*.pakans.*.ongkos_oa.numeric' => 'Ongkos OA harus berupa angka.',
+            'kendaraans.*.penerimas.*.pakans.*.ongkos_oa.min' => 'Ongkos OA tidak boleh kurang dari 0.',
+            'kendaraans.*.penerimas.*.pakans.*.harga_pt_sum.numeric' => 'Harga PT Sum harus berupa angka.',
+            'kendaraans.*.penerimas.*.pakans.*.harga_pt_sum.min' => 'Harga PT Sum tidak boleh kurang dari 0.',
         ]);
 
         // Validasi CV tidak melebihi batas omzet
@@ -426,6 +462,7 @@ class TransferPakanController extends Controller
         // Nama tujuan untuk dokumen
         $tujuanNamaList = Tujuan::whereIn('id', $tujuanIds)->pluck('nama')->join(' & ');
         $tujuanNama = $cpi ?? $tujuanNamaList;
+        // dd($tujuanNama);
 
         $pdf = Pdf::loadView('pdf.transfer-pakan-ptsum', compact('headers', 'from', 'to', 'noSurat', 'tujuanNama', 'cv'))
             ->setPaper('legal', 'landscape')
@@ -437,7 +474,7 @@ class TransferPakanController extends Controller
         $cvNama = $cv?->nama_cv ?? 'CV';
         $filename = 'Transfer-Pakan-PTSum-'.str_replace(' ', '-', $cvNama).'-'.now()->format('Ymd').'.pdf';
 
-        return $pdf->stream($filename);
+        return $pdf->download($filename);
     }
 
     public function edit(string $id)
@@ -504,6 +541,42 @@ class TransferPakanController extends Controller
             'kendaraans.*.penerimas.*.pakans.*.jumlah_kg' => 'required|numeric|min:0.01',
             'kendaraans.*.penerimas.*.pakans.*.ongkos_oa' => 'nullable|numeric|min:0',
             'kendaraans.*.penerimas.*.pakans.*.harga_pt_sum' => 'nullable|numeric|min:0',
+        ], [
+            'no_transfer.required' => 'Nomor transfer wajib diisi.',
+            'no_transfer.unique' => 'Nomor transfer sudah digunakan.',
+            'no_transfer.max' => 'Nomor transfer tidak boleh lebih dari 100 karakter.',
+            'cv_id.required' => 'CV wajib dipilih.',
+            'cv_id.exists' => 'CV yang dipilih tidak valid.',
+            'tanggal_transfer.required' => 'Tanggal transfer wajib diisi.',
+            'tanggal_transfer.date' => 'Format tanggal transfer tidak valid.',
+            'pengirim_id.required' => 'Pengirim wajib dipilih.',
+            'pengirim_id.exists' => 'Pengirim yang dipilih tidak valid.',
+            'nama_pengirim.max' => 'Nama pengirim tidak boleh lebih dari 255 karakter.',
+            'tujuan_id.exists' => 'Tujuan yang dipilih tidak valid.',
+            'kendaraans.required' => 'Data kendaraan wajib diisi.',
+            'kendaraans.array' => 'Format data kendaraan tidak valid.',
+            'kendaraans.min' => 'Minimal harus ada 1 kendaraan.',
+            'kendaraans.*.no_polisi.required' => 'No. polisi kendaraan wajib diisi.',
+            'kendaraans.*.no_polisi.max' => 'No. polisi tidak boleh lebih dari 20 karakter.',
+            'kendaraans.*.nama_sopir.max' => 'Nama sopir tidak boleh lebih dari 255 karakter.',
+            'kendaraans.*.penerimas.required' => 'Data penerima wajib diisi.',
+            'kendaraans.*.penerimas.min' => 'Minimal harus ada 1 penerima per kendaraan.',
+            'kendaraans.*.penerimas.*.nama_penerima.required' => 'Nama penerima wajib diisi.',
+            'kendaraans.*.penerimas.*.nama_penerima.max' => 'Nama penerima tidak boleh lebih dari 255 karakter.',
+            'kendaraans.*.penerimas.*.penerima_id.exists' => 'Penerima yang dipilih tidak valid.',
+            'kendaraans.*.penerimas.*.tujuan_id.exists' => 'Tujuan yang dipilih tidak valid.',
+            'kendaraans.*.penerimas.*.no_surat_jalan.max' => 'No. surat jalan tidak boleh lebih dari 100 karakter.',
+            'kendaraans.*.penerimas.*.pakans.required' => 'Data pakan wajib diisi.',
+            'kendaraans.*.penerimas.*.pakans.min' => 'Minimal harus ada 1 jenis pakan per penerima.',
+            'kendaraans.*.penerimas.*.pakans.*.kode_pakan_id.required' => 'Kode pakan wajib dipilih.',
+            'kendaraans.*.penerimas.*.pakans.*.kode_pakan_id.exists' => 'Kode pakan yang dipilih tidak valid.',
+            'kendaraans.*.penerimas.*.pakans.*.jumlah_kg.required' => 'Jumlah kg wajib diisi.',
+            'kendaraans.*.penerimas.*.pakans.*.jumlah_kg.numeric' => 'Jumlah kg harus berupa angka.',
+            'kendaraans.*.penerimas.*.pakans.*.jumlah_kg.min' => 'Jumlah kg minimal 0.01.',
+            'kendaraans.*.penerimas.*.pakans.*.ongkos_oa.numeric' => 'Ongkos OA harus berupa angka.',
+            'kendaraans.*.penerimas.*.pakans.*.ongkos_oa.min' => 'Ongkos OA tidak boleh kurang dari 0.',
+            'kendaraans.*.penerimas.*.pakans.*.harga_pt_sum.numeric' => 'Harga PT Sum harus berupa angka.',
+            'kendaraans.*.penerimas.*.pakans.*.harga_pt_sum.min' => 'Harga PT Sum tidak boleh kurang dari 0.',
         ]);
 
         // Validasi CV tidak melebihi batas omzet jika berubah

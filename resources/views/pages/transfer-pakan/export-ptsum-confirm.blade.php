@@ -162,7 +162,7 @@
                                     <input type="text" name="no_surat" class="form-control form-control-sm"
                                         value="" placeholder="Masukkan nomor surat">
 
-                                    <label class="form-label small">Masukkan Tujuan (Dari Gudang ke .......)</label>
+                                    <label class="form-label small">Masukkan Tujuan (Dari penerima ke .......)</label>
                                     <input type="text" name="cpi" class="form-control form-control-sm"
                                         value="{{ $dokumen?->cpi }}" placeholder="Masukkan tujuan">
 

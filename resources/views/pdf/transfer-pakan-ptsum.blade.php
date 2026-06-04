@@ -510,7 +510,7 @@
                     <td class="kwit-label">Untuk pembayaran</td>
                     <td class="kwit-colon">:</td>
                     <td class="kwit-value">
-                        Pembayaran Angkutan Transfer Pakan{{ $tujuanNama ? ' — ' . $tujuanNama : '' }}<br>
+                        Pembayaran Angkutan Transfer Pakan dari {{$header->nama_pengirim ?? '-'}} ke {{ $tujuanNama }}<br>
                         Periode :
                         @if ($from && $to)
                             @php
