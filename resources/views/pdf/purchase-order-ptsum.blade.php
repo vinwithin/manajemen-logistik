@@ -472,7 +472,7 @@
                             </td>
                            
                             <td class="td-center">
-                                @if ($penerima->tujuan?->type == 'direct')
+                                @if ($penerima->tujuan?->type == 'direct' || $penerima->tujuan?->type == 'tr_kerinci')
                                     {{ Str::upper($penerima->nama_penerima ?? '-') }}
                                 @else
                                     {{ Str::upper($penerima->tujuan?->nama ?? '-') }}
