@@ -346,11 +346,11 @@
 
         $logoWidth = 170;
         $logoHeight = 50;
-        
+
         if ($cv) {
             $namaCvLower = strtolower(trim($cvCode));
-            
-           if (str_contains($namaCvLower, 'tr')) {
+
+            if (str_contains($namaCvLower, 'tr')) {
                 $top = 20;
                 $logoWidth = 200;
                 $logoHeight = 70;
@@ -358,12 +358,10 @@
                 $top = 0;
                 $logoWidth = 200;
                 $logoHeight = 40;
-            
             } elseif (str_contains($namaCvLower, 'htg')) {
                 $top = 14;
                 $logoWidth = 200;
                 $logoHeight = 70;
-            
             } elseif (str_contains($namaCvLower, 'hnn')) {
                 $top = 14;
                 $logoWidth = 200;
@@ -398,7 +396,7 @@
         <div class="doc-title">UNIT JAMBI</div>
         <div class="doc-title">
             {{ $po->tanggal_po->translatedFormat('d F Y') }}
-           
+
         </div>
     </div>
 
@@ -452,7 +450,7 @@
 
                         <tr class="{{ $rowClass }} isi">
                             <td class="td-no" style="vertical-align:middle;">
-                                {{  $no++ }}
+                                {{ $no++ }}
                             </td>
                             <td style="vertical-align:middle;">
                                 {{ $po->tanggal_po->translatedFormat('d F Y') }}
@@ -464,13 +462,13 @@
                                 {{ $penerima->no_do }}
                             </td>
                             <td style="vertical-align:middle;">
-                                {{  $kendaraan->no_polisi }}
+                                {{ $kendaraan->no_polisi }}
                             </td>
                             <td style="vertical-align:middle;">
                                 {{ $penerima->tiba_at?->translatedFormat('d F Y') ?? '-' }}
 
                             </td>
-                           
+
                             <td class="td-center">
                                 @if ($penerima->tujuan?->type == 'direct' || $penerima->tujuan?->type == 'tr_kerinci')
                                     {{ Str::upper($penerima->nama_penerima ?? '-') }}
@@ -604,7 +602,8 @@
                     </td>
                     <td style="vertical-align: top; text-align: left; width: 50%;  ">
                         <span style="display: block; margin-bottom: 45px; font-size: 12px; margin-top: 0;">
-                            Jambi, {{ $po->tanggal_po->translatedFormat('d F Y') }}
+                           Jambi, {{ now()->translatedFormat('d F Y') }}
+
                         </span>
                         <span class="kwit-sign-line"></span>
                         <div style="font-weight: bold; font-size: 12px; margin-top: 4px;">{{ $cvPimpinan }}</div>
