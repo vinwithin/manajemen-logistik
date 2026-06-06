@@ -2,6 +2,8 @@
 @section('content')
     @php
         $po = $penerima->kendaraan->po;
+        $jenisLansirDefault = old('jenis_lansir', $jenisLansirDefault ?? 'mobil_tim');
+        $isTimBongkarPage = $isTimBongkarPage ?? false;
     @endphp
 
     {{-- Header --}}
@@ -9,7 +11,9 @@
         <div class="card-body py-3">
             <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
                 <div>
-                    <h5 class="mb-1 fw-bold">Lansir — {{ $penerima->nama_penerima }}</h5>
+                    <h5 class="mb-1 fw-bold">
+                        {{ $isTimBongkarPage ? 'Tim Bongkar' : 'Lansir' }} — {{ $penerima->nama_penerima }}
+                    </h5>
                     <div class="text-muted small">
                         PO: <strong>{{ $po->no_po }}</strong>
                         &nbsp;·&nbsp; Kendaraan: <strong>{{ $penerima->kendaraan->no_polisi }}</strong>
@@ -233,39 +237,26 @@
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">No. Surat Jalan</label>
-                            <input type="text" name="no_do"
-                                class="form-control @error('no_do') is-invalid @enderror"
-                                value="{{ old('no_do', $penerima->no_do ?? '') }}" placeholder="Opsional">
-                            @error('no_do')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
+            
                     </div>
+                    <input type="hidden" name="jenis_lansir" id="jenisLansir" value="{{ $jenisLansirDefault }}">
+                    @error('jenis_lansir')
+                        <div class="text-danger small mb-3">{{ $message }}</div>
+                    @enderror
 
 
                     @php
                         $ongkosAngkut = $penerima->penerima?->ongkos_angkut ?? 0;
                         $ongkosBongkar = $penerima->penerima?->ongkos_bongkar ?? 0;
-                        $gabungOngkos = $ongkosAngkut > 0 && $ongkosBongkar > 0;
-                        $defaultOngkosMobil = $gabungOngkos ? $ongkosAngkut + $ongkosBongkar : $ongkosAngkut;
+                        $defaultOngkosMobil = $ongkosAngkut;
                     @endphp
 
                     {{-- Kendaraan Lansir --}}
-                    <div class="mb-4">
+                    <div class="mb-4" id="sectionMobil" @if ($isTimBongkarPage) style="display:none" @endif>
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <div class="d-flex align-items-center gap-2">
-                                <h6 class="fw-semibold mb-0">Kendaraan Lansir</h6>
-                                @if ($gabungOngkos)
-                                    <span class="badge bg-success text-white">
-                                        OA+Angkut: Rp {{ number_format($defaultOngkosMobil, 0, ',', '.') }}/kg
-                                    </span>
-                                    <span class="badge bg-secondary text-white small">
-                                        (OA {{ number_format($ongkosAngkut, 0, ',', '.') }} + Angkut
-                                        {{ number_format($ongkosBongkar, 0, ',', '.') }})
-                                    </span>
-                                @elseif ($ongkosAngkut > 0)
+                                <h6 class="fw-semibold mb-0">Kendaraan Lansir <span class="text-danger">*</span></h6>
+                                @if ($ongkosAngkut > 0)
                                     <span class="badge bg-info text-white">
                                         OA Lansir: Rp {{ number_format($ongkosAngkut, 0, ',', '.') }}/kg
                                     </span>
@@ -318,36 +309,24 @@
                         </div>
                     </div>
 
-                    {{-- Tim Bongkar — disembunyikan jika ongkos sudah digabung ke mobil --}}
-                    @if (!$gabungOngkos)
-                        <div class="mb-4">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <div class="d-flex align-items-center gap-2">
-                                    <h6 class="fw-semibold mb-0">Tim Bongkar <span
-                                            class="text-muted small">(Opsional)</span>
-                                    </h6>
-                                    @if ($penerima->penerima?->ongkos_bongkar > 0)
-                                        <span class="badge bg-secondary">
-                                            Upah: Rp
-                                            {{ number_format($penerima->penerima->ongkos_bongkar, 0, ',', '.') }}/kg
-                                        </span>
-                                    @endif
-                                </div>
-                                <button type="button" class="btn btn-sm btn-outline-secondary" id="btnTambahTim">
-                                    <i class="fa fa-plus"></i> Tambah Tim
-                                </button>
+                    {{-- Tim Bongkar --}}
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <h6 class="fw-semibold mb-0">Tim Bongkar <span class="text-danger">*</span></h6>
+                                @if ($penerima->penerima?->ongkos_bongkar > 0)
+                                    <span class="badge bg-secondary">
+                                        Upah: Rp
+                                        {{ number_format($penerima->penerima->ongkos_bongkar, 0, ',', '.') }}/kg
+                                    </span>
+                                @endif
                             </div>
-                            <div id="listTim"></div>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="btnTambahTim">
+                                <i class="fa fa-plus"></i> Tambah Tim
+                            </button>
                         </div>
-                    @else
-                        <div class="alert alert-info py-2 mb-4 small">
-                            <i class="fa fa-info-circle"></i>
-                            Tim bongkar tidak diperlukan — ongkos OA (Rp
-                            {{ number_format($ongkosAngkut, 0, ',', '.') }}/kg)
-                            dan ongkos angkut (Rp {{ number_format($ongkosBongkar, 0, ',', '.') }}/kg) sudah digabung
-                            ke kolom ongkos kendaraan di atas.
-                        </div>
-                    @endif
+                        <div id="listTim"></div>
+                    </div>
 
                     <button type="submit" class="btn btn-primary">
                         <i class="fa fa-save"></i> Simpan Lansir
@@ -368,7 +347,13 @@
 
             // Ongkos dari master penerima
             var defaultOngkosMobil = {{ $defaultOngkosMobil }};
-            var defaultUpahTim = {{ $gabungOngkos ? 0 : $penerima->penerima?->ongkos_bongkar ?? 0 }};
+            var defaultUpahTim = {{ $penerima->penerima?->ongkos_bongkar ?? 0 }};
+
+            function syncJenisLansir() {
+                var isTimOnly = $('#jenisLansir').val() === 'tim_bongkar';
+                $('#sectionMobil').toggle(!isTimOnly);
+                $('#sectionMobil').find('input, button').prop('disabled', isTimOnly);
+            }
 
             // Auto-calc karung dari berat (untuk mobil)
             $(document).on('input', '.input-berat', function() {
@@ -424,8 +409,7 @@
                 $rows.find('.btn-hapus-mobil').prop('disabled', $rows.length === 1);
             }
 
-            // Tambah tim bongkar
-            $('#btnTambahTim').on('click', function() {
+            function tambahTimRow() {
                 var i = timCount++;
                 var row = `<div class="row g-2 align-items-end mb-2 item-tim">
                 <div class="col-md-2">
@@ -453,11 +437,23 @@
                 </div>
             </div>`;
                 $('#listTim').append(row);
+            }
+
+            // Tambah tim bongkar
+            $('#btnTambahTim').on('click', function() {
+                tambahTimRow();
             });
 
             $(document).on('click', '.btn-hapus-tim', function() {
                 $(this).closest('.item-tim').remove();
+                if ($('.item-tim').length === 0) {
+                    tambahTimRow();
+                }
             });
+
+            $('#jenisLansir').on('change', syncJenisLansir);
+            tambahTimRow();
+            syncJenisLansir();
         </script>
     @endif
 @endsection

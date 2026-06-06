@@ -39,10 +39,9 @@ class PoItemLansir extends Model
         return $this->mobils->sum(fn($m) => ($m->berat ?? 0) * ($m->ongkos ?? 0));
     }
 
-    // Total upah bongkar — pakai total berat × upah per tim
+    // Total upah bongkar — pakai berat masing-masing tim.
     public function getTotalUpahAttribute(): float
     {
-        $berat = $this->total_berat;
-        return $this->tims->sum(fn($t) => $berat * ($t->upah ?? 0));
+        return $this->tims->sum(fn($t) => ($t->berat ?? 0) * ($t->upah ?? 0));
     }
 }

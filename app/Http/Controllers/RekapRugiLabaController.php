@@ -387,11 +387,6 @@ class RekapRugiLabaController extends Controller
             ->whereDate('transfer_pakan_header.tanggal_transfer', '>=', $dari)
             ->whereDate('transfer_pakan_header.tanggal_transfer', '<=', $sampai)
             ->sum(DB::raw('transfer_pakan_tim.jumlah_kg * COALESCE(transfer_pakan_tim.upah_per_kg, 0)'));
-
-      
-
-        
-
         
 
         return [

@@ -1206,25 +1206,51 @@ class PurchaseOrderController extends Controller
     public function penerimaLansirPage(string $penerimaId)
     {
         try {
-            $penerima = PoPenerima::with([
-                'kendaraan.po.cv',
-                'kendaraan.supplier',
-                'tujuan',
-                'pakans.kodePakan',
-                'lansirs.mobils',
-                'lansirs.tims',
-                'penerima', // master penerima untuk ongkos_angkut & ongkos_bongkar
-            ])->findOrFail(decrypt($penerimaId));
+            $penerima = $this->findPenerimaForLansir($penerimaId);
 
             // Allow access if status is 'tiba' (for adding lansir) or 'selesai' (for viewing riwayat)
             if (! in_array($penerima->status, ['tiba', 'selesai'])) {
                 return redirect()->back()->with('error', 'Halaman lansir hanya dapat diakses setelah penerima berstatus Tiba atau Selesai.');
             }
 
-            return view('pages.purchase-order.penerima-lansir', compact('penerima'));
+            $jenisLansirDefault = 'mobil_tim';
+            $isTimBongkarPage = false;
+
+            return view('pages.purchase-order.penerima-lansir', compact('penerima', 'jenisLansirDefault', 'isTimBongkarPage'));
         } catch (Exception $e) {
             return redirect()->back()->with('error', 'Gagal memuat halaman lansir.');
         }
+    }
+
+    public function penerimaTimBongkarPage(string $penerimaId)
+    {
+        try {
+            $penerima = $this->findPenerimaForLansir($penerimaId);
+
+            if (! in_array($penerima->status, ['tiba', 'selesai'])) {
+                return redirect()->back()->with('error', 'Halaman tim bongkar hanya dapat diakses setelah penerima berstatus Tiba atau Selesai.');
+            }
+
+            $jenisLansirDefault = 'tim_bongkar';
+            $isTimBongkarPage = true;
+
+            return view('pages.purchase-order.penerima-lansir', compact('penerima', 'jenisLansirDefault', 'isTimBongkarPage'));
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', 'Gagal memuat halaman tim bongkar.');
+        }
+    }
+
+    private function findPenerimaForLansir(string $penerimaId): PoPenerima
+    {
+        return PoPenerima::with([
+            'kendaraan.po.cv',
+            'kendaraan.supplier',
+            'tujuan',
+            'pakans.kodePakan',
+            'lansirs.mobils',
+            'lansirs.tims',
+            'penerima', // master penerima untuk ongkos_angkut & ongkos_bongkar
+        ])->findOrFail(decrypt($penerimaId));
     }
 
     public function penerimaStoreLansir(Request $request, string $penerimaId)
@@ -1233,15 +1259,16 @@ class PurchaseOrderController extends Controller
             'validasi_oleh' => 'required|string|max:255',
             'tanggal_lansir' => 'required|date',
             'no_do' => 'nullable|string|max:100',
-            'mobils' => 'required|array|min:1',
-            'mobils.*.no_polisi' => 'required|string|max:20',
+            'jenis_lansir' => 'required|in:mobil_tim,tim_bongkar',
+            'mobils' => 'required_if:jenis_lansir,mobil_tim|array|min:1',
+            'mobils.*.no_polisi' => 'required_if:jenis_lansir,mobil_tim|string|max:20',
             'mobils.*.nama_sopir' => 'nullable|string|max:255',
             'mobils.*.berat' => 'nullable|numeric|min:0',
             'mobils.*.jumlah_karung' => 'nullable|integer|min:0',
             'mobils.*.ongkos' => 'nullable|numeric|min:0',
             'mobils.*.keterangan' => 'nullable|string',
-            'tims' => 'nullable|array',
-            'tims.*.nama_tim' => 'required|string|max:255',
+            'tims' => 'required|array|min:1',
+            'tims.*.nama_tim' => 'nullable|string|max:255',
             'tims.*.berat' => 'nullable|numeric|min:0',
             'tims.*.jumlah_karung' => 'nullable|integer|min:0',
             'tims.*.upah' => 'nullable|numeric|min:0',
@@ -1268,7 +1295,7 @@ class PurchaseOrderController extends Controller
                 'selesai_at' => now(),
             ]);
 
-            foreach ($request->mobils as $mobil) {
+            foreach ($request->input('mobils', []) as $mobil) {
                 if (empty(trim($mobil['no_polisi'] ?? ''))) {
                     continue;
                 }

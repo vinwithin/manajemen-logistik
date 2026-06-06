@@ -326,6 +326,10 @@
                                                             class="btn btn-xs btn-warning ms-1">
                                                             <i class="fa fa-truck"></i> Lansir
                                                         </a>
+                                                        <a href="{{ route('po-penerima.tim-bongkar-page', encrypt($penerima->id)) }}"
+                                                            class="btn btn-xs btn-secondary ms-1">
+                                                            <i class="fa fa-users"></i> Tim Bongkar
+                                                        </a>
                                                     @endif
                                                     @if ($penerima->bukti_tiba)
                                                         <a href="{{ asset('storage/' . $penerima->bukti_tiba) }}"

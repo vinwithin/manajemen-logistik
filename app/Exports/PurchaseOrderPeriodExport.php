@@ -117,6 +117,7 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
         $header1[] = '';
         $header1[] = '';
         $header1[] = '';
+        $header1[] = '';
 
         $rows[] = $header1;
 
@@ -152,6 +153,7 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
 
         // ── TIM BONGKAR SUB-HEADERS ───────────────────────────────────
         $header2[] = ''; // Spacer
+        $header2[] = 'Tanggal';
         $header2[] = 'Nama Tim';
         $header2[] = 'Jumlah (kg)';
         $header2[] = 'Upah/kg';
@@ -235,10 +237,10 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                             }
 
                             // ── LANSIR MOBIL DATA ─────────────────────────────────
-                            if ($lansir && $lansir->mobils->count() > 0) {
+                            if ($lansir->mobils->count() > 0) {
                                 $firstMobil = $lansir->mobils->first();
                                 $currentRow[] = ''; // Spacer
-                                $currentRow[] = $lansir->tanggal_lansir->translatedFormat('d F Y') ?? '';
+                                $currentRow[] = $lansir->tanggal_lansir?->translatedFormat('d F Y') ?? '';
                                 $currentRow[] = $firstMobil->no_polisi ?? '';
                                 $currentRow[] = $firstMobil->nama_sopir ?? '';
                                 $currentRow[] = $firstMobil->berat ?? '';
@@ -257,16 +259,18 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                             }
 
                             // ── TIM BONGKAR DATA ──────────────────────────────────
-                            if ($lansir && $lansir->tims->count() > 0) {
+                            if ($lansir->tims->count() > 0) {
                                 $firstTim = $lansir->tims->first();
                                 $totalBerat = $lansir->mobils->sum('berat');
                                 $currentRow[] = ''; // Spacer
+                                $currentRow[] = $lansir->tanggal_lansir?->translatedFormat('d F Y') ?? '';
                                 $currentRow[] = $firstTim->nama_tim ?? '';
                                 $currentRow[] = $firstTim->berat ?? $totalBerat;
                                 $currentRow[] = $firstTim->upah ?? '';
                                 $currentRow[] = (float) ($firstTim->berat ?? $totalBerat) * (float) ($firstTim->upah ?? 0);
                             } else {
                                 $currentRow[] = ''; // Spacer
+                                $currentRow[] = '';
                                 $currentRow[] = '';
                                 $currentRow[] = '';
                                 $currentRow[] = '';
@@ -286,7 +290,7 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                                 // Mobil lansir extra
                                 $mobil = $extraMobils->get($ei);
                                 $extraRow[] = ''; // Spacer
-                                $extraRow[] = $lansir->tanggal_lansir->format('d/m/Y') ?? '';
+                                $extraRow[] = $mobil ? ($lansir->tanggal_lansir?->translatedFormat('d F Y') ?? '') : '';
                                 $extraRow[] = $mobil ? ($mobil->no_polisi ?? '') : '';
                                 $extraRow[] = $mobil ? ($mobil->nama_sopir ?? '') : '';
                                 $extraRow[] = $mobil ? ($mobil->berat ?? '') : '';
@@ -297,6 +301,7 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                                 // Tim bongkar extra
                                 $tim = $extraTims->get($ei);
                                 $extraRow[] = ''; // Spacer
+                                $extraRow[] = $tim ? ($lansir->tanggal_lansir?->translatedFormat('d F Y') ?? '') : '';
                                 $extraRow[] = $tim ? ($tim->nama_tim ?? '') : '';
                                 $extraRow[] = $tim ? ($tim->berat ?? '') : '';
                                 $extraRow[] = $tim ? ($tim->upah ?? '') : '';
@@ -400,6 +405,7 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
 
         // Tim Bongkar totals
         $totalRow[] = ''; // Spacer
+        $totalRow[] = '';
         $totalRow[] = 'TOTAL';
         $totalRow[] = ''; // Will be formula - Jumlah (kg)
         $totalRow[] = ''; // Will be formula - Upah/kg
@@ -461,7 +467,7 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                 $lansirEndCol = $idCols + 2 * $kodePakanCount + 12; // 17+2n
                 $spacer2Col = $idCols + 2 * $kodePakanCount + 13; // 18+2n
                 $timStartCol = $idCols + 2 * $kodePakanCount + 14; // 19+2n
-                $timEndCol = $idCols + 2 * $kodePakanCount + 17;
+                $timEndCol = $idCols + 2 * $kodePakanCount + 18;
                 $totalCols = $timEndCol;
 
                 $lastCol = $this->getColumnLetter($totalCols);
@@ -586,8 +592,8 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                     );
                 }
 
-                // Tim Bongkar columns (skip spacer, skip nama tim)
-                for ($ci = $timStartCol + 1; $ci <= $timEndCol; $ci++) {
+                // Tim Bongkar columns (skip tanggal & nama tim)
+                for ($ci = $timStartCol + 2; $ci <= $timEndCol; $ci++) {
                     $col = $this->getColumnLetter($ci);
                     $sheet->setCellValue(
                         "{$col}{$totalRowNum}",

@@ -184,7 +184,6 @@
                                 <tbody>
                                     @foreach ($rekapTim as $lansir)
                                         @if($tipe === 'po')
-                                            @php $totalBerat = $lansir->total_berat; @endphp
                                             @if ($lansir->tims->isEmpty())
                                                 <tr>
                                                     <td colspan="4" class="text-muted text-center small">
@@ -193,13 +192,14 @@
                                                 </tr>
                                             @else
                                                 @foreach ($lansir->tims as $tim)
+                                                    @php $timBerat = $tim->berat ?? 0; @endphp
                                                     <tr>
                                                         <td>{{ $tim->nama_tim }}</td>
-                                                        <td class="text-end">{{ number_format($totalBerat, 0, ',', '.') }}</td>
+                                                        <td class="text-end">{{ number_format($timBerat, 0, ',', '.') }}</td>
                                                         <td class="text-end">{{ number_format($tim->upah ?? 0, 0, ',', '.') }}
                                                         </td>
                                                         <td class="text-end">
-                                                            {{ number_format($totalBerat * ($tim->upah ?? 0), 0, ',', '.') }}
+                                                            {{ number_format($timBerat * ($tim->upah ?? 0), 0, ',', '.') }}
                                                         </td>
                                                     </tr>
                                                 @endforeach

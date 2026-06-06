@@ -107,8 +107,15 @@
                     <div class="row g-2 text-center">
                         <div class="col-12">
                             <div class="text-muted" style="font-size:11px;">Total Tagihan OA Lansir</div>
-                            <div class="fw-bold text-info fs-5">Rp {{ number_format($lansirPoTotalOa, 0, ',', '.') }}</div>
-                            <!-- <div class="text-muted" style="font-size:11px;">dari {{ $lansirPos->count() }} PO</div> -->
+                            <div class="fw-bold text-info">Rp {{ number_format($lansirPoTotalOa, 0, ',', '.') }}</div>
+                        </div>
+                        <div class="col-12">
+                            <div class="text-muted" style="font-size:11px;">Total Tagihan Upah Mobil Lokal</div>
+                            <div class="fw-bold text-info">Rp {{ number_format($lansirPoSudahBayarMobil, 0, ',', '.') }}</div>
+                        </div>
+                        <div class="col-12">
+                            <div class="text-muted" style="font-size:11px;">Total Upah Tim Bongkar</div>
+                            <div class="fw-bold text-info">Rp {{ number_format($lansirPoSudahBayarTim, 0, ',', '.') }}</div>
                         </div>
                         
                     </div>

@@ -547,8 +547,7 @@
         <div class="kwit-outer">
             <table class="kwit-header-table">
                 <tr>
-                    <td
-                        style="padding:0; margin:0; vertical-align:top; text-align:left; width:70%;">
+                    <td style="padding:0; margin:0; vertical-align:top; text-align:left; width:70%;">
                         <div class="kwit-company-name" style="margin-top: 2px; margin-left:0;">{{ $cvNama }}
                         </div>
                         <div class="kwit-company-sub" style="margin-left: 0;">{{ $cvAlamat }}</div>
@@ -628,10 +627,7 @@
                     <td style="vertical-align: top; text-align: left; width: 50%;">
                         <span style="display: block; margin-bottom: 45px; font-size: 12px; margin-top: 0;">
                             Jambi,
-                            @if ($to)
-                                {{ date('d', strtotime($to)) }}
-                            @endif
-                            {{ now()->translatedFormat('F Y') }}
+                            {{ now()->translatedFormat('d F Y') }}
                         </span>
                         <span class="kwit-sign-line"></span>
                         <div style="font-weight: bold; font-size: 12px; margin-top: 4px;">{{ $cvPimpinan }}</div>

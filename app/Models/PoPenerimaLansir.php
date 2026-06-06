@@ -44,7 +44,6 @@ class PoPenerimaLansir extends Model
 
     public function getTotalUpahAttribute(): float
     {
-        $berat = $this->total_berat;
-        return (float) $this->tims->sum(fn($t) => $berat * ($t->upah ?? 0));
+        return (float) $this->tims->sum(fn($t) => ($t->berat ?? 0) * ($t->upah ?? 0));
     }
 }

@@ -27,8 +27,8 @@ class RekapLansirService
             ->whereHas('penerima.kendaraan', fn($q) => $q->where('po_id', $po->id))
             ->get()
             ->map(function ($lansir) {
-                // Hitung total berat dari mobils untuk digunakan di view
-                $lansir->total_berat_calculated = $lansir->total_berat;
+                // Untuk rekap tim, berat harus mengikuti detail tim bongkar.
+                $lansir->total_berat_calculated = (float) $lansir->tims->sum('berat');
                 return $lansir;
             });
     }

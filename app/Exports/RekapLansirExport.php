@@ -151,10 +151,8 @@ class RekapLansirExport implements ShouldAutoSize, WithEvents, WithTitle
                         ? $penerimaList->pluck('nama')->join(', ')
                         : ($event->item->nama_penerima ?? '-');
                     $karung = $event->item->jumlah_karung ?? 0;
-                    $totalBerat = $event->total_berat;
-
                     foreach ($event->tims as $tim) {
-                        $totalUpah = $totalBerat * ($tim->upah ?? 0);
+                        $totalUpah = ($tim->berat ?? 0) * ($tim->upah ?? 0);
                         $grandTotalUpah += $totalUpah;
 
                         $sheet->setCellValueByColumnAndRow(1, $row, $tanggal);

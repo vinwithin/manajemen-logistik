@@ -69,11 +69,6 @@
                                 <td class="text-end">{{ $fmt($data['pembelian'][$type]) }}</td>
                             </tr>
                         @endforeach
-                        <tr>
-                            <td></td>
-                            <td class="ps-4 text-muted">- Transper Pakan</td>
-                            <td class="text-end">0</td>
-                        </tr>
                         <tr class="table-light">
                             <td></td>
                             <td class="text-center fw-bold">TOTAL</td>

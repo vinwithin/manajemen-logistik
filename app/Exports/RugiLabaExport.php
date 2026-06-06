@@ -44,7 +44,8 @@ class RugiLabaExport implements FromArray, WithEvents, WithTitle
         $rows[] = ['', '- Rent Farm',    $fmt($d['pembelian']['rent_farm'])];
         $rows[] = ['', '- Tr Kerinci',    $fmt($d['pembelian']['tr_kerinci'])];
         // $rows[] = ['', '- Cab. Bungo',   0];
-        $rows[] = ['', '- Transper Pakan', 0];
+        $rows[] = ['', '- Gudang Ke Peternak', $fmt($d['pembelian']['gudang_ke_peternak'])];
+        $rows[] = ['', '- Transper Pakan', $fmt($d['pembelian']['transfer_pakan'])];
         $rows[] = ['', 'TOTAL',          $fmt($d['totalPembelian'])];
         $rows[] = [];
 
@@ -56,7 +57,8 @@ class RugiLabaExport implements FromArray, WithEvents, WithTitle
         $rows[] = ['', '- Rent Farm',    $fmt($d['penjualan']['rent_farm'])];
         $rows[] = ['', '- Tr Kerinci',    $fmt($d['penjualan']['tr_kerinci'])];
         // $rows[] = ['', '- Cab. Bungo',   0];
-        $rows[] = ['', '- Transper Pakan', $fmt($d['penjualan']['transper_pakan'])];
+        $rows[] = ['', '- Gudang Ke Peternak', $fmt($d['penjualan']['gudang_ke_peternak'])];
+        $rows[] = ['', '- Transper Pakan', $fmt($d['penjualan']['transfer_pakan'])];
         $rows[] = ['', 'TOTAL',          $fmt($d['totalPenjualan'])];
         $rows[] = [];
 
