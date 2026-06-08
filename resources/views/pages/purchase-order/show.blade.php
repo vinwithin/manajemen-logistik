@@ -238,7 +238,7 @@
                                             </span>
                                         @endif
                                     </td>
-                                    <td>{{ $penerima->penerima?->tujuan?->nama  }}</td>
+                                    <td>{{ $penerima->penerima?->tujuan?->nama }}</td>
                                     @foreach ($kodePakanList as $kp)
                                         @php $pk = $pakanMap[$kp->id] ?? null; @endphp
                                         <td class="text-center">
@@ -259,85 +259,117 @@
                                         <span class="badge bg-{{ $pBadge['color'] }}">{{ $pBadge['label'] }}</span>
                                         @if ($penerima->validasi_oleh)
                                             <div class="text-muted small mt-1">{{ $penerima->validasi_oleh }}</div>
-                                            <div class="text-muted small d-flex align-items-center justify-content-center gap-1">
+                                            <div
+                                                class="text-muted small d-flex align-items-center justify-content-center gap-1">
                                                 {{ $penerima->tiba_at?->format('d/m/Y') }}
-                                                @if ($po->isLocked() && in_array($penerima->status, ['tiba', 'selesai']))
-                                                    <button class="btn btn-sm btn-outline-primary btn-edit-tanggal-tiba ms-1"
+
+                                            </div>
+                                        @endif
+                                    </td>
+                                    @if ($po->isLocked())
+                                        <td class="text-start">
+                                            <div class="btn-group flex-wrap align-items-center gap-1" role="group">
+                                                @if (in_array($penerima->status, ['tiba', 'selesai']))
+                                                    <button class="btn btn-outline-primary btn-edit-tanggal-tiba ms-1"
                                                         data-id="{{ $penerima->id }}"
                                                         data-nama="{{ $penerima->nama_penerima }}"
                                                         data-tanggal="{{ $penerima->tiba_at?->format('Y-m-d') }}">
                                                         Edit
                                                     </button>
                                                 @endif
-                                            </div>
-                                        @endif
-                                    </td>
-                                    @if ($po->isLocked())
-                                        <td class="text-center">
-                                            @if ($kendaraan->status === 'pending')
-                                                @if ($pi === 0)
-                                                    <button class="btn btn-xs btn-warning btn-aksi-kendaraan"
-                                                        data-id="{{ $kendaraan->id }}"
-                                                        data-polisi="{{ $kendaraan->no_polisi }}"
-                                                        data-target="berangkat">
-                                                        <i class="fa fa-truck"></i> Berangkat
-                                                    </button>
-                                                    <button class="btn btn-xs btn-outline-danger btn-aksi-kendaraan ms-1"
-                                                        data-id="{{ $kendaraan->id }}"
-                                                        data-polisi="{{ $kendaraan->no_polisi }}" data-target="batal">
-                                                        <i class="fa fa-times"></i> Batal
-                                                    </button>
-                                                @else
-                                                    <span class="text-muted small">—</span>
-                                                @endif
-                                            @elseif ($kendaraan->status === 'berangkat')
-                                                {{-- Kendaraan sedang jalan — aksi per penerima --}}
-                                                @if (in_array($penerima->status, ['pending', 'berangkat']))
-                                                    <button class="btn btn-xs btn-info text-white btn-selesai-penerima"
-                                                        data-id="{{ $penerima->id }}"
-                                                        data-nama="{{ $penerima->nama_penerima }}"
-                                                        data-tujuan-type="{{ $penerima->tujuan?->type ?? '' }}">
-                                                        <i class="fa fa-map-marker"></i> Tiba
-                                                    </button>
-                                                @elseif ($penerima->status === 'tiba')
-                                                    {{-- Sudah tiba — pilih: Selesai langsung atau Lansir --}}
-                                                    @if ($penerima->tujuan && $penerima->tujuan->type === 'gudang')
-                                                        {{-- Jika gudang, langsung selesai (stok sudah masuk otomatis) --}}
-                                                        <button class="btn btn-xs btn-success btn-aksi-penerima"
-                                                            data-id="{{ $penerima->id }}"
-                                                            data-nama="{{ $penerima->nama_penerima }}"
-                                                            data-target="selesai">
-                                                            <i class="fa fa-check"></i> Selesai
+                                                @if ($kendaraan->status === 'pending')
+                                                    @if ($pi === 0)
+                                                        <button class="btn btn-xs btn-warning btn-aksi-kendaraan"
+                                                            data-id="{{ $kendaraan->id }}"
+                                                            data-polisi="{{ $kendaraan->no_polisi }}"
+                                                            data-target="berangkat">
+                                                            <i class="fa fa-truck"></i> Berangkat
                                                         </button>
-                                                        {{-- Tombol lansir gudang untuk pengeluaran stok --}}
-                                                        <a href="{{ route('gudang.stok.show', ['id' => $penerima->tujuan_id]) }}"
-                                                            class="btn btn-xs btn-warning ms-1">
-                                                            <i class="fa fa-truck"></i> Lihat Stok
-                                                        </a>
+                                                        <button
+                                                            class="btn btn-xs btn-outline-danger btn-aksi-kendaraan ms-1"
+                                                            data-id="{{ $kendaraan->id }}"
+                                                            data-polisi="{{ $kendaraan->no_polisi }}"
+                                                            data-target="batal">
+                                                            <i class="fa fa-times"></i> Batal
+                                                        </button>
                                                     @else
-                                                        {{-- Jika bukan gudang, proses lansir penerima normal --}}
-                                                        <button class="btn btn-xs btn-success btn-aksi-penerima"
+                                                        <span class="text-muted small">—</span>
+                                                    @endif
+                                                @elseif ($kendaraan->status === 'berangkat')
+                                                    {{-- Kendaraan sedang jalan — aksi per penerima --}}
+                                                    @if (in_array($penerima->status, ['pending', 'berangkat']))
+                                                        <button class="btn btn-xs btn-info text-white btn-selesai-penerima"
                                                             data-id="{{ $penerima->id }}"
                                                             data-nama="{{ $penerima->nama_penerima }}"
-                                                            data-target="selesai">
-                                                            <i class="fa fa-check"></i> Selesai
+                                                            data-tujuan-type="{{ $penerima->tujuan?->type ?? '' }}">
+                                                            <i class="fa fa-map-marker"></i> Tiba
                                                         </button>
-                                                        <a href="{{ route('po-penerima.lansir-page', encrypt($penerima->id)) }}"
-                                                            class="btn btn-xs btn-warning ms-1">
-                                                            <i class="fa fa-truck"></i> Lansir
-                                                        </a>
-                                                        <a href="{{ route('po-penerima.tim-bongkar-page', encrypt($penerima->id)) }}"
-                                                            class="btn btn-xs btn-secondary ms-1">
-                                                            <i class="fa fa-users"></i> Tim Bongkar
-                                                        </a>
+                                                    @elseif ($penerima->status === 'tiba')
+                                                        {{-- Sudah tiba — pilih: Selesai langsung atau Lansir --}}
+                                                        @if ($penerima->tujuan && $penerima->tujuan->type === 'gudang')
+                                                            {{-- Jika gudang, langsung selesai (stok sudah masuk otomatis) --}}
+                                                            <button class="btn btn-xs btn-success btn-aksi-penerima"
+                                                                data-id="{{ $penerima->id }}"
+                                                                data-nama="{{ $penerima->nama_penerima }}"
+                                                                data-target="selesai">
+                                                                <i class="fa fa-check"></i> Selesai
+                                                            </button>
+                                                            {{-- Tombol lansir gudang untuk pengeluaran stok --}}
+                                                            <a href="{{ route('gudang.stok.show', ['id' => $penerima->tujuan_id]) }}"
+                                                                class="btn btn-xs btn-warning ms-1">
+                                                                <i class="fa fa-truck"></i> Lihat Stok
+                                                            </a>
+                                                        @else
+                                                            {{-- Jika bukan gudang, proses lansir penerima normal --}}
+                                                            <button class="btn btn-xs btn-success btn-aksi-penerima"
+                                                                data-id="{{ $penerima->id }}"
+                                                                data-nama="{{ $penerima->nama_penerima }}"
+                                                                data-target="selesai">
+                                                                <i class="fa fa-check"></i> Selesai
+                                                            </button>
+                                                            <a href="{{ route('po-penerima.lansir-page', encrypt($penerima->id)) }}"
+                                                                class="btn btn-xs btn-warning ms-1">
+                                                                <i class="fa fa-truck"></i> Lansir
+                                                            </a>
+                                                            <a href="{{ route('po-penerima.tim-bongkar-page', encrypt($penerima->id)) }}"
+                                                                class="btn btn-xs btn-secondary ms-1">
+                                                                <i class="fa fa-users"></i> Tim Bongkar
+                                                            </a>
+                                                        @endif
+                                                        @if ($penerima->bukti_tiba)
+                                                            <a href="{{ asset('storage/' . $penerima->bukti_tiba) }}"
+                                                                target="_blank"
+                                                                class="btn btn-xs btn-outline-secondary ms-1">
+                                                                <i class="fa fa-file"></i> Bukti
+                                                            </a>
+                                                        @endif
+                                                    @elseif ($penerima->status === 'selesai')
+                                                        @if ($penerima->tujuan && $penerima->tujuan->type === 'gudang')
+                                                            {{-- Jika gudang, tampilkan link ke lansir gudang --}}
+                                                            <a href="{{ route('gudang.lansir.index') }}"
+                                                                class="btn btn-xs btn-warning">
+                                                                <i class="fa fa-truck"></i> Lansir Gudang
+                                                            </a>
+                                                        @else
+                                                            {{-- Jika bukan gudang, tampilkan riwayat lansir penerima --}}
+                                                            @if ($penerima->lansirs->count() > 0)
+                                                                <a href="{{ route('po-penerima.lansir-page', encrypt($penerima->id)) }}"
+                                                                    class="btn btn-xs btn-info text-white">
+                                                                    <i class="fa fa-history"></i> Riwayat Lansir
+                                                                </a>
+                                                            @endif
+                                                        @endif
+                                                        @if ($penerima->bukti_tiba)
+                                                            <a href="{{ asset('storage/' . $penerima->bukti_tiba) }}"
+                                                                target="_blank"
+                                                                class="btn btn-xs btn-outline-secondary ms-1">
+                                                                <i class="fa fa-file"></i> Bukti
+                                                            </a>
+                                                        @endif
+                                                    @else
+                                                        <span class="text-muted small">—</span>
                                                     @endif
-                                                    @if ($penerima->bukti_tiba)
-                                                        <a href="{{ asset('storage/' . $penerima->bukti_tiba) }}"
-                                                            target="_blank" class="btn btn-xs btn-outline-secondary ms-1">
-                                                            <i class="fa fa-file"></i> Bukti
-                                                        </a>
-                                                    @endif
-                                                @elseif ($penerima->status === 'selesai')
+                                                @elseif ($kendaraan->status === 'selesai')
                                                     @if ($penerima->tujuan && $penerima->tujuan->type === 'gudang')
                                                         {{-- Jika gudang, tampilkan link ke lansir gudang --}}
                                                         <a href="{{ route('gudang.lansir.index') }}"
@@ -362,31 +394,7 @@
                                                 @else
                                                     <span class="text-muted small">—</span>
                                                 @endif
-                                            @elseif ($kendaraan->status === 'selesai')
-                                                @if ($penerima->tujuan && $penerima->tujuan->type === 'gudang')
-                                                    {{-- Jika gudang, tampilkan link ke lansir gudang --}}
-                                                    <a href="{{ route('gudang.lansir.index') }}"
-                                                        class="btn btn-xs btn-warning">
-                                                        <i class="fa fa-truck"></i> Lansir Gudang
-                                                    </a>
-                                                @else
-                                                    {{-- Jika bukan gudang, tampilkan riwayat lansir penerima --}}
-                                                    @if ($penerima->lansirs->count() > 0)
-                                                        <a href="{{ route('po-penerima.lansir-page', encrypt($penerima->id)) }}"
-                                                            class="btn btn-xs btn-info text-white">
-                                                            <i class="fa fa-history"></i> Riwayat Lansir
-                                                        </a>
-                                                    @endif
-                                                @endif
-                                                @if ($penerima->bukti_tiba)
-                                                    <a href="{{ asset('storage/' . $penerima->bukti_tiba) }}"
-                                                        target="_blank" class="btn btn-xs btn-outline-secondary ms-1">
-                                                        <i class="fa fa-file"></i> Bukti
-                                                    </a>
-                                                @endif
-                                            @else
-                                                <span class="text-muted small">—</span>
-                                            @endif
+                                            </div>
                                         </td>
                                     @endif
                                 </tr>
@@ -468,19 +476,20 @@
                         <div class="mb-3">
                             <label class="form-label form-label-sm">Nama Validator <span
                                     class="text-danger">*</span></label>
-                            <input type="text" id="selesaiValidator" name="validasi_oleh" class="form-control form-control-sm"
-                                placeholder="Nama admin / petugas">
+                            <input type="text" id="selesaiValidator" name="validasi_oleh"
+                                class="form-control form-control-sm" placeholder="Nama admin / petugas">
                         </div>
                         <div class="mb-3">
                             <label class="form-label form-label-sm">Tanggal Tiba <span
                                     class="text-danger">*</span></label>
-                            <input type="date" id="selesaiTanggal" name="tanggal_tiba" class="form-control form-control-sm">
+                            <input type="date" id="selesaiTanggal" name="tanggal_tiba"
+                                class="form-control form-control-sm">
                             <small class="text-muted">Hanya tanggal (boleh diisi mundur).</small>
                         </div>
                         <div class="mb-2">
                             <label class="form-label form-label-sm">Bukti Tiba <span class="text-danger">*</span></label>
-                            <input type="file" id="selesaiBukti" name="bukti_tiba" class="form-control form-control-sm"
-                                accept=".jpg,.jpeg,.png,.pdf">
+                            <input type="file" id="selesaiBukti" name="bukti_tiba"
+                                class="form-control form-control-sm" accept=".jpg,.jpeg,.png,.pdf">
                             <small class="text-muted">JPG, PNG, PDF · Maks 5MB</small>
                         </div>
                         <div id="errSelesai" class="text-danger small mt-1" style="display:none"></div>
@@ -612,9 +621,11 @@
                 var id = $(this).data('id');
                 var nama = $(this).data('nama');
                 var tanggal = $(this).data('tanggal');
+                var fotoBukti = $(this).data('foto-bukti');
 
                 $('#editTanggalNama').text(nama);
                 $('#editTanggalInput').val(tanggal);
+                $('#editFotoBuktiInput').val(fotoBukti);
                 $('#formEditTanggalTiba').attr('action', '/purchase-order/penerima/' + id + '/update-tanggal-tiba');
 
                 new bootstrap.Modal(document.getElementById('modalEditTanggalTiba')).show();
@@ -726,14 +737,21 @@
                             id="editTanggalNama"></span></h6>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <form id="formEditTanggalTiba" method="POST">
+                <form id="formEditTanggalTiba" method="POST" enctype="multipart/form-data">
                     @csrf
                     <div class="modal-body">
-                        <div class="mb-3">
+                        <div class="">
                             <label class="form-label form-label-sm">Tanggal Tiba <span
                                     class="text-danger">*</span></label>
                             <input type="date" id="editTanggalInput" name="tanggal_tiba"
                                 class="form-control form-control-sm" required>
+                        </div>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label form-label-sm">Foto Bukti<span class="text-danger">*</span></label>
+                            <input type="file" id="editFotoBuktiInput" name="foto_bukti"
+                                accept=".jpg,.jpeg,.png,.pdf" class="form-control form-control-sm">
                         </div>
                     </div>
                     <div class="modal-footer py-2">
@@ -869,7 +887,7 @@
 
                         if (gpsMarker) {
                             gpsMarker.setLatLng([res.lat, res.lng]).setIcon(truckIcon).setPopupContent(
-                            popupContent);
+                                popupContent);
                         } else {
                             gpsMarker = L.marker([res.lat, res.lng], {
                                     icon: truckIcon
