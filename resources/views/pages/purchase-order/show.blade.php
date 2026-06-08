@@ -749,7 +749,7 @@
                     </div>
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label class="form-label form-label-sm">Foto Bukti<span class="text-danger">*</span></label>
+                            <label class="form-label form-label-sm">Foto Bukti (opsional)</label>
                             <input type="file" id="editFotoBuktiInput" name="foto_bukti"
                                 accept=".jpg,.jpeg,.png,.pdf" class="form-control form-control-sm">
                         </div>
