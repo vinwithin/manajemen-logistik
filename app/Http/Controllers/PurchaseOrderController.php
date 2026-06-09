@@ -1335,6 +1335,20 @@ class PurchaseOrderController extends Controller
         }
     }
 
+    public function penerimaDestroyLansir(string $lansirId)
+    {
+        try {
+            $lansir = PoPenerimaLansir::with('penerima')->findOrFail(decrypt($lansirId));
+            $penerimaId = $lansir->po_penerima_id;
+            $lansir->delete();
+            
+            return redirect()->route('po-penerima.lansir-page', encrypt($penerimaId))
+                ->with('success', 'Riwayat lansir berhasil dihapus.');
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', 'Gagal menghapus riwayat lansir: ' . $e->getMessage());
+        }
+    }
+
     public function kendaraanUpdateStatus(Request $request, string $kendaraanId)
     {
         $request->validate([

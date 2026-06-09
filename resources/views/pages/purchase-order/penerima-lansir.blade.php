@@ -80,22 +80,31 @@
             </div>
             <div class="card-body">
                 @foreach ($penerima->lansirs as $i => $lansir)
-                    <div class="border rounded p-3 mb-3">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="fw-semibold">Trip #{{ $i + 1 }}</span>
-                            <span class="text-muted small">
-                                @if ($lansir->no_do)
-                                    <i class="fa fa-file-text-o"></i> {{ $lansir->no_do }}
-                                    &nbsp;·&nbsp;
-                                @endif
-                                @if ($lansir->tanggal_lansir)
-                                    <i class="fa fa-calendar"></i> {{ $lansir->tanggal_lansir->format('d/m/Y') }}
-                                    &nbsp;·&nbsp;
-                                @endif
-                                {{ $lansir->selesai_at?->format('d/m/Y H:i') }}
-                                &nbsp;·&nbsp; {{ $lansir->validasi_oleh }}
-                            </span>
-                        </div>
+            <div class="border rounded p-3 mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="fw-semibold">Trip #{{ $i + 1 }}</span>
+                    <div class="d-flex gap-2 align-items-center">
+                        <span class="text-muted small">
+                            @if ($lansir->no_do)
+                                <i class="fa fa-file-text-o"></i> {{ $lansir->no_do }}
+                                &nbsp;·&nbsp;
+                            @endif
+                            @if ($lansir->tanggal_lansir)
+                                <i class="fa fa-calendar"></i> {{ $lansir->tanggal_lansir->format('d/m/Y') }}
+                                &nbsp;·&nbsp;
+                            @endif
+                            {{ $lansir->selesai_at?->format('d/m/Y H:i') }}
+                            &nbsp;·&nbsp; {{ $lansir->validasi_oleh }}
+                        </span>
+                        <form action="{{ route('po-penerima.lansir-destroy', encrypt($lansir->id)) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus riwayat lansir ini?')">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn btn-sm btn-danger text-white">
+                               Hapus
+                            </button>
+                        </form>
+                    </div>
+                </div>
 
                         {{-- Mobil --}}
                         @if ($lansir->mobils->count())
