@@ -9,6 +9,7 @@ use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use Maatwebsite\Excel\Events\AfterSheet;
+use PhpOffice\PhpSpreadsheet\Cell\Hyperlink;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
@@ -85,6 +86,7 @@ class RekapLansirGudangExport implements FromArray, WithEvents, WithTitle
         $header1[] = 'Harga PT Sum';
         $header1[] = 'Total PT Sum (Rp)';
         $header1[] = 'Keterangan';
+        $header1[] = 'Bukti Tiba';
 
         // Tim Bongkar
         $header1[] = ''; // Spacer
@@ -111,6 +113,7 @@ class RekapLansirGudangExport implements FromArray, WithEvents, WithTitle
         $header2[] = ''; // Harga PT Sum
         $header2[] = ''; // Total PT Sum
         $header2[] = ''; // Keterangan
+        $header2[] = ''; // Bukti Tiba
 
         // Tim Bongkar sub-headers
         $header2[] = ''; // Spacer
@@ -177,6 +180,9 @@ class RekapLansirGudangExport implements FromArray, WithEvents, WithTitle
                     $ket = $penerima->pakans->whereNotNull('keterangan')->first()?->keterangan ?? '';
                     $row[] = $ket;
 
+                    // Bukti Tiba
+                    $row[] = $penerima->bukti_tiba ?? '';
+
                     // ── Tim Bongkar (baris pertama) ───────────────────
                     $firstTim = $penerima->tims->first();
                     if ($firstTim) {
@@ -200,7 +206,7 @@ class RekapLansirGudangExport implements FromArray, WithEvents, WithTitle
                     // Baris tambahan untuk tim bongkar ke-2, ke-3, dst
                     if ($penerima->tims->count() > 1) {
                         foreach ($penerima->tims->skip(1) as $tim) {
-                            $extraRow = array_fill(0, $idCols + ($kpCount * 2) + 5, '');
+                            $extraRow = array_fill(0, $idCols + ($kpCount * 2) + 6, '');
                             $extraRow[] = ''; // Spacer
                             $extraRow[] = $tim->nama_tim;
                             $extraRow[] = (float) $tim->jumlah_kg;
@@ -221,6 +227,7 @@ class RekapLansirGudangExport implements FromArray, WithEvents, WithTitle
             $totalRow[] = '';
         } // diisi SUM di AfterSheet
         $totalRow[] = ''; // Keterangan
+        $totalRow[] = ''; // Bukti Tiba
 
         // Tim Bongkar totals
         $totalRow[] = ''; // Spacer
@@ -305,9 +312,10 @@ class RekapLansirGudangExport implements FromArray, WithEvents, WithTitle
                 $hargaPtSumCol = $idCols + 2 * $kpCount + 3;
                 $totalPtSumCol = $idCols + 2 * $kpCount + 4;
                 $ketCol = $idCols + 2 * $kpCount + 5;
-                $spacerCol = $idCols + 2 * $kpCount + 6;
-                $timStart = $idCols + 2 * $kpCount + 7;
-                $timEnd = $idCols + 2 * $kpCount + 11; // 5 kolom tim
+                $buktiTibaCol = $idCols + 2 * $kpCount + 6;
+                $spacerCol = $idCols + 2 * $kpCount + 7;
+                $timStart = $idCols + 2 * $kpCount + 8;
+                $timEnd = $idCols + 2 * $kpCount + 12; // 5 kolom tim
                 $totalCols = $timEnd;
 
                 $lastCol = $this->getColumnLetter($totalCols);
@@ -322,6 +330,7 @@ class RekapLansirGudangExport implements FromArray, WithEvents, WithTitle
                 $hargaPtSumLtr = $this->getColumnLetter($hargaPtSumCol);
                 $totalPtSumLtr = $this->getColumnLetter($totalPtSumCol);
                 $ketLtr = $this->getColumnLetter($ketCol);
+                $buktiTibaLtr = $this->getColumnLetter($buktiTibaCol);
                 $spacerLtr = $this->getColumnLetter($spacerCol);
                 $timStartLtr = $this->getColumnLetter($timStart);
                 $timEndLtr = $this->getColumnLetter($timEnd);
@@ -357,7 +366,7 @@ class RekapLansirGudangExport implements FromArray, WithEvents, WithTitle
                     ->setVertical(Alignment::VERTICAL_CENTER);
 
                 // Kolom tunggal: merge 2 baris
-                foreach ([$oaLtr, $totalOaLtr, $hargaPtSumLtr, $totalPtSumLtr, $ketLtr, $spacerLtr] as $cl) {
+                foreach ([$oaLtr, $totalOaLtr, $hargaPtSumLtr, $totalPtSumLtr, $ketLtr, $buktiTibaLtr, $spacerLtr] as $cl) {
                     $sheet->mergeCells("{$cl}{$hRow1}:{$cl}{$hRow2}");
                     $sheet->getStyle("{$cl}{$hRow1}")
                         ->getAlignment()
@@ -453,7 +462,7 @@ class RekapLansirGudangExport implements FromArray, WithEvents, WithTitle
                                 ]);
 
                                 // Kolom data: alternating per kendaraan
-                                $sheet->getStyle("{$nextDataCol}{$r}:{$ketLtr}{$r}")->applyFromArray(['fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => $fill]],
+                                $sheet->getStyle("{$nextDataCol}{$r}:{$buktiTibaLtr}{$r}")->applyFromArray(['fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => $fill]],
                                     'font' => ['name' => 'Arial', 'size' => 10],
                                     'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
                                 ]);
@@ -478,6 +487,24 @@ class RekapLansirGudangExport implements FromArray, WithEvents, WithTitle
                 // ── Border seluruh tabel ──────────────────────────────
                 $sheet->getStyle("A{$hRow1}:{$lastCol}{$totalRowNum}")
                     ->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+
+                // ── Add hyperlinks for Bukti Tiba ──────────────────────
+                for ($r = $dataStart; $r < $totalRowNum; $r++) {
+                    $cell = $sheet->getCell("{$buktiTibaLtr}{$r}");
+                    $value = $cell->getValue();
+                    if (!empty($value)) {
+                        // Generate full URL to storage file
+                        $url = url(\Illuminate\Support\Facades\Storage::url($value));
+                        $cell->setHyperlink(new Hyperlink($url, $url));
+                        // Style the link as blue and underlined
+                        $sheet->getStyle("{$buktiTibaLtr}{$r}")->applyFromArray([
+                            'font' => [
+                                'color' => ['argb' => 'FF2563EB'],
+                                'underline' => true,
+                            ],
+                        ]);
+                    }
+                }
 
                 // ── Auto size kolom ───────────────────────────────────
                 foreach (range('A', $lastCol) as $col) {
