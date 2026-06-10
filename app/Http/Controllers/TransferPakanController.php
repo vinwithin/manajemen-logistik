@@ -700,6 +700,20 @@ class TransferPakanController extends Controller
         }
     }
 
+    public function timDestroy(string $id)
+    {
+        try {
+            $id = decrypt($id);
+            $tim = TransferPakanTim::findOrFail($id);
+
+            $tim->delete();
+
+            return redirect()->back()->with('success', 'Tim bongkar berhasil dihapus!');
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', 'Gagal menghapus tim bongkar: '.$e->getMessage());
+        }
+    }
+
     public function destroy(string $id)
     {
         try {

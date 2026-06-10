@@ -83,7 +83,7 @@
                     @endphp
                     <div class="card mb-3 {{ $loop->last ? 'mb-0' : '' }}">
                         <div
-                            class="card-header py-2 d-flex justify-content-between align-items-center bg-light flex-wrap gap-2">
+                            class="card-header py-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
                             <div class="d-flex align-items-center gap-2 flex-wrap">
                                 <span class="fw-bold">
                                     <i class="fa fa-user text-primary"></i> {{ $penerima->nama_penerima }}
@@ -259,6 +259,7 @@
                                                     <th class="text-end">Upah (Rp/kg)</th>
                                                     <th class="text-end">Total Upah</th>
                                                     <th>Keterangan</th>
+                                                    <th>Aksi</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -282,6 +283,13 @@
                                                             @endif
                                                         </td>
                                                         <td class="text-muted small">{{ $tim->keterangan ?? '—' }}</td>
+                                                        <td class="text-center">
+                                                            <form action="{{ route('gudang.lansir.tim.destroy', encrypt($tim->id)) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus tim ini?')">
+                                                                @csrf
+                                                                @method('DELETE')
+                                                                <button type="submit" class="btn btn-sm btn-danger">Hapus</button>
+                                                            </form>
+                                                        </td>
                                                     </tr>
                                                 @endforeach
                                             </tbody>

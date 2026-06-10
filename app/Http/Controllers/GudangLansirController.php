@@ -487,6 +487,20 @@ class GudangLansirController extends Controller
         }
     }
 
+    public function timDestroy(string $id)
+    {
+        try {
+            $id = decrypt($id);
+            $tim = GudangLansirTim::with('penerima')->findOrFail($id);
+
+            $tim->delete();
+
+            return redirect()->back()->with('success', 'Tim bongkar berhasil dihapus!');
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', 'Gagal menghapus tim bongkar: '.$e->getMessage());
+        }
+    }
+
     public function exportRekap(Request $request)
     {
         $from = $request->dari_tanggal ?: null;

@@ -87,115 +87,282 @@
 
     {{-- Kendaraan & Penerima --}}
     @foreach ($header->kendaraans as $ki => $kendaraan)
-        <div class="card mb-3">
-            <div class="card-header py-2 d-flex justify-content-between align-items-center">
-                <div>
-                    <span class="fw-bold"><i class="fa fa-truck"></i> {{ $kendaraan->no_polisi }}</span>
-                    @if ($kendaraan->nama_sopir)
-                        <span class="text-muted small ms-2">· {{ $kendaraan->nama_sopir }}</span>
-                    @endif
+        <div class="card mb-3 border-info">
+            <div class="card-header text-dark py-2">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <h6 class="mb-0">
+                        <i class="fa fa-truck"></i> Kendaraan {{ $ki + 1 }}: <strong>{{ $kendaraan->no_polisi }}</strong>
+                        @if ($kendaraan->nama_sopir)
+                            <span class="fw-normal opacity-75">({{ $kendaraan->nama_sopir }})</span>
+                        @endif
+                    </h6>
+                    <div class="d-flex gap-1 flex-wrap">
+                        <span class="badge bg-warning text-dark">{{ number_format($kendaraan->total_kg, 0, ',', '.') }} kg</span>
+                        <span class="badge bg-light text-dark">{{ number_format($kendaraan->total_karung, 0, ',', '.') }} karung</span>
+                    </div>
                 </div>
-                <span class="badge bg-primary">{{ number_format($kendaraan->total_kg, 0, ',', '.') }} kg</span>
             </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-sm table-bordered mb-0 align-middle">
-                        <thead class="table-light">
-                            <tr>
-                                <th>#</th>
-                                <th>Penerima</th>
-                                <th>No. SJ</th>
-                                <th>Tujuan</th>
-                                @foreach ($kodePakanList as $kp)
-                                    <th class="text-center">{{ $kp->kode }}</th>
-                                @endforeach
-                                <th class="text-end">Total KG</th>
-                                <th class="text-end">Total PT Sum</th>
-                                <th class="text-center">Status</th>
-                                <th class="text-center">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach ($kendaraan->penerimas as $pi => $penerima)
-                                @php $pakanMap = $penerima->pakans->keyBy('kode_pakan_id'); @endphp
-                                <tr>
-                                    <td>{{ $pi + 1 }}</td>
-                                    <td><strong>{{ $penerima->nama_penerima }}</strong></td>
-                                    <td class="small text-muted">{{ $penerima->no_surat_jalan ?? '-' }}</td>
-                                    <td>{{ $penerima->tujuan?->nama ?? '-' }}</td>
-                                    @foreach ($kodePakanList as $kp)
-                                        @php $pk = $pakanMap[$kp->id] ?? null; @endphp
-                                        <td class="text-center">
-                                            {{ $pk ? number_format($pk->jumlah_karung, 0, ',', '.') : '—' }}
-                                        </td>
-                                    @endforeach
-                                    <td class="text-end">{{ number_format($penerima->total_kg, 0, ',', '.') }}</td>
-                                    <td class="text-end">Rp {{ number_format($penerima->total_pt_sum, 0, ',', '.') }}</td>
-                                    <td class="text-center">
-                                        @php
-                                            $badge = match ($penerima->status) {
-                                                'tiba' => 'info',
-                                                'selesai' => 'success',
-                                                default => 'secondary',
-                                            };
-                                            $label = match ($penerima->status) {
-                                                'tiba' => 'Tiba',
-                                                'selesai' => 'Selesai',
-                                                default => 'Pending',
-                                            };
-                                        @endphp
-                                        <span class="badge bg-{{ $badge }}">{{ $label }}</span>
-                                        @if ($penerima->tiba_at)
-                                            <div class="small text-muted mt-1" style="font-size:10px;">
-                                                {{ \Carbon\Carbon::parse($penerima->tiba_at)->format('d/m/Y') }}
-                                            </div>
-                                        @endif
-                                        @if ($penerima->validasi_oleh)
-                                            <div class="small text-muted" style="font-size:10px;">
-                                                <i class="fa fa-user"></i> {{ $penerima->validasi_oleh }}
-                                            </div>
-                                        @endif
-                                    </td>
-                                    <td class="text-center">
-                                        @if ($penerima->status === 'pending')
-                                            <button class="btn btn-xs btn-info text-white btn-tiba"
-                                                data-id="{{ encrypt($penerima->id) }}"
-                                                data-nama="{{ $penerima->nama_penerima }}">
-                                                <i class="fa fa-map-marker"></i> Tiba
-                                            </button>
-                                        @elseif ($penerima->status === 'tiba')
-                                            <button class="btn btn-xs btn-success btn-selesai"
-                                                data-id="{{ encrypt($penerima->id) }}"
-                                                data-nama="{{ $penerima->nama_penerima }}">
-                                                <i class="fa fa-check"></i> Selesai
-                                            </button>
-                                        @else
-                                            <span class="text-muted small">✓</span>
-                                        @endif
-                                    </td>
-                                </tr>
 
-                                {{-- Tim Bongkar --}}
-                                @if ($penerima->tims->count())
-                                    <tr class="table-light">
-                                        <td colspan="{{ 5 + $kodePakanList->count() }}" class="small text-muted ps-4">
-                                            <strong>Tim Bongkar:</strong>
-                                            @foreach ($penerima->tims as $tim)
-                                                {{ $tim->nama_tim }} ({{ number_format($tim->jumlah_kg, 0, ',', '.') }} kg
-                                                @if ($tim->upah_per_kg)
-                                                    · Rp {{ number_format($tim->upah_per_kg, 0, ',', '.') }}/kg
-                                                @endif)
-                                                @if (!$loop->last)
-                                                    ,
-                                                @endif
-                                            @endforeach
-                                        </td>
-                                    </tr>
+            <div class="card-body p-3">
+                @forelse ($kendaraan->penerimas as $pi => $penerima)
+                    @php
+                        $totalOaPenerima = $penerima->pakans->sum(fn($pk) => $pk->jumlah_kg * $pk->ongkos_oa);
+                        $totalUpahPenerima = $penerima->tims->sum('total_upah');
+                    @endphp
+                    <div class="card mb-3 {{ $loop->last ? 'mb-0' : '' }}">
+                        <div class="card-header py-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <span class="fw-bold">
+                                    <i class="fa fa-user text-primary"></i> {{ $penerima->nama_penerima }}
+                                </span>
+                                @if ($penerima->tujuan)
+                                    <span class="text-muted small">→ {{ $penerima->tujuan->nama }}</span>
                                 @endif
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
+                                @if ($penerima->no_surat_jalan)
+                                    <span class="badge bg-light text-dark">SJ: {{ $penerima->no_surat_jalan }}</span>
+                                @endif
+                                @php
+                                    $badge = match ($penerima->status) {
+                                        'tiba' => 'info',
+                                        'selesai' => 'success',
+                                        default => 'secondary',
+                                    };
+                                    $label = match ($penerima->status) {
+                                        'tiba' => 'Tiba',
+                                        'selesai' => 'Selesai',
+                                        default => 'Pending',
+                                    };
+                                @endphp
+                                <span class="badge bg-{{ $badge }}">{{ $label }}</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <span class="badge bg-primary">{{ number_format($penerima->total_kg, 0, ',', '.') }} kg</span>
+
+                                @if ($penerima->status === 'pending')
+                                    <button class="btn btn-xs btn-info text-white btn-tiba"
+                                        data-id="{{ encrypt($penerima->id) }}"
+                                        data-nama="{{ $penerima->nama_penerima }}">
+                                        <i class="fa fa-map-marker"></i> Tiba
+                                    </button>
+                                @elseif ($penerima->status === 'tiba')
+                                    <form action="{{ route('transfer-pakan.penerima.update-status', encrypt($penerima->id)) }}"
+                                        method="POST" class="d-inline">
+                                        @csrf
+                                        <input type="hidden" name="status" value="selesai">
+                                        <button type="submit" class="btn btn-xs btn-success"
+                                            onclick="return confirm('Tandai penerima ini sebagai Selesai?')">
+                                            <i class="fa fa-check-circle"></i> Selesai
+                                        </button>
+                                    </form>
+                                @endif
+                            </div>
+                        </div>
+
+                        <div class="card-body p-0">
+                            @if (in_array($penerima->status, ['tiba', 'selesai']))
+                                <div class="px-3 py-2 bg-light border-bottom">
+                                    <div class="row g-2 small">
+                                        <div class="col-md-4">
+                                            <span class="text-muted">Waktu Tiba:</span>
+                                            <strong class="ms-1">{{ $penerima->tiba_at?->format('d/m/Y H:i') ?? '-' }}</strong>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <span class="text-muted">Validasi Oleh:</span>
+                                            <strong class="ms-1">{{ $penerima->validasi_oleh ?? '-' }}</strong>
+                                        </div>
+                                        <div class="col-md-4">
+                                            @if ($penerima->bukti_tiba)
+                                                <a href="{{ asset('storage/' . $penerima->bukti_tiba) }}" target="_blank"
+                                                    class="btn btn-xs btn-outline-primary">
+                                                    <i class="fa fa-image"></i> Lihat Bukti Tiba
+                                                </a>
+                                            @else
+                                                <span class="text-muted small">Tidak ada bukti tiba</span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
+
+                            @if ($penerima->pakans->count() > 0)
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-bordered mb-0 align-middle">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th width="40px">#</th>
+                                                <th>Kode Pakan</th>
+                                                <th class="text-end">Jumlah (kg)</th>
+                                                <th class="text-end">Karung</th>
+                                                <th class="text-end">Ongkos OA (Rp/kg)</th>
+                                                <th class="text-end">Total OA</th>
+                                                <th class="text-end">Harga PT Sum (Rp/kg)</th>
+                                                <th class="text-end">Total PT Sum</th>
+                                                <th>Keterangan</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach ($penerima->pakans as $idx => $pakan)
+                                                <tr>
+                                                    <td class="text-center text-muted">{{ $idx + 1 }}</td>
+                                                    <td><strong>{{ $pakan->kodePakan?->kode ?? '-' }}</strong></td>
+                                                    <td class="text-end">
+                                                        {{ number_format($pakan->jumlah_kg, 0, ',', '.') }}
+                                                    </td>
+                                                    <td class="text-end">
+                                                        {{ number_format($pakan->jumlah_karung, 0, ',', '.') }}
+                                                    </td>
+                                                    <td class="text-end">
+                                                        @if ($pakan->ongkos_oa > 0)
+                                                            Rp {{ number_format($pakan->ongkos_oa, 0, ',', '.') }}
+                                                        @else
+                                                            <span class="text-muted">—</span>
+                                                        @endif
+                                                    </td>
+                                                    <td class="text-end">
+                                                        @php $totalOaPakan = $pakan->jumlah_kg * ($pakan->ongkos_oa ?? 0); @endphp
+                                                        @if ($totalOaPakan > 0)
+                                                            Rp {{ number_format($totalOaPakan, 0, ',', '.') }}
+                                                        @else
+                                                            <span class="text-muted">—</span>
+                                                        @endif
+                                                    </td>
+                                                    <td class="text-end">
+                                                        @if (($pakan->harga_pt_sum ?? 0) > 0)
+                                                            Rp {{ number_format($pakan->harga_pt_sum, 0, ',', '.') }}
+                                                        @else
+                                                            <span class="text-muted">—</span>
+                                                        @endif
+                                                    </td>
+                                                    <td class="text-end">
+                                                        @php $totalPtSumPakan = $pakan->jumlah_kg * ($pakan->harga_pt_sum ?? 0); @endphp
+                                                        @if ($totalPtSumPakan > 0)
+                                                            Rp {{ number_format($totalPtSumPakan, 0, ',', '.') }}
+                                                        @else
+                                                            <span class="text-muted">—</span>
+                                                        @endif
+                                                    </td>
+                                                    <td class="text-muted small">{{ $pakan->keterangan ?? '—' }}</td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                        <tfoot class="table-light fw-bold">
+                                            <tr>
+                                                <td colspan="2" class="text-end">Total</td>
+                                                <td class="text-end">{{ number_format($penerima->total_kg, 0, ',', '.') }}</td>
+                                                <td class="text-end">{{ number_format($penerima->total_karung, 0, ',', '.') }}</td>
+                                                <td></td>
+                                                <td class="text-end text-primary">Rp {{ number_format($totalOaPenerima, 0, ',', '.') }}</td>
+                                                <td></td>
+                                                <td class="text-end text-success">Rp {{ number_format($penerima->total_pt_sum, 0, ',', '.') }}</td>
+                                                <td></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            @else
+                                <div class="text-center text-muted py-3 small">Tidak ada data pakan.</div>
+                            @endif
+
+                            {{-- Tim Bongkar --}}
+                            @if ($penerima->tims->count() > 0)
+                                <div class="border-top">
+                                    <div class="px-3 pt-2 pb-1">
+                                        <span class="small fw-semibold text-muted">
+                                            <i class="fa fa-users"></i> Tim Bongkar
+                                        </span>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-bordered mb-0 align-middle">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Nama Tim</th>
+                                                    <th class="text-end">Jumlah (kg)</th>
+                                                    <th class="text-end">Karung</th>
+                                                    <th class="text-end">Upah (Rp/kg)</th>
+                                                    <th class="text-end">Total Upah</th>
+                                                    <th>Keterangan</th>
+                                                    <th class="text-center">Aksi</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach ($penerima->tims as $tim)
+                                                    <tr>
+                                                        <td>{{ $tim->nama_tim }}</td>
+                                                        <td class="text-end">{{ number_format($tim->jumlah_kg, 0, ',', '.') }}</td>
+                                                        <td class="text-end">{{ $tim->jumlah_karung ? number_format($tim->jumlah_karung, 0, ',', '.') : '—' }}</td>
+                                                        <td class="text-end">
+                                                            @if ($tim->upah_per_kg > 0)
+                                                                Rp {{ number_format($tim->upah_per_kg, 0, ',', '.') }}
+                                                            @else
+                                                                <span class="text-muted">—</span>
+                                                            @endif
+                                                        </td>
+                                                        <td class="text-end fw-bold">
+                                                            @if ($tim->total_upah > 0)
+                                                                Rp {{ number_format($tim->total_upah, 0, ',', '.') }}
+                                                            @else
+                                                                <span class="text-muted">—</span>
+                                                            @endif
+                                                        </td>
+                                                        <td class="text-muted small">{{ $tim->keterangan ?? '—' }}</td>
+                                                        <td class="text-center">
+                                                            <form action="{{ route('transfer-pakan.tim.destroy', encrypt($tim->id)) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus tim ini?')">
+                                                                @csrf
+                                                                @method('DELETE')
+                                                                <button type="submit" class="btn btn-sm btn-danger">Hapus</button>
+                                                            </form>
+                                                        </td>
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                            @if ($penerima->tims->count() > 1)
+                                                <tfoot class="table-light fw-bold">
+                                                    <tr>
+                                                        <td colspan="4" class="text-end">Total Upah Tim</td>
+                                                        <td class="text-end text-success">Rp {{ number_format($totalUpahPenerima, 0, ',', '.') }}</td>
+                                                        <td></td>
+                                                        <td></td>
+                                                    </tr>
+                                                </tfoot>
+                                            @endif
+                                        </table>
+                                    </div>
+                                </div>
+                            @endif
+
+                            {{-- Subtotal Penerima --}}
+                            <div class="d-flex justify-content-between align-items-center px-3 py-2 bg-light border-top small fw-semibold text-muted">
+                                <span>{{ number_format($penerima->total_kg, 0, ',', '.') }} kg · {{ number_format($penerima->total_karung, 0, ',', '.') }} karung</span>
+                                <span>
+                                    OA: <span class="text-primary">Rp {{ number_format($totalOaPenerima, 0, ',', '.') }}</span>
+                                    @if ($totalUpahPenerima > 0)
+                                        · Angkut: <span class="text-success">Rp {{ number_format($totalUpahPenerima, 0, ',', '.') }}</span>
+                                    @endif
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                @empty
+                    <div class="alert alert-info m-0">Belum ada penerima dalam kendaraan ini.</div>
+                @endforelse
+
+                {{-- Total per Kendaraan --}}
+                @if ($kendaraan->penerimas->count() > 0)
+                    @php
+                        $oaKendaraan = $kendaraan->penerimas->sum(fn($p) => $p->pakans->sum(fn($pk) => $pk->jumlah_kg * $pk->ongkos_oa));
+                        $upahKendaraan = $kendaraan->penerimas->flatMap->tims->sum('total_upah');
+                    @endphp
+                    <div class="mt-3 p-2 bg-light rounded border d-flex justify-content-between align-items-center small fw-semibold">
+                        <span class="text-muted">Total Kendaraan {{ $ki + 1 }}</span>
+                        <span>
+                            <span class="text-dark">{{ number_format($kendaraan->total_kg, 0, ',', '.') }} kg</span>
+                            · OA: <span class="text-primary">Rp {{ number_format($oaKendaraan, 0, ',', '.') }}</span>
+                            @if ($upahKendaraan > 0)
+                                · Angkut: <span class="text-success">Rp {{ number_format($upahKendaraan, 0, ',', '.') }}</span>
+                            @endif
+                        </span>
+                    </div>
+                @endif
             </div>
         </div>
     @endforeach

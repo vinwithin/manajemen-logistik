@@ -145,6 +145,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/lansir/{id}', [GudangLansirController::class, 'show'])->name('lansir.show')->middleware('can:gudang-stok.lansir');
         Route::post('/lansir/penerima/{id}/update-status', [GudangLansirController::class, 'penerimaUpdateStatus'])->name('lansir.penerima.update-status')->middleware('can:gudang-stok.lansir');
         Route::get('/lansir/api/po-penerima/{id}', [GudangLansirController::class, 'getPoPenerimaData'])->name('lansir.api.po-penerima')->middleware('can:gudang-stok.lansir');
+        Route::delete('/lansir/tim/{id}', [GudangLansirController::class, 'timDestroy'])->name('lansir.tim.destroy')->middleware('can:gudang-stok.lansir');
     });
 
     // Rekap PO
@@ -166,6 +167,7 @@ Route::middleware('auth')->group(function () {
         Route::put('/{id}', [TransferPakanController::class, 'update'])->name('update');
         Route::delete('/{id}', [TransferPakanController::class, 'destroy'])->name('destroy');
         Route::get('/{id}', [TransferPakanController::class, 'show'])->name('show');
+        Route::delete('/tim/{id}', [TransferPakanController::class, 'timDestroy'])->name('tim.destroy');
     });
 
     // Rekap Lansir
