@@ -665,9 +665,9 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                         $kendaraanStart = $currentRow;
                         $kendaraanEnd = $currentRow + $totalRows - 1;
 
-                        // Merge A–E (sampai No. DO) per kendaraan jika > 1 baris
+                        // Merge A–D (Tanggal, No PO, No Polisi) per kendaraan jika > 1 baris (LEAVE No. DO UNMERGED)
                         if ($totalRows > 1) {
-                            $mergeEndCol = $this->getColumnLetter(5);
+                            $mergeEndCol = $this->getColumnLetter(4); // Column D
                             foreach (range('A', $mergeEndCol) as $col) {
                                 $sheet->mergeCells("{$col}{$kendaraanStart}:{$col}{$kendaraanEnd}");
                                 $sheet->getStyle("{$col}{$kendaraanStart}:{$col}{$kendaraanEnd}")
@@ -677,7 +677,7 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                             }
                         }
 
-                        // Per penerima: merge kolom Tujuan & PENERIMA jika ada baris lansir tambahan
+                        // Per penerima: NO MORE merging! Show all data on every row!
                         $penerimaRow = $currentRow;
                         if ($kendaraan->penerimas->count() > 0) {
                             foreach ($kendaraan->penerimas as $penerima) {
@@ -695,20 +695,6 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                                     }
                                 } else {
                                     $penerimaRows = 1; // Tidak ada lansir, cuma 1 baris identitas
-                                }
-
-                                if ($penerimaRows > 1) {
-                                    $penerimaEnd = $penerimaRow + $penerimaRows - 1;
-                                    $sheet->mergeCells("{$tujuanColLetter}{$penerimaRow}:{$tujuanColLetter}{$penerimaEnd}");
-                                    $sheet->getStyle("{$tujuanColLetter}{$penerimaRow}:{$tujuanColLetter}{$penerimaEnd}")
-                                        ->getAlignment()
-                                        ->setVertical(Alignment::VERTICAL_CENTER)
-                                        ->setHorizontal(Alignment::HORIZONTAL_LEFT);
-                                    $sheet->mergeCells("{$penerimaColLetter}{$penerimaRow}:{$penerimaColLetter}{$penerimaEnd}");
-                                    $sheet->getStyle("{$penerimaColLetter}{$penerimaRow}:{$penerimaColLetter}{$penerimaEnd}")
-                                        ->getAlignment()
-                                        ->setVertical(Alignment::VERTICAL_CENTER)
-                                        ->setHorizontal(Alignment::HORIZONTAL_LEFT);
                                 }
                                 $penerimaRow += $penerimaRows;
                             }
