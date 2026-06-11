@@ -8,12 +8,126 @@ use App\Models\Supplier;
 use App\Models\PoPenerima;
 use App\Models\PurchaseOrder;
 use App\Traits\WithUserTujuan;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Exception;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 
 class PembayaranSupplierController extends Controller
 {
     use WithUserTujuan;
+
+    public function exportPdfConfirm(Request $request)
+    {
+        $suppliers = Supplier::orderBy('nama')->get();
+        $tujuans = $this->getUserTujuan();
+        $from = $request->from;
+        $to = $request->to;
+        $supplierId = $request->supplier_id;
+        $tujuanId = $request->tujuan_id;
+        $tipePembayaran = $request->tipe_pembayaran;
+        $paymentCount = null;
+
+        if ($from && $to) {
+            $paymentCount = $this->paidPaymentQuery($request)
+                ->distinct('po_kendaraan_id')
+                ->count('po_kendaraan_id');
+        }
+
+        return view('pages.keuangan.pembayaran.export-pdf-confirm', compact(
+            'suppliers',
+            'tujuans',
+            'from',
+            'to',
+            'supplierId',
+            'tujuanId',
+            'tipePembayaran',
+            'paymentCount'
+        ));
+    }
+
+    public function exportPdf(Request $request)
+    {
+        try {
+            $request->validate([
+                'from' => 'required|date',
+                'to' => 'required|date|after_or_equal:from',
+            ], [
+                'from.required' => 'Tanggal awal pembayaran wajib diisi.',
+                'to.required' => 'Tanggal akhir pembayaran wajib diisi.',
+                'to.after_or_equal' => 'Tanggal akhir harus sama atau setelah tanggal awal.',
+            ]);
+
+            $from = $request->from;
+            $to = $request->to;
+            $kendaraanIds = $this->paidPaymentQuery($request)
+                ->pluck('po_kendaraan_id')
+                ->filter()
+                ->unique()
+                ->values();
+
+            $pos = PurchaseOrder::with([
+                'cv',
+                'kendaraans' => function ($q) use ($kendaraanIds) {
+                    $q->whereIn('id', $kendaraanIds);
+                },
+                'kendaraans.supplier',
+                'kendaraans.oaPayments' => function ($q) use ($request) {
+                    $q
+                        ->where('jumlah_bayar', '>', 0)
+                        ->when($request->from, fn($q) => $q->whereDate('tanggal_bayar', '>=', $request->from))
+                        ->when($request->to, fn($q) => $q->whereDate('tanggal_bayar', '<=', $request->to))
+                        ->when($request->tipe_pembayaran, fn($q) => $q->where('tipe_pembayaran', $request->tipe_pembayaran))
+                        ->when($request->supplier_id, fn($q) => $q->where('supplier_id', $request->supplier_id));
+                },
+                'kendaraans.penerimas.pakans.kodePakan',
+                'kendaraans.penerimas.tujuan',
+            ])
+                ->whereHas('kendaraans', fn($q) => $q->whereIn('id', $kendaraanIds))
+                ->orderBy('tanggal_po', 'asc')
+                ->orderBy('no_po', 'asc')
+                ->get();
+
+            $pdf = Pdf::loadView('pdf.purchase-order-period-supplier', compact('pos', 'from', 'to'))
+                ->setPaper('legal', 'landscape')
+                ->setOption('margin-top', 10)
+                ->setOption('margin-bottom', 10)
+                ->setOption('margin-left', 10)
+                ->setOption('margin-right', 10);
+
+            $filename = 'Pembayaran-OA-Supplier-' . now()->format('Ymd-His') . '.pdf';
+
+            return $pdf->stream($filename);
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', 'Gagal export PDF pembayaran supplier: ' . $e->getMessage());
+        }
+    }
+
+    private function paidPaymentQuery(Request $request)
+    {
+        $tujuans = $this->getUserTujuan();
+        $activeCvId = session('active_cv');
+        $from = $request->from;
+        $to = $request->to;
+        $supplierId = $request->supplier_id;
+        $tujuanId = $request->tujuan_id;
+        $tipePembayaran = $request->tipe_pembayaran;
+
+        return OaPayment::query()
+            ->whereNotNull('po_kendaraan_id')
+            ->where('jumlah_bayar', '>', 0)
+            ->when($from, fn($q) => $q->whereDate('tanggal_bayar', '>=', $from))
+            ->when($to, fn($q) => $q->whereDate('tanggal_bayar', '<=', $to))
+            ->when($supplierId, fn($q) => $q->where('supplier_id', $supplierId))
+            ->when($tipePembayaran, fn($q) => $q->where('tipe_pembayaran', $tipePembayaran))
+            ->when($activeCvId, fn($q) => $q->whereHas('kendaraan.po', fn($po) => $po->where('cv_id', $activeCvId)))
+            ->whereHas('kendaraan', fn($q) => $q->where('status', '!=', 'batal'))
+            ->whereHas('kendaraan.penerimas.penerima', function ($q) use ($tujuans, $tujuanId) {
+                $q->whereIn('tujuan_id', $tujuans->pluck('id'))
+                    ->when($tujuanId, fn($q) => $q->where('tujuan_id', $tujuanId));
+            });
+    }
+
     public function index(Request $request)
     {
         $tujuans = $this->getUserTujuan();

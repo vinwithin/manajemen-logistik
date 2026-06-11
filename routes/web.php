@@ -59,6 +59,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/oa/{id}/bayar', [RekapOaController::class, 'bayar'])->name('oa.bayar')->middleware('can:payment.create');
         Route::post('/oa/{id}/bayar', [RekapOaController::class, 'storeBayar'])->name('oa.store-bayar')->middleware('can:payment.create');
         Route::get('/pembayaran', [PembayaranSupplierController::class, 'index'])->name('pembayaran.index')->middleware('can:payment.view');
+        Route::get('/pembayaran/export-pdf-confirm', [PembayaranSupplierController::class, 'exportPdfConfirm'])->name('pembayaran.export-pdf-confirm')->middleware('can:payment.view');
+        Route::get('/pembayaran/export-pdf', [PembayaranSupplierController::class, 'exportPdf'])->name('pembayaran.export-pdf')->middleware('can:payment.view');
         Route::delete('/pembayaran/{id}', [PembayaranSupplierController::class, 'destroy'])->name('pembayaran.destroy')->middleware('can:payment.confirm');
 
         Route::get('/rugi-laba', [RekapRugiLabaController::class, 'index'])->name('rugi-laba.index')->middleware('can:rugi-laba.view');

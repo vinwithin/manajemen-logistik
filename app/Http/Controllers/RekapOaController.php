@@ -62,9 +62,14 @@ class RekapOaController extends Controller
                 ->addColumn('total_kg', fn ($q) => $q->total_kg)
                 ->addColumn('total_oa', fn ($q) => $q->total_oa)
                 ->addColumn('dp_nominal', fn ($q) => number_format($q->dp_nominal ?? 0, 0, ',', '.'))
+                ->addColumn('sudah_bayar', fn ($q) => number_format($q->total_bayar_ongkos ?? 0, 0, ',', '.'))
                 ->addColumn('status_bayar', function ($q) {
-                    // Gunakan oaPaymentOnly untuk status yang akurat
-                    $s = $q->oaPaymentOnly?->status ?? 'pending';
+                    $s = 'pending';
+                    if ($q->total_bayar >= $q->total_oa) {
+                        $s = 'lunas';
+                    } elseif ($q->total_bayar > 0) {
+                        $s = 'partial';
+                    }
                     $map = ['pending' => ['secondary', 'Belum Bayar'], 'partial' => ['warning', 'Bayar Sebagian'], 'lunas' => ['success', 'Lunas']];
                     [$color, $label] = $map[$s] ?? ['secondary', 'Belum Bayar'];
 
@@ -73,9 +78,8 @@ class RekapOaController extends Controller
                 ->addColumn('sisa', fn ($q) => max(0, $q->total_oa - $q->total_bayar))
                 ->addColumn('action', function ($q) {
                     $url = route('keuangan.oa.bayar', encrypt($q->id));
-                    $status = $q->oaPaymentOnly?->status ?? 'pending';
 
-                    if ($status === 'lunas') {
+                    if ($q->total_bayar >= $q->total_oa) {
                         return "<a href='{$url}' class='btn btn-xs btn-success'><i class='fa fa-check'></i> Lunas</a>";
                     }
 
@@ -118,8 +122,12 @@ class RekapOaController extends Controller
         $existingOa = OaPayment::where('po_kendaraan_id', $kendaraan->id)
             ->where('tipe_pembayaran', 'oa')
             ->first();
+        $totalDp = (float) OaPayment::where('po_kendaraan_id', $kendaraan->id)
+            ->where('tipe_pembayaran', 'dp_supplier')
+            ->sum('jumlah_bayar');
+        $totalBayarSebelumnya = $totalDp + (float) ($existingOa?->jumlah_bayar ?? 0);
 
-        if ($existingOa && $existingOa->status === 'lunas') {
+        if (($existingOa && $existingOa->status === 'lunas') || $totalBayarSebelumnya >= $tagihan) {
             return redirect()->route('keuangan.oa.index')
                 ->with('error', 'Pembayaran sudah lunas, tidak dapat menambah pembayaran baru.');
         }
@@ -131,8 +139,9 @@ class RekapOaController extends Controller
 
         // Gunakan $existingOa yang sudah di-query di atas
         $existing = $existingOa;
-        $totalBayar = ($existing?->jumlah_bayar ?? 0) + $request->jumlah_bayar;
-        $status = $totalBayar >= $tagihan ? 'lunas' : 'partial';
+        $totalBayarOa = (float) ($existing?->jumlah_bayar ?? 0) + (float) $request->jumlah_bayar;
+        $totalBayarKendaraan = $totalDp + $totalBayarOa;
+        $status = $totalBayarKendaraan >= $tagihan ? 'lunas' : 'partial';
 
         OaPayment::updateOrCreate(
             [
@@ -143,7 +152,7 @@ class RekapOaController extends Controller
                 'po_penerima_id' => null,
                 'supplier_id' => $kendaraan->supplier_id,
                 'jumlah_tagihan' => $tagihan,
-                'jumlah_bayar' => $totalBayar,
+                'jumlah_bayar' => $totalBayarOa,
                 'tanggal_bayar' => $request->tanggal_bayar,
                 'metode_bayar' => $request->metode_bayar,
                 'bukti_bayar' => $path ?? $existing?->bukti_bayar,

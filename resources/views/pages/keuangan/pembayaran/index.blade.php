@@ -43,6 +43,9 @@
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
             <h5 class="mb-0">Pembayaran Supplier</h5>
             <div class="d-flex gap-2 flex-wrap">
+                <a href="{{ route('keuangan.pembayaran.export-pdf-confirm') }}" class="btn btn-sm btn-danger">
+                    <i class="fa fa-file-pdf-o"></i> Cetak PDF
+                </a>
                 <select id="filterTipe" class="form-select form-select-sm" style="width:150px">
                     <option value="">Semua Tipe</option>
                     <option value="oa">Pembayaran OA</option>

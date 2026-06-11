@@ -125,10 +125,10 @@
                         render: d => d && d !== '0' ? 'Rp ' + d : '-'
                     },
                     {
-                        data: 'oaPaymentOnly.jumlah_bayar',
-                        name: 'jumlah_bayar',
+                        data: 'sudah_bayar',
+                        name: 'sudah_bayar',
                         searchable: false,
-                        render: d => fmt(d || 0)
+                        render: d => d && d !== '0' ? 'Rp ' + d : '-'
                     },
                     {
                         data: 'sisa',

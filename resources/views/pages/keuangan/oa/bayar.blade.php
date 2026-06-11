@@ -1,5 +1,9 @@
 @extends('layout.app')
 @section('content')
+    @php
+        $totalBayarKendaraan = (float) $kendaraan->total_bayar;
+        $sisaTagihan = max(0, (float) $tagihan - $totalBayarKendaraan);
+    @endphp
     <div class="row justify-content-center">
         <div class="col-12">
 
@@ -41,12 +45,18 @@
                         @endif
                         @if ($kendaraan->oaPaymentOnly)
                             <div class="col-6 col-md-3">
-                                <div class="text-muted">Sudah Dibayar</div>
+                                <div class="text-muted">Sudah Dibayar OA</div>
                                 <div class="fw-bold text-success">
                                     Rp {{ number_format($kendaraan->oaPaymentOnly->jumlah_bayar, 0, ',', '.') }}
                                 </div>
                             </div>
                         @endif
+                        <div class="col-6 col-md-3">
+                            <div class="text-muted">Total Dibayar</div>
+                            <div class="fw-bold text-success">
+                                Rp {{ number_format($totalBayarKendaraan, 0, ',', '.') }}
+                            </div>
+                        </div>
                     </div>
 
                     {{-- Detail penerima dan pakan --}}
@@ -89,10 +99,10 @@
                         </div>
                     @endif
 
-                    @if ($kendaraan->oaPaymentOnly && $kendaraan->oaPaymentOnly->sisa_tagihan > 0)
+                    @if ($sisaTagihan > 0)
                         <div class="alert alert-warning py-2 mt-2 mb-0 small">
                             Sisa tagihan: <strong>Rp
-                                {{ number_format($kendaraan->oaPaymentOnly->sisa_tagihan, 0, ',', '.') }}</strong>
+                                {{ number_format($sisaTagihan, 0, ',', '.') }}</strong>
                         </div>
                     @endif
                 </div>
@@ -104,14 +114,14 @@
                     <h6 class="mb-0">Catat Pembayaran OA</h6>
                 </div>
                 <div class="card-body">
-                    @if ($kendaraan->oaPaymentOnly?->status === 'lunas')
+                    @if ($sisaTagihan <= 0)
                         <div class="alert alert-success d-flex align-items-center gap-2 mb-0">
                             <i class="fa fa-check-circle fa-lg"></i>
                             <div>
                                 <strong>Pembayaran sudah lunas.</strong>
                                 Dibayar pada {{ $kendaraan->oaPaymentOnly->tanggal_bayar?->format('d M Y') ?? '-' }}
                                 sebesar <strong>Rp
-                                    {{ number_format($kendaraan->oaPaymentOnly->jumlah_bayar, 0, ',', '.') }}</strong>.
+                                    {{ number_format($totalBayarKendaraan, 0, ',', '.') }}</strong>.
                             </div>
                         </div>
                     @else
@@ -126,7 +136,7 @@
                                         <span class="input-group-text">Rp</span>
                                         <input type="number" name="jumlah_bayar"
                                             class="form-control @error('jumlah_bayar') is-invalid @enderror"
-                                            value="{{ old('jumlah_bayar', $kendaraan->total_oa - $kendaraan->total_bayar) }}"
+                                            value="{{ old('jumlah_bayar', $sisaTagihan) }}"
                                             step="1" min="1">
                                         @error('jumlah_bayar')
                                             <div class="invalid-feedback">{{ $message }}</div>

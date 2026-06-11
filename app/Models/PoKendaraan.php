@@ -89,6 +89,7 @@ class PoKendaraan extends Model
         return (float) $this->oaPayments->sum('jumlah_bayar');
     }
 
+
     // Pembayaran OA murni (bukan DP) — digunakan untuk status di rekap OA
     public function oaPaymentOnly()
     {
@@ -101,6 +102,10 @@ class PoKendaraan extends Model
     {
         return $this->hasOne(OaPayment::class, 'po_kendaraan_id')
             ->where('tipe_pembayaran', 'dp_supplier');
+    }
+    public function getTotalBayarOngkosAttribute(): float
+    {
+        return (float) $this->oaPaymentOnly()->sum('jumlah_bayar');
     }
 
     // Total KG seluruh penerima di kendaraan ini

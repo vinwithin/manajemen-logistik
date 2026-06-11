@@ -64,14 +64,15 @@
         .isi {
             text-align: center;
         }
+
         thead {
             display: table-header-group;
         }
-        
+
         tfoot {
             display: table-footer-group;
         }
-        
+
 
         /* Header baris 1: group */
         table.rekap thead tr.head-group th {
@@ -197,7 +198,7 @@
 
     {{-- Header dengan Logo --}}
     <div style="position: relative; margin-bottom: 15px;">
-    
+
 
         <div class="doc-title">REKAPITULASI PENGIRIMAN PAKAN</div>
         <div class="doc-title">PT. SURYA UNGGAS MANDIRI</div>
@@ -240,9 +241,11 @@
                 <th style="width:30px;">Bag</th>
                 <th style="width:30px;">Ongkos</th>
                 <th style="width:45px;">Total<br>Ongkos</th>
-                <th style="width:45px;">DP</th>
+                <th style="width:40px;">DP</th>
+                <th style="width:45px;">Bayar<br>OA</th>
                 <th style="width:45px;">Sisa</th>
                 <th style="width:50px;">Supplier</th>
+                <th style="width:50px;">Bukti Bayar</th>
             </tr>
         </thead>
         <tbody>
@@ -252,6 +255,7 @@
                 $grandTotalKarung = 0;
                 $grandTotalOngkos = 0;
                 $grandTotalDp = 0;
+                $grandTotalBayarOa = 0;
                 $grandTotalSisa = 0;
                 $rowIdx = 0;
             @endphp
@@ -261,9 +265,16 @@
                     @php
                         $penerimaCount = $kendaraan->penerimas->count();
                         // Hitung total DP untuk kendaraan ini
-                        $totalDpKendaraan = (float) $kendaraan->oaPayments->where('tipe_pembayaran', 'dp_supplier')->sum('jumlah_bayar');
+                        $totalDpKendaraan = (float) $kendaraan->oaPayments
+                            ->where('tipe_pembayaran', 'dp_supplier')
+                            ->sum('jumlah_bayar');
+                        $totalBayarOaKendaraan = (float) $kendaraan->oaPayments
+                            ->where('tipe_pembayaran', 'oa')
+                            ->sum('jumlah_bayar');
                         $grandTotalDp += $totalDpKendaraan;
-                        
+                        $grandTotalBayarOa += $totalBayarOaKendaraan;
+                        $buktiBayarList = $kendaraan->oaPayments->pluck('bukti_bayar')->filter()->unique()->values();
+
                         // Hitung total ongkos untuk SELURUH penerima di kendaraan ini
                         $totalOngkosKendaraan = 0;
                         foreach ($kendaraan->penerimas as $p) {
@@ -271,9 +282,9 @@
                                 fn($pak) => (float) $pak->jumlah_kg * (float) ($pak->ongkos_oa ?? 0),
                             );
                         }
-                        
+
                         // Hitung sisa tagihan
-                        $sisaKendaraan = max(0, $totalOngkosKendaraan - $totalDpKendaraan);
+                        $sisaKendaraan = max(0, $totalOngkosKendaraan - $totalDpKendaraan - $totalBayarOaKendaraan);
                         $grandTotalSisa += $sisaKendaraan;
                     @endphp
                     @foreach ($kendaraan->penerimas as $penerima)
@@ -296,7 +307,7 @@
                             $rowIdx++;
                         @endphp
 
-                       <tr class="{{ $rowClass }} isi">
+                        <tr class="{{ $rowClass }} isi">
                             <td class="td-no">{{ $loop->first ? $no++ : '' }}</td>
                             <td>{{ $loop->first ? $po->tanggal_po->translatedFormat('d F Y') : '' }}</td>
                             <td>{{ $loop->first ? $kendaraan->no_polisi : '' }}</td>
@@ -304,14 +315,29 @@
                             <td>{{ $penerima->no_do ?? '-' }}</td>
                             <td>{{ Str::upper($penerima->nama_penerima ?? '-') }}</td>
                             <td>{{ Str::upper($penerima->tujuan?->nama ?? '-') }}</td>
-                            <td>{{ $totalKgPenerima > 0 ? number_format($totalKgPenerima,0,',','.') : '' }}</td>
-                            <td>{{ $totalKarungPenerima > 0 ? number_format($totalKarungPenerima,0,',','.') : '' }}</td>
-                            <td>{{ $ongkosPerKg > 0 ? number_format($ongkosPerKg,0,',','.') : '-' }}</td>
-                            <td>{{ $totalOngkosPenerima > 0 ? number_format($totalOngkosPenerima,0,',','.') : '-' }}</td>
-                            <td>{{ $loop->first ? ($totalDpKendaraan > 0 ? number_format($totalDpKendaraan,0,',','.') : '-') : '' }}</td>
-                            <td>{{ $loop->first ? ($sisaKendaraan > 0 ? number_format($sisaKendaraan,0,',','.') : '-') : '' }}</td>
-                            <td>{{ $loop->first ? ($kendaraan->supplier?->nama ?? '-') : '' }}</td>
-                        </tr>   
+                            <td>{{ $totalKgPenerima > 0 ? number_format($totalKgPenerima, 0, ',', '.') : '' }}</td>
+                            <td>{{ $totalKarungPenerima > 0 ? number_format($totalKarungPenerima, 0, ',', '.') : '' }}
+                            </td>
+                            <td>{{ $ongkosPerKg > 0 ? number_format($ongkosPerKg, 0, ',', '.') : '-' }}</td>
+                            <td>{{ $totalOngkosPenerima > 0 ? number_format($totalOngkosPenerima, 0, ',', '.') : '-' }}
+                            </td>
+                            <td>{{ $loop->first ? ($totalDpKendaraan > 0 ? number_format($totalDpKendaraan, 0, ',', '.') : '-') : '' }}
+                            </td>
+                            <td>{{ $loop->first ? ($totalBayarOaKendaraan > 0 ? number_format($totalBayarOaKendaraan, 0, ',', '.') : '-') : '' }}
+                            </td>
+                            <td>{{ $loop->first ? ($sisaKendaraan > 0 ? number_format($sisaKendaraan, 0, ',', '.') : 'Lunas') : '' }}
+                            </td>
+                            <td>{{ $loop->first ? $kendaraan->supplier?->nama ?? '-' : '' }}</td>
+                            <td>
+                                @if ($loop->first && $buktiBayarList->isNotEmpty())
+                                    @foreach ($buktiBayarList as $idx => $buktiBayar)
+                                        <a href="{{ url('storage/' . $buktiBayar) }}">Link {{ $idx + 1 }}</a>{{ ! $loop->last ? ', ' : '' }}
+                                    @endforeach
+                                @elseif ($loop->first)
+                                    -
+                                @endif
+                            </td>
+                        </tr>
 
                         @php
                             $grandTotalKg += $totalKgPenerima;
@@ -330,7 +356,9 @@
                 <td colspan="1"></td>
                 <td>{{ number_format($grandTotalOngkos, 0, ',', '.') }}</td>
                 <td>{{ $grandTotalDp > 0 ? number_format($grandTotalDp, 0, ',', '.') : '-' }}</td>
+                <td>{{ $grandTotalBayarOa > 0 ? number_format($grandTotalBayarOa, 0, ',', '.') : '-' }}</td>
                 <td>{{ $grandTotalSisa > 0 ? number_format($grandTotalSisa, 0, ',', '.') : '-' }}</td>
+                <td></td>
                 <td></td>
             </tr>
         </tbody>
