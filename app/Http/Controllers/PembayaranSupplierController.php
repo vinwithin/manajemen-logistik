@@ -97,7 +97,7 @@ class PembayaranSupplierController extends Controller
 
             $filename = 'Pembayaran-OA-Supplier-' . now()->format('Ymd-His') . '.pdf';
 
-            return $pdf->stream($filename);
+            return $pdf->download($filename);
         } catch (Exception $e) {
             return redirect()->back()->with('error', 'Gagal export PDF pembayaran supplier: ' . $e->getMessage());
         }
