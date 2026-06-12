@@ -136,8 +136,8 @@
                             @endif
                         </tbody>
                         @if ($grandTotal > 0)
-                            <tfoot>
-                                <tr class="table-dark">
+                            <tfoot class="table-light">
+                                <tr class="table-light">
                                     <td class="fw-bold small">TOTAL</td>
                                     <td class="text-end fw-bold small">{{ $fmt($grandTotal) }}</td>
                                 </tr>
