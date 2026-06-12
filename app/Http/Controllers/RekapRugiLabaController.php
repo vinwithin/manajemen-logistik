@@ -112,6 +112,7 @@ class RekapRugiLabaController extends Controller
 
         $fields = [
             'gaji',
+            'biaya_sewa',
             'atk',
             'pembayaran_supplier_lintas',
             'pembayaran_mobil_lokal',

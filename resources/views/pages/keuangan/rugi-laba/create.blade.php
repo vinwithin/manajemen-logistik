@@ -22,9 +22,16 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">{{ $title }}</h5>
-                    <a href="{{ route('keuangan.rugi-laba.index', ['cv_id' => $cvId]) }}" class="btn btn-sm btn-secondary">
-                        <i class="fa fa-arrow-left"></i> Kembali
-                    </a>
+                    <div class="d-flex gap-2">
+
+                        <a href="{{ route('keuangan.rugi-laba.show', $rl->id) }}" class="btn btn-sm btn-info text-white">
+                            <i class="fa fa-eye"></i> Lihat Laporan
+                        </a>
+                        <a href="{{ route('keuangan.rugi-laba.index', ['cv_id' => $cvId]) }}"
+                            class="btn btn-sm btn-secondary">
+                            <i class="fa fa-arrow-left"></i> Kembali
+                        </a>
+                    </div>
                 </div>
                 <div class="card-body">
 
