@@ -27,19 +27,22 @@
                     </div>
                 </div>
                 <div class="card-body">
-                    <table class="table table-striped table-bordered" id="table">
-                        <thead>
-                            <tr>
-                                <th>No</th>
-                                <th>No. PO</th>
-                                <th>Tanggal</th>
-                                <th>CV</th>
-                                <th>Kendaraan</th>
-                                <th>Status</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                    </table>
+                    <div class="table-responsive">
+
+                        <table class="table table-striped table-bordered" id="table">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>No. PO</th>
+                                    <th>Tanggal</th>
+                                    <th>CV</th>
+                                    <th>Kendaraan</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
