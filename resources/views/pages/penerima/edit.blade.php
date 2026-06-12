@@ -65,7 +65,6 @@
                                         class="form-control @error('ongkos_bongkar') is-invalid @enderror"
                                         value="{{ old('ongkos_bongkar', $data->ongkos_bongkar) }}" placeholder="0"
                                         step="0.01" min="0">
-                                    <small class="text-muted">Ongkos untuk tim bongkar (Bangko dan Bungo)</small>
                                     @error('ongkos_bongkar')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
