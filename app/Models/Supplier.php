@@ -18,7 +18,7 @@ class Supplier extends Model
     public function tujuans(): BelongsToMany
     {
         return $this->belongsToMany(Tujuan::class, 'supplier_tujuan')
-            ->withPivot('ongkos_angkut', 'jenis_kendaraan')
+            ->withPivot('ongkos_angkut', 'harga_pt_sum', 'jenis_kendaraan')
             ->withTimestamps();
     }
 
@@ -35,5 +35,17 @@ class Supplier extends Model
         
         $tujuan = $query->first();
         return $tujuan ? (float) $tujuan->pivot->ongkos_angkut : 0;
+    }
+
+    public function getHargaPtSum($tujuanId, $jenisKendaraan = null): float
+    {
+        $query = $this->tujuans()->where('tujuan_id', $tujuanId);
+
+        if ($jenisKendaraan) {
+            $query->where('jenis_kendaraan', $jenisKendaraan);
+        }
+
+        $tujuan = $query->first();
+        return $tujuan ? (float) ($tujuan->pivot->harga_pt_sum ?? 0) : 0;
     }
 }

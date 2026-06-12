@@ -43,7 +43,7 @@
                         <hr class="my-4">
 
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="mb-0">Tujuan, Jenis Kendaraan & Ongkos Angkut</h6>
+                            <h6 class="mb-0">Tujuan, Jenis Kendaraan, Ongkos Angkut & Harga PT SUM</h6>
                             <button type="button" class="btn btn-sm btn-success" id="btnAddTujuan">
                                 <i class="fa fa-plus"></i> Tambah Tujuan
                             </button>
@@ -53,9 +53,10 @@
                             <table class="table table-sm table-bordered">
                                 <thead class="table-light">
                                     <tr>
-                                        <th width="35%">Tujuan</th>
-                                        <th width="25%">Jenis Kendaraan</th>
-                                        <th width="30%">Ongkos Angkut (Rp/kg)</th>
+                                        <th width="30%">Tujuan</th>
+                                        <th width="22%">Jenis Kendaraan</th>
+                                        <th width="20%">Ongkos Angkut (Rp/kg)</th>
+                                        <th width="18%">Harga PT SUM (Rp/kg)</th>
                                         <th width="10%">Aksi</th>
                                     </tr>
                                 </thead>
@@ -69,6 +70,7 @@
                                                         'tujuan_id' => $t->id,
                                                         'jenis_kendaraan' => $t->pivot->jenis_kendaraan,
                                                         'ongkos_angkut' => $t->pivot->ongkos_angkut,
+                                                        'harga_pt_sum' => $t->pivot->harga_pt_sum ?? 0,
                                                     ];
                                                 })
                                                 ->toArray(),
@@ -101,9 +103,14 @@
                                                     value="{{ $tujuan['ongkos_angkut'] }}" step="0.01" min="0"
                                                     required>
                                             </td>
+                                            <td>
+                                                <input type="number" name="tujuans[{{ $index }}][harga_pt_sum]"
+                                                    class="form-control form-control-sm" placeholder="0"
+                                                    value="{{ $tujuan['harga_pt_sum'] ?? 0 }}" step="0.01" min="0">
+                                            </td>
                                             <td class="text-center">
                                                 <button type="button" class="btn btn-sm btn-danger btnRemoveTujuan">
-                                                    <i class="fa fa-trash"></i>
+                                                   Edit
                                                 </button>
                                             </td>
                                         </tr>
@@ -148,9 +155,14 @@
                             class="form-control form-control-sm" placeholder="0" 
                             step="0.01" min="0" required>
                     </td>
+                    <td>
+                        <input type="number" name="tujuans[${tujuanIndex}][harga_pt_sum]" 
+                            class="form-control form-control-sm" placeholder="0" 
+                            step="0.01" min="0" value="0">
+                    </td>
                     <td class="text-center">
                         <button type="button" class="btn btn-sm btn-danger btnRemoveTujuan">
-                            <i class="fa fa-trash"></i>
+                            Hapus
                         </button>
                     </td>
                 </tr>

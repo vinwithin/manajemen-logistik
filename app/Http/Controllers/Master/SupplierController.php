@@ -45,6 +45,7 @@ class SupplierController extends Controller
             'tujuans.*.tujuan_id' => 'required|exists:tujuan,id',
             'tujuans.*.jenis_kendaraan' => 'nullable|string|max:100',
             'tujuans.*.ongkos_angkut' => 'required|numeric|min:0',
+            'tujuans.*.harga_pt_sum' => 'nullable|numeric|min:0',
         ]);
 
         try {
@@ -55,6 +56,7 @@ class SupplierController extends Controller
                 foreach ($request->tujuans as $tujuan) {
                     $supplier->tujuans()->attach($tujuan['tujuan_id'], [
                         'ongkos_angkut' => $tujuan['ongkos_angkut'],
+                        'harga_pt_sum' => $tujuan['harga_pt_sum'] ?? 0,
                         'jenis_kendaraan' => $tujuan['jenis_kendaraan'] ?? null,
                     ]);
                 }
@@ -89,6 +91,7 @@ class SupplierController extends Controller
             'tujuans.*.tujuan_id' => 'required|exists:tujuan,id',
             'tujuans.*.jenis_kendaraan' => 'nullable|string|max:100',
             'tujuans.*.ongkos_angkut' => 'required|numeric|min:0',
+            'tujuans.*.harga_pt_sum' => 'nullable|numeric|min:0',
         ]);
 
         try {
@@ -111,6 +114,7 @@ class SupplierController extends Controller
                     if (! $exists) {
                         $supplier->tujuans()->attach($tujuan['tujuan_id'], [
                             'ongkos_angkut' => $tujuan['ongkos_angkut'],
+                            'harga_pt_sum' => $tujuan['harga_pt_sum'] ?? 0,
                             'jenis_kendaraan' => $tujuan['jenis_kendaraan'] ?? null,
                         ]);
                     }
@@ -169,10 +173,12 @@ class SupplierController extends Controller
 
             $supplier = Supplier::with('tujuans')->findOrFail($supplierId);
             $ongkos = $supplier->getOngkosAngkut($tujuanId, $jenisKendaraan);
+            $hargaPtSum = $supplier->getHargaPtSum($tujuanId, $jenisKendaraan);
 
             return response()->json([
                 'success' => true,
                 'ongkos_angkut' => $ongkos,
+                'harga_pt_sum' => $hargaPtSum,
                 'has_relation' => $ongkos > 0,
             ]);
         } catch (Exception $e) {
@@ -196,8 +202,9 @@ class SupplierController extends Controller
 
             $tujuans = [];
             $jenisKendaraan = [];
-            // Map: tujuan_id -> jenis_kendaraan -> ongkos_angkut
+            // Map: tujuan_id -> jenis_kendaraan -> ongkos_angkut / harga_pt_sum
             $ongkosMap = [];
+            $hargaPtSumMap = [];
 
             foreach ($supplier->tujuans as $tujuan) {
                 // unique tujuan by id
@@ -215,7 +222,11 @@ class SupplierController extends Controller
                 if (! isset($ongkosMap[$tujuan->id])) {
                     $ongkosMap[$tujuan->id] = [];
                 }
+                if (! isset($hargaPtSumMap[$tujuan->id])) {
+                    $hargaPtSumMap[$tujuan->id] = [];
+                }
                 $ongkosMap[$tujuan->id][$jenis] = (float) ($tujuan->pivot->ongkos_angkut ?? 0);
+                $hargaPtSumMap[$tujuan->id][$jenis] = (float) ($tujuan->pivot->harga_pt_sum ?? 0);
             }
 
             return response()->json([
@@ -223,6 +234,7 @@ class SupplierController extends Controller
                 'jenis_kendaraan' => array_values($jenisKendaraan),
                 'tujuans' => array_values($tujuans),
                 'ongkos_map' => $ongkosMap,
+                'harga_pt_sum_map' => $hargaPtSumMap,
             ]);
         } catch (Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);

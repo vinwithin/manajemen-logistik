@@ -610,10 +610,14 @@
                 $row.find('[name*="[harga_pt_sum]"]').val(oldData.harga_pt_sum || 0);
                 updateKarung($row.find('.input-jumlah-kg'));
             } else {
-                // Baris pakan baru: auto-fill ongkos OA dari data attribute penerima
+                // Baris pakan baru: auto-fill ongkos OA dan harga PT SUM dari data attribute penerima
                 var savedOa = parseFloat($penerimaCard.attr('data-ongkos-oa')) || 0;
+                var savedHargaPtSum = parseFloat($penerimaCard.attr('data-harga-pt-sum')) || 0;
                 if (savedOa > 0) {
                     $row.find('[name*="[ongkos_oa]"]').val(savedOa);
+                }
+                if (savedHargaPtSum > 0) {
+                    $row.find('[name*="[harga_pt_sum]"]').val(savedHargaPtSum);
                 }
             }
         }
@@ -910,12 +914,15 @@
                 success: function(response) {
                     if (response.success) {
                         var oa = response.ongkos_angkut;
+                        var hargaPtSum = response.harga_pt_sum || 0;
 
                         // Simpan di data attribute agar baris pakan baru bisa auto-fill
                         $pCard.attr('data-ongkos-oa', oa);
+                        $pCard.attr('data-harga-pt-sum', hargaPtSum);
 
                         // Update semua baris pakan yang sudah ada
                         $pCard.find('[name*="[ongkos_oa]"]').val(oa);
+                        $pCard.find('[name*="[harga_pt_sum]"]').val(hargaPtSum);
 
                         // Update badge info OA
                         if (oa > 0) {
