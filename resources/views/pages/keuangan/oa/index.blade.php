@@ -23,26 +23,29 @@
                     </div>
                 </div>
                 <div class="card-body">
-                    <table class="table table-striped table-bordered" id="table">
-                        <thead>
-                            <tr>
-                                <th>No</th>
-                                <th>No. PO</th>
-                                <th>Tanggal</th>
-                                <th>CV</th>
-                                <th>No. Polisi</th>
-                                <th>Penerima</th>
-                                <th>Supplier</th>
-                                <th>Total KG</th>
-                                <th>Total OA</th>
-                                <th>DP</th>
-                                <th>Sudah Bayar</th>
-                                <th>Sisa</th>
-                                <th>Status</th>
-                                <th>Aksi</th>
-                            </tr>
-                        </thead>
-                    </table>
+                    <div class="table-responsive">
+
+                        <table class="table table-striped table-bordered" id="table">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>No. PO</th>
+                                    <th>Tanggal</th>
+                                    <th>CV</th>
+                                    <th>No. Polisi</th>
+                                    <th>Penerima</th>
+                                    <th>Supplier</th>
+                                    <th>Total KG</th>
+                                    <th>Total OA</th>
+                                    <th>DP</th>
+                                    <th>Sudah Bayar</th>
+                                    <th>Sisa</th>
+                                    <th>Status</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
