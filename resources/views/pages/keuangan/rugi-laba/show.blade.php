@@ -112,6 +112,7 @@
                         @php
                             $biayaRows = [
                                 ['GAJI', $rl->gaji],
+                                ['BIAYA SEWA', $rl->biaya_sewa],
                                 ['ATK', $rl->atk],
                                
                                 [

@@ -114,6 +114,7 @@
                                         @php
                                             $formFields = [
                                                 'gaji' => 'GAJI',
+                                                'biaya_sewa' => 'BIAYA SEWA',
                                                 'atk' => 'ATK',
                                                 'pembayaran_mobil_lokal' => 'PEMBAYARAN MOBIL LOKAL (tambahan)',
                                                 'sharing_fee' => 'SHARING FEE',

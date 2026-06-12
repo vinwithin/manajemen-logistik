@@ -65,6 +65,7 @@ class RugiLabaExport implements FromArray, WithEvents, WithTitle
         // C. BIAYA OPERASIONAL
         $rows[] = ['C.', 'Biaya Operasional', ''];
         $rows[] = ['', 'GAJI',                      $fmt($d['rl']->gaji)];
+        $rows[] = ['', 'Biaya Sewa',                      $fmt($d['rl']->biaya_sewa)];
         $rows[] = ['', 'ATK',                       $fmt($d['rl']->atk)];
         $rows[] = ['', 'PEMBAYARAN MOBIL LOKAL',     $fmt($d['rl']->pembayaran_mobil_lokal) + $fmt($d['mobilLokalOtomatis'])];
         $rows[] = ['', 'SHARING FEE',               $fmt($d['rl']->sharing_fee)];

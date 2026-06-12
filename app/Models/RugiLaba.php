@@ -14,7 +14,7 @@ class RugiLaba extends Model
         'gaji', 'atk', 'pembayaran_supplier_lintas', 'pembayaran_mobil_lokal',
         'sharing_fee', 'sharing_profit', 'perjalanan_dinas', 'entertain',
         'adm_bank', 'upah_bongkar', 'upah_muat', 'upah_bongkar_muat',
-        'biaya_lain_lain', 'bbm', 'listrik', 'pdam', 'potongan_voucher', 'lingkungan',
+        'biaya_lain_lain', 'bbm', 'listrik', 'pdam', 'potongan_voucher', 'lingkungan', 'biaya_sewa',
         'catatan', 'created_by',
     ];
 
@@ -37,6 +37,7 @@ class RugiLaba extends Model
         'pdam'                       => 'decimal:2',
         'potongan_voucher'           => 'decimal:2',
         'lingkungan'                 => 'decimal:2',
+        'biaya_sewa'                 => 'decimal:2',
     ];
 
     public function cv(): BelongsTo
@@ -71,7 +72,7 @@ class RugiLaba extends Model
     public function getTotalBiayaOperasionalAttribute(): float
     {
         return (float) (
-            $this->gaji + $this->atk +
+            $this->gaji + $this->atk + $this->biaya_sewa +
             $this->pembayaran_mobil_lokal + $this->sharing_fee + $this->sharing_profit +
             $this->perjalanan_dinas + $this->entertain + $this->adm_bank +
             $this->upah_bongkar + $this->upah_muat +
