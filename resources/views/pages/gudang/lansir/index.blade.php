@@ -46,23 +46,26 @@
                 </div>
 
                 <div class="card-body">
-                    <table class="table table-striped table-bordered" id="table">
-                        <thead>
-                            <tr>
-                                <th>No</th>
-                                <th>No Lansir</th>
-                                <th>Tanggal</th>
-                                <th>Gudang</th>
-                                <th>Kendaraan</th>
-                                <th>Penerima</th>
-                                <th>Total (kg)</th>
-                                <th>Total (karung)</th>
-                                <th>Pakan</th>
-                                <th>Status</th>
-                                <th>Aksi</th>
-                            </tr>
-                        </thead>
-                    </table>
+                    <div class="table-responsive">
+
+                        <table class="table table-striped table-bordered" id="table">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>No Lansir</th>
+                                    <th>Tanggal</th>
+                                    <th>Gudang</th>
+                                    <th>Kendaraan</th>
+                                    <th>Penerima</th>
+                                    <th>Total (kg)</th>
+                                    <th>Total (karung)</th>
+                                    <th>Pakan</th>
+                                    <th>Status</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>

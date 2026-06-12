@@ -10,22 +10,25 @@
                     <span class="text-muted small">Daftar penerima yang memiliki riwayat lansir</span>
                 </div>
                 <div class="card-body">
-                    <table class="table table-striped table-bordered" id="table">
-                        <thead>
-                            <tr>
-                                <th>No</th>
-                                <th>No. PO</th>
-                                <th>Tanggal</th>
-                                <th>CV</th>
-                                <th>No. Polisi</th>
-                                <th>Nama Penerima</th>
-                                <th>Tujuan</th>
-                                <th>Berat (kg)</th>
-                                <th>Trip Lansir</th>
-                                <th>Aksi</th>
-                            </tr>
-                        </thead>
-                    </table>
+                    <div class="table-responsive">
+
+                        <table class="table table-striped table-bordered" id="table">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>No. PO</th>
+                                    <th>Tanggal</th>
+                                    <th>CV</th>
+                                    <th>No. Polisi</th>
+                                    <th>Nama Penerima</th>
+                                    <th>Tujuan</th>
+                                    <th>Berat (kg)</th>
+                                    <th>Trip Lansir</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
