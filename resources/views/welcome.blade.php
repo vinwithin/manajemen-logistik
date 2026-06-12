@@ -253,7 +253,7 @@
             position: absolute;
             left: 8%;
             right: 8%;
-            bottom: 86px;
+            bottom: 60px;
             height: 8px;
             border-radius: 999px;
             background: rgba(255, 255, 255, 0.24);
@@ -273,7 +273,7 @@
         .truck-wrap {
             position: absolute;
             left: 50%;
-            bottom: 50px;
+            bottom: 20px;
             width: min(92%, 440px);
             transform: translateX(-50%);
             animation: truckDrive 2.6s ease-in-out infinite;
@@ -555,7 +555,7 @@
             }
 
             .smoke {
-                left: 3%;
+                right: 3%;
             }
 
             .stat-number {
