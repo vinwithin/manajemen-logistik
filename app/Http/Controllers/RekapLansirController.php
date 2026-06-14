@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Exports\RekapLansirExport;
 use App\Exports\RekapLansirPeriodExport;
 use App\Models\GudangLansirHeader;
 use App\Models\LansirPayment;
@@ -386,10 +385,20 @@ class RekapLansirController extends Controller
 
         // try {
         $filename = 'rekap-lansir-'.$po->no_po.'-'.now()->format('Ymd').'.xlsx';
+        [$mobilRows, $timRows] = $this->getPoRows($po);
+        $tanggalLansir = $mobilRows->pluck('tanggal')
+            ->merge($timRows->pluck('tanggal'))
+            ->filter(fn ($tanggal) => $tanggal !== '-')
+            ->map(fn ($tanggal) => Carbon::createFromFormat('d/m/Y', $tanggal))
+            ->sort()
+            ->values();
+        $from = $tanggalLansir->first()?->format('d/m/Y') ?? $po->tanggal_po?->format('d/m/Y') ?? '-';
+        $to = $tanggalLansir->last()?->format('d/m/Y') ?? $from;
 
-        $rekap = $this->service->getRekapPo($po);
-
-        return Excel::download(new RekapLansirExport($po, $rekap), $filename);
+        return Excel::download(
+            new RekapLansirPeriodExport($mobilRows, $timRows, $from, $to),
+            $filename
+        );
         // } catch (\Exception $e) {
         //     return redirect()->back()->with('error', 'Gagal mengekspor data: '.$e->getMessage());
         // }
@@ -500,5 +509,52 @@ class RekapLansirController extends Controller
             $mobilRows->sortBy([['tanggal', 'asc'], ['no_po', 'asc']])->values(),
             $timRows->sortBy([['tanggal', 'asc'], ['no_po', 'asc']])->values(),
         ];
+    }
+
+    private function getPoRows(PurchaseOrder $po): array
+    {
+        $mobilRows = collect();
+        $timRows = collect();
+        $statusMobil = $po->lansirPayments
+            ->firstWhere('tipe', LansirPayment::TIPE_MOBIL)?->status === LansirPayment::STATUS_SUDAH
+                ? 'Sudah Bayar'
+                : 'Belum Bayar';
+        $statusTim = $po->lansirPayments
+            ->firstWhere('tipe', LansirPayment::TIPE_TIM)?->status === LansirPayment::STATUS_SUDAH
+                ? 'Sudah Bayar'
+                : 'Belum Bayar';
+
+        foreach ($this->service->getRekapPo($po) as $lansir) {
+            $base = [
+                'tanggal' => $lansir->tanggal_lansir?->format('d/m/Y') ?? '-',
+                'no_po' => $po->no_po,
+                'kendaraan_po' => $lansir->penerima?->kendaraan?->no_polisi ?? '-',
+                'penerima' => $lansir->penerima?->nama_penerima ?? '-',
+            ];
+
+            foreach ($lansir->mobils as $mobil) {
+                $mobilRows->push($base + [
+                    'pelaksana' => $mobil->no_polisi ?? '-',
+                    'berat' => (float) ($mobil->berat ?? 0),
+                    'karung' => (int) ($mobil->jumlah_karung ?? 0),
+                    'tarif' => (float) ($mobil->ongkos ?? 0),
+                    'total' => (float) ($mobil->berat ?? 0) * (float) ($mobil->ongkos ?? 0),
+                    'status_bayar' => $statusMobil,
+                ]);
+            }
+
+            foreach ($lansir->tims as $tim) {
+                $timRows->push($base + [
+                    'pelaksana' => $tim->nama_tim ?? '-',
+                    'berat' => (float) ($tim->berat ?? 0),
+                    'karung' => (int) ($tim->jumlah_karung ?? 0),
+                    'tarif' => (float) ($tim->upah ?? 0),
+                    'total' => (float) ($tim->berat ?? 0) * (float) ($tim->upah ?? 0),
+                    'status_bayar' => $statusTim,
+                ]);
+            }
+        }
+
+        return [$mobilRows, $timRows];
     }
 }
