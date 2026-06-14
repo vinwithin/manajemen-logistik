@@ -19,8 +19,22 @@ class RekapLansirPeriodExport implements FromArray, ShouldAutoSize, WithEvents, 
         'Tanggal',
         'No. PO',
         'Kendaraan PO',
+        'Tujuan',
         'Penerima',
-        'Pelaksana',
+        'Mobil Lansir',
+        'Berat (kg)',
+        'Jumlah Karung',
+        'Tarif (Rp/kg)',
+        'Total (Rp)',
+        'Status Bayar',
+    ];
+    private const HEADINGS1 = [
+        'Tanggal',
+        'No. PO',
+        'Kendaraan PO',
+        'Tujuan',
+        'Penerima',
+        'Tim Bongkar',
         'Berat (kg)',
         'Jumlah Karung',
         'Tarif (Rp/kg)',
@@ -61,7 +75,7 @@ class RekapLansirPeriodExport implements FromArray, ShouldAutoSize, WithEvents, 
         $rows[] = [''];
         $rows[] = ['TIM BONGKAR'];
         $this->timHeaderRow = count($rows) + 1;
-        $rows[] = self::HEADINGS;
+        $rows[] = self::HEADINGS1;
 
         foreach ($this->timRows as $row) {
             $rows[] = $this->mapRow($row);
@@ -79,6 +93,7 @@ class RekapLansirPeriodExport implements FromArray, ShouldAutoSize, WithEvents, 
             $row['tanggal'],
             $row['no_po'],
             $row['kendaraan_po'],
+            $row['tujuan'],
             $row['penerima'],
             $row['pelaksana'],
             $row['berat'],
@@ -93,6 +108,7 @@ class RekapLansirPeriodExport implements FromArray, ShouldAutoSize, WithEvents, 
     {
         return [
             'GRAND TOTAL',
+            '',
             '',
             '',
             '',
@@ -119,15 +135,15 @@ class RekapLansirPeriodExport implements FromArray, ShouldAutoSize, WithEvents, 
             AfterSheet::class => function (AfterSheet $event) {
                 $sheet = $event->sheet->getDelegate();
                 $sheet->freezePane('A5');
-                $sheet->getStyle("A{$this->mobilHeaderRow}:J{$this->mobilHeaderRow}")
+                $sheet->getStyle("A{$this->mobilHeaderRow}:K{$this->mobilHeaderRow}")
                     ->applyFromArray($this->headerStyle());
-                $sheet->getStyle("A{$this->timHeaderRow}:J{$this->timHeaderRow}")
+                $sheet->getStyle("A{$this->timHeaderRow}:K{$this->timHeaderRow}")
                     ->applyFromArray($this->headerStyle());
-                $sheet->getStyle("A{$this->mobilTotalRow}:J{$this->mobilTotalRow}")
+                $sheet->getStyle("A{$this->mobilTotalRow}:K{$this->mobilTotalRow}")
                     ->applyFromArray($this->totalStyle());
-                $sheet->getStyle("A{$this->timTotalRow}:J{$this->timTotalRow}")
+                $sheet->getStyle("A{$this->timTotalRow}:K{$this->timTotalRow}")
                     ->applyFromArray($this->totalStyle());
-                $sheet->getStyle('A'.($this->timHeaderRow - 1).':J'.($this->timHeaderRow - 1))
+                $sheet->getStyle('A'.($this->timHeaderRow - 1).':K'.($this->timHeaderRow - 1))
                     ->applyFromArray([
                         'font' => ['bold' => true, 'size' => 12],
                         'fill' => [

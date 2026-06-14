@@ -457,6 +457,7 @@ class RekapLansirController extends Controller
 
         $poLansirs = PoPenerimaLansir::with([
             'penerima.kendaraan.po.lansirPayments',
+            'penerima.tujuan',
             'mobils',
             'tims',
         ])
@@ -479,6 +480,7 @@ class RekapLansirController extends Controller
                 'tanggal' => $lansir->tanggal_lansir?->format('d/m/Y') ?? '-',
                 'no_po' => $po?->no_po ?? '-',
                 'kendaraan_po' => $lansir->penerima?->kendaraan?->no_polisi ?? '-',
+                'tujuan' => $lansir->penerima?->tujuan?->nama ?? '-',
                 'penerima' => $lansir->penerima?->nama_penerima ?? '-',
             ];
 
@@ -529,6 +531,7 @@ class RekapLansirController extends Controller
                 'tanggal' => $lansir->tanggal_lansir?->format('d/m/Y') ?? '-',
                 'no_po' => $po->no_po,
                 'kendaraan_po' => $lansir->penerima?->kendaraan?->no_polisi ?? '-',
+                'tujuan' => $lansir->penerima?->tujuan?->nama ?? '-',
                 'penerima' => $lansir->penerima?->nama_penerima ?? '-',
             ];
 
