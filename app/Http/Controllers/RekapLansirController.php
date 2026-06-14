@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exports\RekapLansirExport;
+use App\Exports\RekapLansirPeriodExport;
 use App\Models\GudangLansirHeader;
 use App\Models\LansirPayment;
 use App\Models\PoPenerimaLansir;
@@ -11,6 +12,8 @@ use App\Models\TransferPakanHeader;
 use App\Services\Datatables\RekapLansirDatatableService;
 use App\Services\RekapLansirService;
 use App\Traits\WithUserTujuan;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -22,6 +25,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 class RekapLansirController extends Controller
 {
     use WithUserTujuan;
+
     public function __construct(
         private RekapLansirService $service,
         private RekapLansirDatatableService $datatableService,
@@ -36,6 +40,8 @@ class RekapLansirController extends Controller
             // Gabungkan data dari PO Lansir dan Gudang Lansir
             $poLansir = PoPenerimaLansir::with(['penerima.kendaraan.po.cv', 'penerima.tujuan'])
                 ->withCount('mobils')
+                ->when($request->filled('from'), fn ($q) => $q->whereDate('tanggal_lansir', '>=', $request->from))
+                ->when($request->filled('to'), fn ($q) => $q->whereDate('tanggal_lansir', '<=', $request->to))
                 ->when($activeCvId, fn ($q) => $q->whereHas('penerima.kendaraan.po', fn ($q2) => $q2->where('cv_id', $activeCvId)))
                 ->whereHas('penerima', function ($q) use ($tujuans) {
                     $q->whereIn('tujuan_id', $tujuans->pluck('id'));
@@ -56,6 +62,8 @@ class RekapLansirController extends Controller
 
             $gudangLansir = GudangLansirHeader::with(['cv', 'gudang', 'kendaraans.penerimas'])
                 ->withCount('kendaraans')
+                ->when($request->filled('from'), fn ($q) => $q->whereDate('tanggal_lansir', '>=', $request->from))
+                ->when($request->filled('to'), fn ($q) => $q->whereDate('tanggal_lansir', '<=', $request->to))
                 ->when($activeCvId, fn ($q) => $q->where('cv_id', $activeCvId))
                 ->whereHas('kendaraans.penerimas', function ($q) use ($tujuans) {
                     $q->whereIn('tujuan_id', $tujuans->pluck('id'));
@@ -76,6 +84,8 @@ class RekapLansirController extends Controller
 
             $transferPakan = TransferPakanHeader::with(['cv', 'kendaraans'])
                 ->withCount('kendaraans')
+                ->when($request->filled('from'), fn ($q) => $q->whereDate('tanggal_transfer', '>=', $request->from))
+                ->when($request->filled('to'), fn ($q) => $q->whereDate('tanggal_transfer', '<=', $request->to))
                 ->when($activeCvId, fn ($q) => $q->where('cv_id', $activeCvId))
                 ->whereHas('kendaraans.penerimas', function ($q) use ($tujuans) {
                     $q->whereIn('tujuan_id', $tujuans->pluck('id'));
@@ -136,12 +146,12 @@ class RekapLansirController extends Controller
             } elseif (str_starts_with($decryptedId, 'transfer_')) {
                 // Transfer Pakan
                 $transferPakanId = (int) str_replace('transfer_', '', $decryptedId);
-                $header = \App\Models\TransferPakanHeader::with(['cv', 'kendaraans.penerimas.pakans', 'kendaraans.penerimas.tims'])->findOrFail($transferPakanId);
+                $header = TransferPakanHeader::with(['cv', 'kendaraans.penerimas.pakans', 'kendaraans.penerimas.tims'])->findOrFail($transferPakanId);
                 $tipe = 'transfer';
 
             } else {
                 // Fallback untuk backward compatibility (jika ada ID lama tanpa prefix)
-                $header = PurchaseOrder::with('cv')->findOrFail($decryptedId);
+                $header = PurchaseOrder::with(['cv'])->findOrFail($decryptedId);
                 $tipe = 'po';
             }
         } catch (\Exception $e) {
@@ -150,10 +160,10 @@ class RekapLansirController extends Controller
 
         if ($tipe === 'po') {
             // Untuk PO Lansir
-            $rekapMobil = $this->service->getRekapMobil($header);
-            $rekapTim = $this->service->getRekapTim($header);
-            $grandTotalMobil = $this->service->getGrandTotalMobil($header);
-            $grandTotalTim = $this->service->getGrandTotalTim($header);
+            $rekapMobil = $this->service->getRekapPo($header);
+            $rekapTim = $this->service->prepareRekapTim($rekapMobil);
+            $grandTotalMobil = $this->service->getGrandTotalMobil($rekapMobil);
+            $grandTotalTim = $this->service->getGrandTotalTim($rekapTim);
 
             $paymentMobil = LansirPayment::where('po_id', $header->id)
                 ->where('tipe', LansirPayment::TIPE_MOBIL)->first();
@@ -162,7 +172,7 @@ class RekapLansirController extends Controller
         } elseif ($tipe === 'gudang') {
             // Untuk Gudang Lansir
             [$rekapMobil, $rekapTim, $grandTotalMobil, $grandTotalTim] = $this->prepareGudangLansirData($header);
-            
+
             $paymentMobil = LansirPayment::where('gudang_lansir_header_id', $header->id)
                 ->where('tipe', LansirPayment::TIPE_MOBIL)->first();
             $paymentTim = LansirPayment::where('gudang_lansir_header_id', $header->id)
@@ -170,7 +180,7 @@ class RekapLansirController extends Controller
         } elseif ($tipe === 'transfer') {
             // Untuk Transfer Pakan
             [$rekapMobil, $rekapTim, $grandTotalMobil, $grandTotalTim] = $this->prepareTransferPakanData($header);
-            
+
             $paymentMobil = LansirPayment::where('transfer_pakan_header_id', $header->id)
                 ->where('tipe', LansirPayment::TIPE_MOBIL)->first();
             $paymentTim = LansirPayment::where('transfer_pakan_header_id', $header->id)
@@ -200,7 +210,7 @@ class RekapLansirController extends Controller
                     $totalOngkos += $pakan->jumlah_kg * $pakan->ongkos_oa;
                 }
 
-                $rekapMobil->push((object)[
+                $rekapMobil->push((object) [
                     'kendaraan' => $kendaraan,
                     'penerima' => $penerima,
                     'pakans' => $penerima->pakans,
@@ -216,7 +226,7 @@ class RekapLansirController extends Controller
                     $totalUpah += $tim->total_upah;
                 }
 
-                $rekapTim->push((object)[
+                $rekapTim->push((object) [
                     'kendaraan' => $kendaraan,
                     'penerima' => $penerima,
                     'tims' => $penerima->tims,
@@ -232,7 +242,7 @@ class RekapLansirController extends Controller
         return [$rekapMobil, $rekapTim, $grandTotalMobil, $grandTotalTim];
     }
 
-    private function prepareTransferPakanData(\App\Models\TransferPakanHeader $transferPakan): array
+    private function prepareTransferPakanData(TransferPakanHeader $transferPakan): array
     {
         $rekapMobil = collect();
         $rekapTim = collect();
@@ -247,7 +257,7 @@ class RekapLansirController extends Controller
                     $totalOngkos += $pakan->jumlah_kg * $pakan->ongkos_oa;
                 }
 
-                $rekapMobil->push((object)[
+                $rekapMobil->push((object) [
                     'kendaraan' => $kendaraan,
                     'penerima' => $penerima,
                     'pakans' => $penerima->pakans,
@@ -263,7 +273,7 @@ class RekapLansirController extends Controller
                     $totalUpah += $tim->total_upah;
                 }
 
-                $rekapTim->push((object)[
+                $rekapTim->push((object) [
                     'kendaraan' => $kendaraan,
                     'penerima' => $penerima,
                     'tims' => $penerima->tims,
@@ -292,13 +302,13 @@ class RekapLansirController extends Controller
             $decryptedId = decrypt($id);
             $data = null;
             $tipeLansir = $request->tipe_lansir;
-            
+
             if ($tipeLansir === 'po') {
                 $data = PurchaseOrder::findOrFail($decryptedId);
             } elseif ($tipeLansir === 'gudang') {
                 $data = GudangLansirHeader::findOrFail($decryptedId);
             } elseif ($tipeLansir === 'transfer') {
-                $data = \App\Models\TransferPakanHeader::findOrFail($decryptedId);
+                $data = TransferPakanHeader::findOrFail($decryptedId);
             }
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Data lansir tidak ditemukan.');
@@ -307,7 +317,7 @@ class RekapLansirController extends Controller
         try {
             DB::transaction(function () use ($request, $data, $tipeLansir) {
                 $attributes = ['tipe' => $request->tipe];
-                
+
                 if ($tipeLansir === 'po') {
                     $attributes['po_id'] = $data->id;
                     $attributes['gudang_lansir_header_id'] = null;
@@ -321,7 +331,7 @@ class RekapLansirController extends Controller
                     $attributes['po_id'] = null;
                     $attributes['gudang_lansir_header_id'] = null;
                 }
-                
+
                 LansirPayment::updateOrCreate(
                     $attributes,
                     [
@@ -342,7 +352,7 @@ class RekapLansirController extends Controller
     public function export(string $id): BinaryFileResponse|RedirectResponse
     {
         try {
-            $po = PurchaseOrder::with('cv')->findOrFail(decrypt($id));
+            $po = PurchaseOrder::with(['cv', 'lansirPayments'])->findOrFail(decrypt($id));
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'PO tidak ditemukan.');
         }
@@ -350,9 +360,118 @@ class RekapLansirController extends Controller
         // try {
         $filename = 'rekap-lansir-'.$po->no_po.'-'.now()->format('Ymd').'.xlsx';
 
-        return Excel::download(new RekapLansirExport($po), $filename);
+        $rekap = $this->service->getRekapPo($po);
+
+        return Excel::download(new RekapLansirExport($po, $rekap), $filename);
         // } catch (\Exception $e) {
         //     return redirect()->back()->with('error', 'Gagal mengekspor data: '.$e->getMessage());
         // }
+    }
+
+    public function exportPeriodExcel(Request $request): BinaryFileResponse
+    {
+        [$from, $to] = $this->validatedPeriod($request);
+        [$mobilRows, $timRows] = $this->getPeriodRows($from, $to);
+        $filename = "rekap-lansir-{$from}-{$to}.xlsx";
+
+        return Excel::download(
+            new RekapLansirPeriodExport(
+                $mobilRows,
+                $timRows,
+                Carbon::parse($from)->format('d/m/Y'),
+                Carbon::parse($to)->format('d/m/Y'),
+            ),
+            $filename
+        );
+    }
+
+    public function exportPeriodPdf(Request $request)
+    {
+        [$from, $to] = $this->validatedPeriod($request);
+        [$mobilRows, $timRows] = $this->getPeriodRows($from, $to);
+        $fromLabel = Carbon::parse($from)->format('d/m/Y');
+        $toLabel = Carbon::parse($to)->format('d/m/Y');
+
+        return Pdf::loadView('pdf.rekap-lansir-period', compact(
+            'mobilRows',
+            'timRows',
+            'fromLabel',
+            'toLabel'
+        ))
+            ->setPaper('a4', 'landscape')
+            ->download("rekap-lansir-{$from}-{$to}.pdf");
+    }
+
+    private function validatedPeriod(Request $request): array
+    {
+        $validated = $request->validate([
+            'from' => ['required', 'date'],
+            'to' => ['required', 'date', 'after_or_equal:from'],
+        ]);
+
+        return [$validated['from'], $validated['to']];
+    }
+
+    private function getPeriodRows(string $from, string $to): array
+    {
+        $activeCvId = session('active_cv');
+        $tujuanIds = $this->getUserTujuan()->pluck('id');
+        $mobilRows = collect();
+        $timRows = collect();
+
+        $poLansirs = PoPenerimaLansir::with([
+            'penerima.kendaraan.po.lansirPayments',
+            'mobils',
+            'tims',
+        ])
+            ->whereBetween('tanggal_lansir', [$from, $to])
+            ->when($activeCvId, fn ($q) => $q->whereHas('penerima.kendaraan.po', fn ($po) => $po->where('cv_id', $activeCvId)))
+            ->whereHas('penerima', fn ($q) => $q->whereIn('tujuan_id', $tujuanIds))
+            ->get();
+
+        foreach ($poLansirs as $lansir) {
+            $po = $lansir->penerima?->kendaraan?->po;
+            $statusMobil = $po?->lansirPayments
+                ->firstWhere('tipe', LansirPayment::TIPE_MOBIL)?->status === LansirPayment::STATUS_SUDAH
+                    ? 'Sudah Bayar'
+                    : 'Belum Bayar';
+            $statusTim = $po?->lansirPayments
+                ->firstWhere('tipe', LansirPayment::TIPE_TIM)?->status === LansirPayment::STATUS_SUDAH
+                    ? 'Sudah Bayar'
+                    : 'Belum Bayar';
+            $base = [
+                'tanggal' => $lansir->tanggal_lansir?->format('d/m/Y') ?? '-',
+                'no_po' => $po?->no_po ?? '-',
+                'kendaraan_po' => $lansir->penerima?->kendaraan?->no_polisi ?? '-',
+                'penerima' => $lansir->penerima?->nama_penerima ?? '-',
+            ];
+
+            foreach ($lansir->mobils as $mobil) {
+                $mobilRows->push($base + [
+                    'pelaksana' => $mobil->no_polisi ?? '-',
+                    'berat' => (float) ($mobil->berat ?? 0),
+                    'karung' => (int) ($mobil->jumlah_karung ?? 0),
+                    'tarif' => (float) ($mobil->ongkos ?? 0),
+                    'total' => (float) ($mobil->berat ?? 0) * (float) ($mobil->ongkos ?? 0),
+                    'status_bayar' => $statusMobil,
+                ]);
+            }
+
+            foreach ($lansir->tims as $tim) {
+                $timRows->push($base + [
+                    'pelaksana' => $tim->nama_tim ?? '-',
+                    'berat' => (float) ($tim->berat ?? 0),
+                    'karung' => (int) ($tim->jumlah_karung ?? 0),
+                    'tarif' => (float) ($tim->upah ?? 0),
+                    'total' => (float) ($tim->berat ?? 0) * (float) ($tim->upah ?? 0),
+                    'status_bayar' => $statusTim,
+                ]);
+            }
+        }
+
+        return [
+            $mobilRows->sortBy([['tanggal', 'asc'], ['no_po', 'asc']])->values(),
+            $timRows->sortBy([['tanggal', 'asc'], ['no_po', 'asc']])->values(),
+        ];
     }
 }

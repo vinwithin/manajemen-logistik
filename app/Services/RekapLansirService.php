@@ -9,39 +9,52 @@ use Illuminate\Support\Collection;
 class RekapLansirService
 {
     /**
-     * Ambil semua lansir (PoPenerimaLansir) beserta mobil-nya untuk PO ini.
+     * Ambil seluruh data rekap PO dari sumber yang sama.
      */
-    public function getRekapMobil(PurchaseOrder $po): Collection
+    public function getRekapPo(PurchaseOrder $po): Collection
     {
-        return PoPenerimaLansir::with(['mobils', 'penerima.kendaraan'])
-            ->whereHas('penerima.kendaraan', fn($q) => $q->where('po_id', $po->id))
+        return PoPenerimaLansir::with([
+            'mobils',
+            'tims',
+            'penerima.kendaraan',
+            'penerima.tujuan',
+        ])
+            ->whereHas('penerima.kendaraan', fn ($q) => $q->where('po_id', $po->id))
+            ->orderBy('tanggal_lansir')
+            ->orderBy('id')
             ->get();
     }
 
-    /**
-     * Ambil semua lansir beserta tim bongkar-nya untuk PO ini.
-     */
+    public function getRekapMobil(PurchaseOrder $po): Collection
+    {
+        return $this->getRekapPo($po);
+    }
+
     public function getRekapTim(PurchaseOrder $po): Collection
     {
-        return PoPenerimaLansir::with(['tims', 'mobils', 'penerima.kendaraan'])
-            ->whereHas('penerima.kendaraan', fn($q) => $q->where('po_id', $po->id))
-            ->get()
-            ->map(function ($lansir) {
-                // Untuk rekap tim, berat harus mengikuti detail tim bongkar.
-                $lansir->total_berat_calculated = (float) $lansir->tims->sum('berat');
-                return $lansir;
-            });
+        return $this->prepareRekapTim($this->getRekapPo($po));
     }
 
-    public function getGrandTotalMobil(PurchaseOrder $po): float
+    public function prepareRekapTim(Collection $rekap): Collection
     {
-        return (float) $this->getRekapMobil($po)
-            ->sum(fn($lansir) => $lansir->total_ongkos);
+        return $rekap->each(function (PoPenerimaLansir $lansir) {
+            $lansir->total_berat_calculated = (float) $lansir->tims->sum('berat');
+        });
     }
 
-    public function getGrandTotalTim(PurchaseOrder $po): float
+    public function getGrandTotalMobil(PurchaseOrder|Collection $source): float
     {
-        return (float) $this->getRekapTim($po)
-            ->sum(fn($lansir) => $lansir->total_upah);
+        $rekap = $source instanceof PurchaseOrder ? $this->getRekapPo($source) : $source;
+
+        return (float) $rekap
+            ->sum(fn ($lansir) => $lansir->total_ongkos);
+    }
+
+    public function getGrandTotalTim(PurchaseOrder|Collection $source): float
+    {
+        $rekap = $source instanceof PurchaseOrder ? $this->getRekapPo($source) : $source;
+
+        return (float) $rekap
+            ->sum(fn ($lansir) => $lansir->total_upah);
     }
 }

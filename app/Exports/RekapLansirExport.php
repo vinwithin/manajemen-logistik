@@ -3,198 +3,242 @@
 namespace App\Exports;
 
 use App\Models\LansirPayment;
-use App\Models\PoItemLansir;
-use App\Models\KodePakan;
 use App\Models\PurchaseOrder;
+use Illuminate\Support\Collection;
+use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithEvents;
+use Maatwebsite\Excel\Concerns\WithMultipleSheets;
+use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use Maatwebsite\Excel\Events\AfterSheet;
-use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class RekapLansirExport implements ShouldAutoSize, WithEvents, WithTitle
+class RekapLansirExport implements WithMultipleSheets
 {
-    public function __construct(private PurchaseOrder $po) {}
+    public function __construct(
+        private PurchaseOrder $po,
+        private Collection $rekap,
+    ) {}
 
-    public function title(): string
+    public function sheets(): array
     {
-        return 'Rekap Lansir';
+        return [
+            new RekapLansirMobilSheet($this->po, $this->rekap),
+            new RekapLansirTimSheet($this->po, $this->rekap),
+        ];
+    }
+}
+
+abstract class RekapLansirSheet implements FromArray, ShouldAutoSize, WithEvents, WithStyles, WithTitle
+{
+    protected int $columnCount;
+
+    public function __construct(
+        protected PurchaseOrder $po,
+        protected Collection $rekap,
+    ) {}
+
+    abstract protected function headings(): array;
+
+    abstract protected function detailRows(): array;
+
+    abstract protected function paymentType(): string;
+
+    public function array(): array
+    {
+        $this->columnCount = count($this->headings());
+        $rows = [
+            ['No. PO', $this->po->no_po],
+            ['Tanggal PO', $this->po->tanggal_po?->format('d/m/Y') ?? '-'],
+            ['CV', $this->po->cv?->nama_cv ?? '-'],
+            [],
+            $this->headings(),
+        ];
+
+        $details = $this->detailRows();
+        $rows = array_merge($rows, $details);
+        $total = collect($details)->sum(fn (array $row) => (float) end($row));
+        $totalRow = array_fill(0, $this->columnCount, '');
+        $totalRow[0] = 'GRAND TOTAL';
+        $totalRow[$this->columnCount - 1] = $total;
+        $rows[] = $totalRow;
+
+        $payment = $this->po->lansirPayments
+            ->firstWhere('tipe', $this->paymentType());
+        $status = $payment?->status === LansirPayment::STATUS_SUDAH
+            ? 'Sudah Bayar'
+            : 'Belum Bayar';
+        $rows[] = ['Status Pembayaran', $status];
+
+        if ($payment?->tanggal_bayar) {
+            $rows[] = [
+                'Tanggal Bayar',
+                $payment->tanggal_bayar->format('d/m/Y'),
+                'Dibayar Oleh',
+                $payment->dibayar_oleh ?? '-',
+            ];
+        }
+
+        return $rows;
+    }
+
+    public function styles(Worksheet $sheet): array
+    {
+        return [
+            1 => ['font' => ['bold' => true]],
+            2 => ['font' => ['bold' => true]],
+            3 => ['font' => ['bold' => true]],
+            5 => [
+                'font' => ['bold' => true, 'color' => ['argb' => 'FFFFFFFF']],
+                'fill' => [
+                    'fillType' => Fill::FILL_SOLID,
+                    'startColor' => ['argb' => 'FF2563EB'],
+                ],
+                'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+            ],
+        ];
     }
 
     public function registerEvents(): array
     {
-        $po = $this->po;
-
         return [
-            AfterSheet::class => function (AfterSheet $event) use ($po) {
+            AfterSheet::class => function (AfterSheet $event) {
                 $sheet = $event->sheet->getDelegate();
+                $lastColumn = $sheet->getHighestColumn();
+                $lastRow = $sheet->getHighestRow();
+                $grandTotalRow = 6 + count($this->detailRows());
 
-                // Load all events with relations
-                $events = PoItemLansir::with([
-                    'item.penerimaList',
-                    'item.tujuan',
-                    'mobils',
-                    'tims',
-                ])->whereHas('item', fn ($q) => $q->where('po_id', $po->id))
-                    ->get();
-
-                $paymentMobil = LansirPayment::where('po_id', $po->id)
-                    ->where('tipe', LansirPayment::TIPE_MOBIL)->first();
-                $paymentTim = LansirPayment::where('po_id', $po->id)
-                    ->where('tipe', LansirPayment::TIPE_TIM)->first();
-
-                $row = 1;
-
-                // ── PO Info ──────────────────────────────────────────
-                $sheet->setCellValue('A'.$row, 'No. PO');
-                $sheet->setCellValue('B'.$row, $po->no_po);
-                $sheet->getStyle('A'.$row)->getFont()->setBold(true);
-                $row++;
-
-                $sheet->setCellValue('A'.$row, 'Tanggal');
-                $sheet->setCellValue('B'.$row, $po->tanggal_po->format('d/m/Y'));
-                $sheet->getStyle('A'.$row)->getFont()->setBold(true);
-                $row++;
-
-                $sheet->setCellValue('A'.$row, 'CV');
-                $sheet->setCellValue('B'.$row, $po->cv?->nama_cv ?? '-');
-                $sheet->getStyle('A'.$row)->getFont()->setBold(true);
-                $row++;
-
-                $row++; // blank
-
-                // ── TABEL MOBIL LANSIR ────────────────────────────────
-                $mobilHeaderRow = $row;
-                $mobilHeaders = ['Tanggal', 'Nopol', 'Sopir', 'Asal Pakan', 'Peternak', 'Jumlah (Bag)', 'OA', 'TOTAL OA'];
-                foreach ($mobilHeaders as $col => $header) {
-                    $sheet->setCellValueByColumnAndRow($col + 1, $row, $header);
-                }
-                $this->styleHeaderRow($sheet, $row, count($mobilHeaders));
-                $row++;
-
-                $grandTotalOa = 0;
-                foreach ($events as $event) {
-                    $tanggal = $event->selesai_at?->format('d/m/y') ?? '-';
-                    $penerimaList = $event->item->penerimaList;
-                    $asalPakan = $event->item->tujuan?->nama ?? '-';
-                    $penerima = $penerimaList->isNotEmpty()
-                        ? $penerimaList->pluck('nama')->join(', ')
-                        : ($event->item->nama_penerima ?? '-');
-
-                    foreach ($event->mobils as $mobil) {
-                        $totalOa = ($mobil->berat ?? 0) * ($mobil->ongkos ?? 0);
-                        $grandTotalOa += $totalOa;
-
-                        $sheet->setCellValueByColumnAndRow(1, $row, $tanggal);
-                        $sheet->setCellValueByColumnAndRow(2, $row, $mobil->no_polisi);
-                        $sheet->setCellValueByColumnAndRow(3, $row, $mobil->nama_sopir ?? '-');
-                        $sheet->setCellValueByColumnAndRow(4, $row, $asalPakan ?? '-');
-                        $sheet->setCellValueByColumnAndRow(5, $row, $penerima);
-                        $sheet->setCellValueByColumnAndRow(6, $row, $mobil->jumlah_karung ?? 0);
-                        $sheet->setCellValueByColumnAndRow(7, $row, $mobil->ongkos ?? 0);
-                        $sheet->setCellValueByColumnAndRow(8, $row, $totalOa);
-                        $row++;
-                    }
-                }
-
-                // Grand total mobil
-                $sheet->setCellValueByColumnAndRow(1, $row, 'TOTAL');
-                $sheet->setCellValueByColumnAndRow(7, $row, $grandTotalOa);
-                $sheet->getStyle('A'.$row.':G'.$row)->applyFromArray([
-                    'font' => ['bold' => true],
-                    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FFD1FAE5']],
-                ]);
-                $row++;
-
-                // Status bayar mobil
-                $statusMobil = $paymentMobil?->status === LansirPayment::STATUS_SUDAH ? 'Sudah Bayar' : 'Belum Bayar';
-                $sheet->setCellValueByColumnAndRow(1, $row, 'Status Bayar Mobil: '.$statusMobil);
-                if ($paymentMobil?->tanggal_bayar) {
-                    $sheet->setCellValueByColumnAndRow(4, $row, 'Tgl: '.$paymentMobil->tanggal_bayar->format('d/m/Y'));
-                    $sheet->setCellValueByColumnAndRow(5, $row, 'Oleh: '.($paymentMobil->dibayar_oleh ?? '-'));
-                }
-                $sheet->getStyle('A'.$row)->getFont()->setBold(true)->setItalic(true);
-                $row++;
-
-                $row++; // blank
-
-                // ── TITLE TIM BONGKAR ─────────────────────────────────
-                $timTitleRow = $row;
-                $sheet->setCellValue('A'.$row, 'Team Bongkar');
-                $sheet->mergeCells('A'.$row.':G'.$row);
-                $sheet->getStyle('A'.$row.':G'.$row)->applyFromArray([
-                    'font' => ['bold' => true, 'size' => 12],
-                    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FFE5E7EB']],
-                    'alignment' => ['horizontal' => Alignment::HORIZONTAL_LEFT],
-                ]);
-                $row++;
-
-                $row++; // blank
-
-                // ── TABEL TIM BONGKAR ─────────────────────────────────
-                $timHeaders = ['Tanggal', 'Nopol', 'Team Bongkar', 'Asal Pakan', 'Peternak', 'Jumlah (Bag)', 'Upah Bongkar', 'TOTAL OA'];
-                foreach ($timHeaders as $col => $header) {
-                    $sheet->setCellValueByColumnAndRow($col + 1, $row, $header);
-                }
-                $this->styleHeaderRow($sheet, $row, count($timHeaders));
-                $row++;
-
-                $grandTotalUpah = 0;
-                foreach ($events as $event) {
-                    $tanggal = $event->selesai_at?->format('d/m/y') ?? '-';
-                    $nopol = $event->item->no_polisi ?? '-';
-                    $asalPakan = $event->item->tujuan?->nama ?? '-';
-                    $penerimaList = $event->item->penerimaList;
-                    $penerima = $penerimaList->isNotEmpty()
-                        ? $penerimaList->pluck('nama')->join(', ')
-                        : ($event->item->nama_penerima ?? '-');
-                    $karung = $event->item->jumlah_karung ?? 0;
-                    foreach ($event->tims as $tim) {
-                        $totalUpah = ($tim->berat ?? 0) * ($tim->upah ?? 0);
-                        $grandTotalUpah += $totalUpah;
-
-                        $sheet->setCellValueByColumnAndRow(1, $row, $tanggal);
-                        $sheet->setCellValueByColumnAndRow(2, $row, $nopol);
-                        $sheet->setCellValueByColumnAndRow(3, $row, $tim->nama_tim);
-                        $sheet->setCellValueByColumnAndRow(4, $row, $asalPakan);
-                        $sheet->setCellValueByColumnAndRow(5, $row, $penerima);
-                        $sheet->setCellValueByColumnAndRow(6, $row, $karung);
-                        $sheet->setCellValueByColumnAndRow(7, $row, $tim->upah ?? 0);
-                        $sheet->setCellValueByColumnAndRow(8, $row, $totalUpah);
-                        $row++;
-                    }
-                }
-
-                // Grand total tim
-                $sheet->setCellValueByColumnAndRow(1, $row, 'TOTAL');
-                $sheet->setCellValueByColumnAndRow(8, $row, $grandTotalUpah);
-                $sheet->getStyle('A'.$row.':H'.$row)->applyFromArray([
-                    'font' => ['bold' => true],
-                    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FFD1FAE5']],
-                ]);
-                $row++;
-
-                // Status bayar tim
-                $statusTim = $paymentTim?->status === LansirPayment::STATUS_SUDAH ? 'Sudah Bayar' : 'Belum Bayar';
-                $sheet->setCellValueByColumnAndRow(1, $row, 'Status Bayar Tim: '.$statusTim);
-                if ($paymentTim?->tanggal_bayar) {
-                    $sheet->setCellValueByColumnAndRow(4, $row, 'Tgl: '.$paymentTim->tanggal_bayar->format('d/m/Y'));
-                    $sheet->setCellValueByColumnAndRow(5, $row, 'Oleh: '.($paymentTim->dibayar_oleh ?? '-'));
-                }
-                $sheet->getStyle('A'.$row)->getFont()->setBold(true)->setItalic(true);
+                $sheet->setAutoFilter("A5:{$lastColumn}5");
+                $sheet->freezePane('A6');
+                $sheet->getStyle("A{$grandTotalRow}:{$lastColumn}{$grandTotalRow}")
+                    ->applyFromArray([
+                        'font' => ['bold' => true],
+                        'fill' => [
+                            'fillType' => Fill::FILL_SOLID,
+                            'startColor' => ['argb' => 'FFD1FAE5'],
+                        ],
+                    ]);
+                $sheet->getStyle("A1:{$lastColumn}{$lastRow}")
+                    ->getAlignment()
+                    ->setVertical(Alignment::VERTICAL_CENTER);
             },
         ];
     }
+}
 
-    private function styleHeaderRow($sheet, int $row, int $colCount): void
+class RekapLansirMobilSheet extends RekapLansirSheet
+{
+    protected function headings(): array
     {
-        $lastCol = Coordinate::stringFromColumnIndex($colCount);
-        $sheet->getStyle('A'.$row.':'.$lastCol.$row)->applyFromArray([
-            'font' => ['bold' => true, 'color' => ['argb' => 'FFFFFFFF']],
-            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FF2563EB']],
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
-        ]);
+        return [
+            'No',
+            'Kendaraan PO',
+            'Sopir PO',
+            'Penerima',
+            'Tujuan',
+            'Tanggal Lansir',
+            'Mobil Lansir',
+            'Sopir Lansir',
+            'Berat (kg)',
+            'Jumlah Karung',
+            'Ongkos (Rp/kg)',
+            'Total Ongkos (Rp)',
+        ];
+    }
+
+    protected function detailRows(): array
+    {
+        $rows = [];
+        $no = 1;
+
+        foreach ($this->rekap as $lansir) {
+            foreach ($lansir->mobils as $mobil) {
+                $rows[] = [
+                    $no++,
+                    $lansir->penerima?->kendaraan?->no_polisi ?? '-',
+                    $lansir->penerima?->kendaraan?->nama_sopir ?? '-',
+                    $lansir->penerima?->nama_penerima ?? '-',
+                    $lansir->penerima?->tujuan?->nama ?? '-',
+                    $lansir->tanggal_lansir?->format('d/m/Y') ?? '-',
+                    $mobil->no_polisi ?? '-',
+                    $mobil->nama_sopir ?? '-',
+                    (float) ($mobil->berat ?? 0),
+                    (int) ($mobil->jumlah_karung ?? 0),
+                    (float) ($mobil->ongkos ?? 0),
+                    (float) ($mobil->berat ?? 0) * (float) ($mobil->ongkos ?? 0),
+                ];
+            }
+        }
+
+        return $rows;
+    }
+
+    protected function paymentType(): string
+    {
+        return LansirPayment::TIPE_MOBIL;
+    }
+
+    public function title(): string
+    {
+        return 'Mobil Lansir';
+    }
+}
+
+class RekapLansirTimSheet extends RekapLansirSheet
+{
+    protected function headings(): array
+    {
+        return [
+            'No',
+            'Kendaraan PO',
+            'Sopir PO',
+            'Penerima',
+            'Tujuan',
+            'Tanggal Lansir',
+            'Nama Tim',
+            'Berat (kg)',
+            'Jumlah Karung',
+            'Upah (Rp/kg)',
+            'Total Upah (Rp)',
+        ];
+    }
+
+    protected function detailRows(): array
+    {
+        $rows = [];
+        $no = 1;
+
+        foreach ($this->rekap as $lansir) {
+            foreach ($lansir->tims as $tim) {
+                $rows[] = [
+                    $no++,
+                    $lansir->penerima?->kendaraan?->no_polisi ?? '-',
+                    $lansir->penerima?->kendaraan?->nama_sopir ?? '-',
+                    $lansir->penerima?->nama_penerima ?? '-',
+                    $lansir->penerima?->tujuan?->nama ?? '-',
+                    $lansir->tanggal_lansir?->format('d/m/Y') ?? '-',
+                    $tim->nama_tim ?? '-',
+                    (float) ($tim->berat ?? 0),
+                    (int) ($tim->jumlah_karung ?? 0),
+                    (float) ($tim->upah ?? 0),
+                    (float) ($tim->berat ?? 0) * (float) ($tim->upah ?? 0),
+                ];
+            }
+        }
+
+        return $rows;
+    }
+
+    protected function paymentType(): string
+    {
+        return LansirPayment::TIPE_TIM;
+    }
+
+    public function title(): string
+    {
+        return 'Tim Bongkar';
     }
 }

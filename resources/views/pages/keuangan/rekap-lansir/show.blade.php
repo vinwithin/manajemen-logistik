@@ -24,6 +24,9 @@
                         {{ $header->tanggal_lansir->format('d M Y') }}
                     @endif
                 </span>
+                <span class="text-muted small">
+                    &nbsp;·&nbsp; {{ $header->kendaraans->pluck('no_polisi')->implode(', ') ?? '-' }}
+                </span>
             </div>
             <div class="d-flex gap-2">
                 @can('rekap-lansir.view')

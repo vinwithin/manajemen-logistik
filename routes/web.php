@@ -175,6 +175,8 @@ Route::middleware('auth')->group(function () {
     // Rekap Lansir
     Route::prefix('keuangan/rekap-lansir')->name('rekap-lansir.')->group(function () {
         Route::get('/', [RekapLansirController::class, 'index'])->name('index')->middleware('can:rekap-lansir.view');
+        Route::get('/export/periode/excel', [RekapLansirController::class, 'exportPeriodExcel'])->name('export-period-excel')->middleware('can:report.payment.export');
+        Route::get('/export/periode/pdf', [RekapLansirController::class, 'exportPeriodPdf'])->name('export-period-pdf')->middleware('can:report.payment.export');
         Route::get('/{id}', [RekapLansirController::class, 'show'])->name('show')->middleware('can:rekap-lansir.view');
         Route::post('/{id}/bayar', [RekapLansirController::class, 'bayar'])->name('bayar')->middleware('can:rekap-lansir.bayar');
         Route::get('/{id}/export', [RekapLansirController::class, 'export'])->name('export')->middleware('can:report.payment.export');
