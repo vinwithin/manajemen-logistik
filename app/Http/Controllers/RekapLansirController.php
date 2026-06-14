@@ -6,6 +6,7 @@ use App\Exports\RekapLansirExport;
 use App\Exports\RekapLansirPeriodExport;
 use App\Models\GudangLansirHeader;
 use App\Models\LansirPayment;
+use App\Models\PoPenerima;
 use App\Models\PoPenerimaLansir;
 use App\Models\PurchaseOrder;
 use App\Models\TransferPakanHeader;
@@ -39,7 +40,6 @@ class RekapLansirController extends Controller
         if ($request->ajax()) {
             // Gabungkan data dari PO Lansir dan Gudang Lansir
             $poLansir = PoPenerimaLansir::with(['penerima.kendaraan.po.cv', 'penerima.tujuan'])
-                ->withCount('mobils')
                 ->when($request->filled('from'), fn ($q) => $q->whereDate('tanggal_lansir', '>=', $request->from))
                 ->when($request->filled('to'), fn ($q) => $q->whereDate('tanggal_lansir', '<=', $request->to))
                 ->when($activeCvId, fn ($q) => $q->whereHas('penerima.kendaraan.po', fn ($q2) => $q2->where('cv_id', $activeCvId)))
@@ -47,18 +47,33 @@ class RekapLansirController extends Controller
                     $q->whereIn('tujuan_id', $tujuans->pluck('id'));
                 })
                 ->get()
-                ->map(function ($item) {
+                ->filter(fn ($item) => $item->penerima?->kendaraan?->po_id !== null)
+                ->groupBy(fn ($item) => $item->penerima->kendaraan->po_id)
+                ->map(function ($items) {
+                    $first = $items->first();
+                    $po = $first->penerima?->kendaraan?->po;
+                    $penerima = $items->pluck('penerima.nama_penerima')
+                        ->filter()
+                        ->unique()
+                        ->values()
+                        ->implode(', ');
+                    $jumlahKendaraan = $items->pluck('penerima.kendaraan.id')
+                        ->filter()
+                        ->unique()
+                        ->count();
+
                     return [
-                        'id' => encrypt('po_'.$item->id),
+                        'id' => encrypt('po_header_'.$po->id),
                         'tipe' => 'PO Lansir',
-                        'no_referensi' => $item->penerima?->kendaraan?->po?->no_po ?? '-',
-                        'tanggal_lansir' => $item->tanggal_lansir,
-                        'nama_tujuan' => $item->penerima?->nama_penerima ?? '-',
-                        'cv_name' => $item->penerima?->kendaraan?->po?->cv?->nama_cv ?? '-',
-                        'jumlah_kendaraan' => $item->mobils_count ?? 0,
-                        'original_id' => $item->id,
+                        'no_referensi' => $po?->no_po ?? '-',
+                        'tanggal_lansir' => $items->max('tanggal_lansir'),
+                        'nama_tujuan' => $penerima ?: '-',
+                        'cv_name' => $po?->cv?->nama_cv ?? '-',
+                        'jumlah_kendaraan' => $jumlahKendaraan,
+                        'original_id' => $po?->id,
                     ];
-                });
+                })
+                ->values();
 
             $gudangLansir = GudangLansirHeader::with(['cv', 'gudang', 'kendaraans.penerimas'])
                 ->withCount('kendaraans')
@@ -106,7 +121,7 @@ class RekapLansirController extends Controller
 
             // Gabungkan dan urutkan berdasarkan tanggal
             $combined = $poLansir->concat($gudangLansir)->concat($transferPakan)
-                ->sortByDesc('created_at')
+                ->sortByDesc('tanggal_lansir')
                 ->values();
 
             return $this->datatableService->getDataFromCollection($combined);
@@ -129,12 +144,23 @@ class RekapLansirController extends Controller
             $paymentMobil = null;
             $paymentTim = null;
             $header = null;
+            $poPenerima = null;
 
             // Cek apakah ini PO Lansir atau Gudang Lansir berdasarkan prefix
-            if (str_starts_with($decryptedId, 'po_')) {
+            if (str_starts_with($decryptedId, 'po_penerima_')) {
+                $penerimaId = (int) str_replace('po_penerima_', '', $decryptedId);
+                $poPenerima = PoPenerima::with(['kendaraan.po.cv', 'tujuan'])->findOrFail($penerimaId);
+                $header = $poPenerima->kendaraan->po;
+                $tipe = 'po';
+            } elseif (str_starts_with($decryptedId, 'po_header_')) {
+                $poId = (int) str_replace('po_header_', '', $decryptedId);
+                $header = PurchaseOrder::with(['cv'])->findOrFail($poId);
+                $tipe = 'po';
+            } elseif (str_starts_with($decryptedId, 'po_')) {
                 // PO Lansir
                 $lansirId = (int) str_replace('po_', '', $decryptedId);
                 $lansir = PoPenerimaLansir::with(['penerima.kendaraan.po.cv'])->findOrFail($lansirId);
+                $poPenerima = $lansir->penerima;
                 $header = $lansir->penerima->kendaraan->po;
                 $tipe = 'po';
 
@@ -161,6 +187,7 @@ class RekapLansirController extends Controller
         if ($tipe === 'po') {
             // Untuk PO Lansir
             $rekapMobil = $this->service->getRekapPo($header);
+            $poPenerima = null;
             $rekapTim = $this->service->prepareRekapTim($rekapMobil);
             $grandTotalMobil = $this->service->getGrandTotalMobil($rekapMobil);
             $grandTotalTim = $this->service->getGrandTotalTim($rekapTim);
@@ -188,7 +215,7 @@ class RekapLansirController extends Controller
         }
 
         return view('pages.keuangan.rekap-lansir.show', compact(
-            'header', 'tipe',
+            'header', 'tipe', 'poPenerima',
             'rekapMobil', 'rekapTim',
             'grandTotalMobil', 'grandTotalTim',
             'paymentMobil', 'paymentTim'

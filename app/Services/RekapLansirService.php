@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\PoPenerima;
 use App\Models\PoPenerimaLansir;
 use App\Models\PurchaseOrder;
 use Illuminate\Support\Collection;
@@ -20,6 +21,20 @@ class RekapLansirService
             'penerima.tujuan',
         ])
             ->whereHas('penerima.kendaraan', fn ($q) => $q->where('po_id', $po->id))
+            ->orderBy('tanggal_lansir')
+            ->orderBy('id')
+            ->get();
+    }
+
+    public function getRekapPenerima(PoPenerima $penerima): Collection
+    {
+        return PoPenerimaLansir::with([
+            'mobils',
+            'tims',
+            'penerima.kendaraan',
+            'penerima.tujuan',
+        ])
+            ->where('po_penerima_id', $penerima->id)
             ->orderBy('tanggal_lansir')
             ->orderBy('id')
             ->get();

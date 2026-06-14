@@ -41,7 +41,7 @@
                                 <th>Tipe</th>
                                 <th>No. Referensi</th>
                                 <th>Tanggal Lansir</th>
-                                <th>Tujuan</th>
+                                <th>Penerima</th>
                                 <th>CV</th>
                                 <th>Kendaraan</th>
                                 <th>Aksi</th>
