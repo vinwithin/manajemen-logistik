@@ -94,7 +94,7 @@ class StokKeluarExport implements FromArray, WithEvents, WithTitle
                 $lansirHeader?->cv?->nama_cv ?? '-',
                 $m->tujuan?->nama ?? '-',
                 $kendaraan?->no_polisi ?? '-',
-                $kendaraan?->no_surat_jalan ?? '-',
+                $kendaraan?->no_hp ?? '-',
                 $penerima?->nama_penerima ?? '-',
                 $penerima?->tujuan?->nama ?? '-',
                 $m->kodePakan?->kode ?? '-',

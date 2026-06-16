@@ -27,6 +27,8 @@ class permissionSeeder extends Seeder
         //  30 = Suplier CV      (child of Master Data)
         //  31 = Kode Pakan      (child of Master Data)
         //  32 = Tujuan Kirim    (child of Master Data)
+        //  33 = Penerima        (child of Master Data)
+        //  34 = Mobil           (child of Master Data)
         //  40 = Laporan PO      (child of Laporan)
         //  41 = Laporan Bayar   (child of Laporan)
         //  50 = Manaj. User     (child of Pengaturan)
@@ -66,6 +68,8 @@ class permissionSeeder extends Seeder
             ['name' => 'destination.manage',    'menu_id' => 32],
             ['name' => 'penerima.view',      'menu_id' => 33],
             ['name' => 'penerima.manage',    'menu_id' => 33],
+            ['name' => 'mobil.view',         'menu_id' => 34],
+            ['name' => 'mobil.manage',       'menu_id' => 34],
 
             // Laporan
             ['name' => 'report.po.view',        'menu_id' => 40],
@@ -134,6 +138,10 @@ class permissionSeeder extends Seeder
             'feed_code.manage',
             'destination.view',
             'destination.manage',
+            'penerima.view',
+            'penerima.manage',
+            'mobil.view',
+            'mobil.manage',
             'report.po.view',
             'report.po.export',
             'report.payment.view',
@@ -156,6 +164,8 @@ class permissionSeeder extends Seeder
             'supplier.view',
             'feed_code.view',
             'destination.view',
+            'penerima.view',
+            'mobil.view',
             'report.po.view',
             'report.payment.view',
         ]);

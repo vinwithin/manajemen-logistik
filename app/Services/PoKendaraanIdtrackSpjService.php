@@ -19,12 +19,12 @@ class PoKendaraanIdtrackSpjService
     {
         $kendaraan->loadMissing(['po', 'penerimas.penerima', 'penerimas.tujuan']);
 
-        $sj = trim((string) ($kendaraan->no_surat_jalan ?? ''));
+        $sj = trim((string) ($kendaraan->no_hp ?? ''));
         if ($sj === '') {
             return [
                 'success' => false,
                 'skipped' => true,
-                'message' => 'Nomor surat jalan belum diisi.',
+                'message' => 'No HP belum diisi.',
             ];
         }
 

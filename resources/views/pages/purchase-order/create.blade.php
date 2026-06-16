@@ -155,12 +155,25 @@
                 <div class="row g-3 mb-3">
                     <div class="col-md-3">
                         <label class="form-label">No. Polisi <span class="text-danger">*</span></label>
-                        <input type="text" name="kendaraan[__KI__][no_polisi]"
-                            class="form-control text-uppercase input-no-polisi" placeholder="Contoh: B 1234 XY">
+                        <select name="kendaraan[__KI__][no_polisi]" class="form-select input-no-polisi">
+                            <option value="">-- Pilih Mobil --</option>
+                            @foreach ($mobils as $mobil)
+                                <option value="{{ $mobil->nopol }}" data-nama-sopir="{{ $mobil->nama_sopir }}"
+                                    data-no-hp="{{ $mobil->no_hp }}">
+                                    {{ $mobil->nopol }}
+                                </option>
+                            @endforeach
+                        </select>
                     </div>
                     <div class="col-md-3">
                         <label class="form-label">Nama Sopir</label>
-                        <input type="text" name="kendaraan[__KI__][nama_sopir]" class="form-control"
+                        <input type="text" name="kendaraan[__KI__][nama_sopir]"
+                            class="form-control input-nama-sopir"
+                            placeholder="Opsional">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">No HP</label>
+                        <input type="text" name="kendaraan[__KI__][no_hp]" class="form-control input-no-hp"
                             placeholder="Opsional">
                     </div>
 
@@ -440,6 +453,24 @@
                 /__PKI__/g, pki);
         }
 
+        function ensureNopolOption($select, nopol) {
+            if (!nopol || $select.find('option[value="' + nopol.replace(/"/g, '\\"') + '"]').length) return;
+            $select.append($('<option>', {
+                value: nopol,
+                text: nopol
+            }));
+        }
+
+        function applyMobilToKendaraan($select) {
+            var $option = $select.find('option:selected');
+            var $card = $select.closest('.item-kendaraan');
+            var namaSopir = $option.data('nama-sopir') || '';
+            var noHp = $option.data('no-hp') || '';
+
+            $card.find('.input-nama-sopir').val(namaSopir);
+            $card.find('.input-no-hp').val(noHp);
+        }
+
         function getKendaraanIndex($card) {
             var name = $card.find('[name^="kendaraan["]').first().attr('name');
             if (!name) return 0;
@@ -462,9 +493,11 @@
             updateKendaraanLabels();
 
             if (oldData) {
-                $card.find('[name="kendaraan[' + ki + '][no_polisi]"]').val(oldData.no_polisi || '');
+                var $nopol = $card.find('[name="kendaraan[' + ki + '][no_polisi]"]');
+                ensureNopolOption($nopol, oldData.no_polisi || '');
+                $nopol.val(oldData.no_polisi || '');
                 $card.find('[name="kendaraan[' + ki + '][nama_sopir]"]').val(oldData.nama_sopir || '');
-                $card.find('[name="kendaraan[' + ki + '][no_surat_jalan]"]').val(oldData.no_surat_jalan || '');
+                $card.find('[name="kendaraan[' + ki + '][no_hp]"]').val(oldData.no_hp || '');
                 if (oldData.jumlah_kg) {
                     $card.find('.input-muatan-kg').val(oldData.jumlah_kg);
                     updateMuatanKarung($card);
@@ -564,6 +597,10 @@
                 }
             }
         }
+
+        $(document).on('change', '.input-no-polisi', function() {
+            applyMobilToKendaraan($(this));
+        });
 
         // ── Add penerima ──────────────────────────────────────────
         function addPenerima($kendaraanCard, ki, pi, oldData) {
@@ -1018,7 +1055,7 @@
                         return [
                             'no_polisi' => $kend['no_polisi'] ?? '',
                             'nama_sopir' => $kend['nama_sopir'] ?? '',
-                            'no_surat_jalan' => $kend['no_surat_jalan'] ?? '',
+                            'no_hp' => $kend['no_hp'] ?? '',
                             'supplier_id' => $kend['supplier_id'] ?? '',
                             'jumlah_kg' => $kend['jumlah_kg'] ?? '',
                             'dp_nominal' => $kend['dp_nominal'] ?? 0,

@@ -13,7 +13,7 @@ return new class extends Migration
             $table->foreignId('po_id')->constrained('purchase_orders')->cascadeOnDelete();
             $table->string('no_polisi', 20);
             $table->string('nama_sopir')->nullable();
-            $table->string('no_surat_jalan', 100)->nullable();
+            $table->string('no_hp', 20)->nullable();
             $table->foreignId('supplier_id')->nullable()->constrained('suppliers')->nullOnDelete();
             $table->integer('tujuan_id')->nullable();
             $table->string('jenis_kendaraan')->nullable();

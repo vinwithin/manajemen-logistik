@@ -10,6 +10,7 @@ use App\Http\Controllers\LaporanPembayaranController;
 use App\Http\Controllers\LaporanPoController;
 use App\Http\Controllers\Master\CvController;
 use App\Http\Controllers\Master\KodePakanController;
+use App\Http\Controllers\Master\MobilController;
 use App\Http\Controllers\Master\PenerimaController;
 use App\Http\Controllers\Master\SupplierController;
 use App\Http\Controllers\Master\TujuanController;
@@ -118,6 +119,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('/master/tujuan', TujuanController::class)->middleware(['can:destination.view']);
     Route::resource('/master/supplier', SupplierController::class)->middleware(['can:supplier.view']);
     Route::resource('/master/penerima', PenerimaController::class)->middleware(['can:penerima.view']);
+    Route::resource('/master/mobil', MobilController::class)->middleware(['can:mobil.view']);
     Route::get('/master/supplier/ongkos-angkut/get', [SupplierController::class, 'getOngkosAngkut'])->name('supplier.get-ongkos')->middleware('can:supplier.view');
     Route::get('/master/supplier/jenis-kendaraan/get', [SupplierController::class, 'getJenisKendaraan'])->name('supplier.get-jenis-kendaraan')->middleware('can:supplier.view');
     Route::get('/master/penerima/ongkos-angkut/get', [PenerimaController::class, 'getOngkosAngkut'])->name('penerima.get-ongkos')->middleware('can:penerima.view');

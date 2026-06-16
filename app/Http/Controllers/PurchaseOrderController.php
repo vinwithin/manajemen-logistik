@@ -7,6 +7,7 @@ use App\Exports\PurchaseOrderExport;
 use App\Exports\PurchaseOrderPeriodExport;
 use App\Models\Cv;
 use App\Models\KodePakan;
+use App\Models\Mobil;
 use App\Models\OaPayment;
 use App\Models\Penerima;
 use App\Models\PoItemLansir;
@@ -611,10 +612,13 @@ class PurchaseOrderController extends Controller
             ->whereIn('tujuan_id', $userTujuan->pluck('id'))
             ->orderBy('nama')
             ->get(['id', 'nama', 'tujuan_id']);
+        $mobils = Mobil::where('is_aktif', true)
+            ->orderBy('nopol')
+            ->get(['id', 'nopol', 'nama_sopir', 'no_hp']);
         $batasOmzet = Cv::BATAS_OMZET;
 
         // $userCvs dan $activeCv sudah tersedia di semua view dari AppServiceProvider
-        return view('pages.purchase-order.create', compact('activeCvId', 'suppliers', 'kodePakans', 'tujuans', 'penerimas', 'batasOmzet'));
+        return view('pages.purchase-order.create', compact('activeCvId', 'suppliers', 'kodePakans', 'tujuans', 'penerimas', 'mobils', 'batasOmzet'));
     }
 
     public function store(Request $request)
@@ -628,6 +632,7 @@ class PurchaseOrderController extends Controller
             'kendaraan' => 'required|array|min:1',
             'kendaraan.*.no_polisi' => 'required|string|max:20',
             'kendaraan.*.nama_sopir' => 'nullable|string|max:255',
+            'kendaraan.*.no_hp' => 'nullable|string|max:20',
             'kendaraan.*.supplier_id' => 'nullable|exists:suppliers,id',
             'kendaraan.*.jenis_kendaraan' => 'nullable|string|max:100',
             'kendaraan.*.tujuan_id' => 'required|exists:tujuan,id',
@@ -668,6 +673,8 @@ class PurchaseOrderController extends Controller
             'kendaraan.*.no_polisi.max' => 'Nomor polisi maksimal 20 karakter.',
             'kendaraan.*.nama_sopir.string' => 'Nama sopir harus berupa teks.',
             'kendaraan.*.nama_sopir.max' => 'Nama sopir maksimal 255 karakter.',
+            'kendaraan.*.no_hp.string' => 'No HP sopir harus berupa teks.',
+            'kendaraan.*.no_hp.max' => 'No HP sopir maksimal 20 karakter.',
             'kendaraan.*.supplier_id.exists' => 'Supplier yang dipilih tidak valid.',
             'kendaraan.*.jenis_kendaraan.string' => 'Jenis kendaraan harus berupa teks.',
             'kendaraan.*.jenis_kendaraan.max' => 'Jenis kendaraan maksimal 100 karakter.',
@@ -733,6 +740,7 @@ class PurchaseOrderController extends Controller
                     'po_id' => $po->id,
                     'no_polisi' => strtoupper(trim($kendaraanData['no_polisi'])),
                     'nama_sopir' => $kendaraanData['nama_sopir'] ?? null,
+                    'no_hp' => $kendaraanData['no_hp'] ?? null,
                     'supplier_id' => $kendaraanData['supplier_id'] ?? null,
                     'jenis_kendaraan' => $kendaraanData['jenis_kendaraan'] ?? null,
                     'tujuan_id' => $kendaraanData['tujuan_id'] ?? null,
@@ -905,9 +913,12 @@ class PurchaseOrderController extends Controller
                 ->where('is_aktif', true)
                 ->orderBy('nama')
                 ->get(['id', 'nama', 'tujuan_id']);
+            $mobils = Mobil::where('is_aktif', true)
+                ->orderBy('nopol')
+                ->get(['id', 'nopol', 'nama_sopir', 'no_hp']);
             $batasOmzet = Cv::BATAS_OMZET;
 
-            return view('pages.purchase-order.sunting', compact('po', 'cvList', 'tujuans', 'suppliers', 'kodePakans', 'penerimas', 'batasOmzet'));
+            return view('pages.purchase-order.sunting', compact('po', 'cvList', 'tujuans', 'suppliers', 'kodePakans', 'penerimas', 'mobils', 'batasOmzet'));
         } catch (Exception $e) {
             return redirect()->back()->with('error', 'Gagal memuat halaman!');
         }
@@ -924,6 +935,7 @@ class PurchaseOrderController extends Controller
             'kendaraan.*.id' => 'nullable|exists:po_kendaraan,id',
             'kendaraan.*.no_polisi' => 'required|string|max:20',
             'kendaraan.*.nama_sopir' => 'nullable|string|max:255',
+            'kendaraan.*.no_hp' => 'nullable|string|max:20',
             'kendaraan.*.supplier_id' => 'nullable|exists:suppliers,id',
             'kendaraan.*.jenis_kendaraan' => 'nullable|string|max:100',
             'kendaraan.*.tujuan_id' => 'required|exists:tujuan,id',
@@ -962,6 +974,8 @@ class PurchaseOrderController extends Controller
             'kendaraan.*.no_polisi.max' => 'Nomor polisi maksimal 20 karakter.',
             'kendaraan.*.nama_sopir.string' => 'Nama sopir harus berupa teks.',
             'kendaraan.*.nama_sopir.max' => 'Nama sopir maksimal 255 karakter.',
+            'kendaraan.*.no_hp.string' => 'No HP sopir harus berupa teks.',
+            'kendaraan.*.no_hp.max' => 'No HP sopir maksimal 20 karakter.',
             'kendaraan.*.supplier_id.exists' => 'Supplier yang dipilih tidak valid.',
             'kendaraan.*.jenis_kendaraan.string' => 'Jenis kendaraan harus berupa teks.',
             'kendaraan.*.jenis_kendaraan.max' => 'Jenis kendaraan maksimal 100 karakter.',
@@ -1040,6 +1054,7 @@ class PurchaseOrderController extends Controller
                 $kendaraan->fill([
                     'no_polisi' => strtoupper(trim($kendaraanData['no_polisi'])),
                     'nama_sopir' => $kendaraanData['nama_sopir'] ?? null,
+                    'no_hp' => $kendaraanData['no_hp'] ?? null,
                     'supplier_id' => $kendaraanData['supplier_id'] ?? null,
                     'jenis_kendaraan' => $kendaraanData['jenis_kendaraan'] ?? null,
                     'tujuan_id' => $kendaraanData['tujuan_id'] ?? null,

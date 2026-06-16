@@ -223,6 +223,16 @@ class MenuSeeder extends Seeder
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
+            [
+                'id' => 34,
+                'nama_menu' => 'Mobil',
+                'url' => '/master/mobil',
+                'icon' => 'truck',
+                'parent_id' => '4',
+                'order' => '4',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
 
             // ── Laporan (parent_id = 5) ────────────────────────
             [

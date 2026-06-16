@@ -135,7 +135,7 @@ class PurchaseOrderExport implements FromArray, WithEvents, WithTitle
                     $no++,
                     $this->po->tanggal_po->translatedFormat('d F Y'),
                     $kendaraan->no_polisi,
-                    $kendaraan->no_surat_jalan ?? '-',
+                    $kendaraan->no_hp ?? '-',
                     $namaTujuan,
                     $penerima?->nama_penerima ?? '',
                 ];

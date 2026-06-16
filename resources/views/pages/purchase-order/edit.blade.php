@@ -167,8 +167,8 @@
                             placeholder="Opsional">
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">No. Surat Jalan</label>
-                        <input type="text" name="kendaraan[__KI__][no_surat_jalan]" class="form-control"
+                        <label class="form-label">No HP</label>
+                        <input type="text" name="kendaraan[__KI__][no_hp]" class="form-control"
                             placeholder="Opsional">
                     </div>
                     <div class="col-md-3">
@@ -370,7 +370,7 @@
                 $card.find('[name="kendaraan[' + ki + '][id]"]').val(data.id || '');
                 $card.find('[name="kendaraan[' + ki + '][no_polisi]"]').val(data.no_polisi || '');
                 $card.find('[name="kendaraan[' + ki + '][nama_sopir]"]').val(data.nama_sopir || '');
-                $card.find('[name="kendaraan[' + ki + '][no_surat_jalan]"]').val(data.no_surat_jalan || '');
+                $card.find('[name="kendaraan[' + ki + '][no_hp]"]').val(data.no_hp || '');
                 $card.find('[name="kendaraan[' + ki + '][supplier_id]"]').val(data.supplier_id || '');
                 $card.find('[name="kendaraan[' + ki + '][status]"]').val(data.status || 'pending');
 
@@ -566,7 +566,7 @@
                         'id' => $k->id,
                         'no_polisi' => $k->no_polisi,
                         'nama_sopir' => $k->nama_sopir,
-                        'no_surat_jalan' => $k->no_surat_jalan,
+                        'no_hp' => $k->no_hp,
                         'supplier_id' => $k->supplier_id,
                         'status' => $k->status,
                         'penerima' => $k->penerimas

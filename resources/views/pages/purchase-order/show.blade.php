@@ -90,8 +90,8 @@
                     @if ($kendaraan->nama_sopir)
                         <span class="text-muted small ms-2">· {{ $kendaraan->nama_sopir }}</span>
                     @endif
-                    @if ($kendaraan->no_surat_jalan)
-                        <span class="text-muted small ms-2">· SJ: {{ $kendaraan->no_surat_jalan }}</span>
+                    @if ($kendaraan->no_hp)
+                        <span class="text-muted small ms-2">· HP: {{ $kendaraan->no_hp }}</span>
                     @endif
                     @if ($kendaraan->supplier)
                         <span class="badge bg-light text-dark border ms-2">{{ $kendaraan->supplier->initial }}</span>

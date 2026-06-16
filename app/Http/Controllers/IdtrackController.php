@@ -63,7 +63,7 @@ class IdtrackController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => $out['message'],
-                'nomor_surat' => trim((string) ($kendaraan->no_surat_jalan ?? '')),
+                'nomor_surat' => trim((string) ($kendaraan->no_hp ?? '')),
                 'result' => $out['result'] ?? null,
                 'skipped' => $out['skipped'] ?? false,
             ]);
@@ -92,8 +92,8 @@ class IdtrackController extends Controller
         }
 
         try {
-            // Cari kendaraan berdasarkan no_surat_jalan atau format PO-{no_po}-{id}
-            $kendaraan = PoKendaraan::where('no_surat_jalan', $nomorSurat)->first();
+            // Cari kendaraan berdasarkan no_hp atau format PO-{no_po}-{id}
+            $kendaraan = PoKendaraan::where('no_hp', $nomorSurat)->first();
 
             if (! $kendaraan && preg_match('/^PO-.+-(\d+)$/', $nomorSurat, $m)) {
                 $kendaraan = PoKendaraan::find($m[1]);

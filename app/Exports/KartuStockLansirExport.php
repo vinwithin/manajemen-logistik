@@ -127,7 +127,7 @@ class KartuStockLansirExport implements FromArray, WithEvents, WithTitle
             $row = [
                 $this->header->tanggal_lansir->format('d/m/y'),
                 $kendaraan->no_polisi ?? '',
-                $kendaraan->no_surat_jalan ?? '',  // Tgl & No.DO CPI
+                $kendaraan->no_hp ?? '',
                 '',                                 // No.SJ ke Kandang (dari keterangan pakan)
                 $penerima->nama_penerima,
             ];

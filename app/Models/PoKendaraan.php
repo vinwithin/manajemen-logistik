@@ -16,7 +16,7 @@ class PoKendaraan extends Model
         'po_id',
         'no_polisi',
         'nama_sopir',
-        'no_surat_jalan',
+        'no_hp',
         'supplier_id',
         'tujuan_id',
         'ongkos_angkut',

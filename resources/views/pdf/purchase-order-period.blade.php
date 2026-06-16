@@ -214,7 +214,7 @@
                             <td>{{ $no++ }}</td>
                             <td>{{ $po->tanggal_po->format('d/m/Y') }}</td>
                             <td>{{ $kendaraan->no_polisi }}</td>
-                            <td>{{ $kendaraan->no_surat_jalan ?? '-' }}</td>
+                            <td>{{ $kendaraan->no_hp ?? '-' }}</td>
                             <td class="text-left">{{ $penerima->nama_penerima }}</td>
                             @foreach ($kodePakanList as $i => $kp)
                                 @php

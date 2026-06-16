@@ -424,7 +424,7 @@
 
 
                                 <td rowspan="{{ $penerimaCount }}" style="vertical-align:middle;">
-                                    {{ $kendaraan->no_surat_jalan ?? '-' }}</td>
+                                    {{ $kendaraan->no_hp ?? '-' }}</td>
                                 <td rowspan="{{ $penerimaCount }}" style="vertical-align:middle;">
                                     {{ $kendaraan->no_polisi }}</td>
                                 @php $isFirstPenerima = false; @endphp
