@@ -18,8 +18,8 @@ class PurchaseOrderExport implements FromArray, WithEvents, WithTitle
 
     protected array $kodePakanList;
 
-    /** No | Tanggal | No Polisi | No. DO | Tujuan | Penerima */
-    protected int $identitasCols = 6;
+    /** No | Tanggal | No Polisi | No. DO | Nama Sopir | No HP Sopir | Tujuan | Penerima */
+    protected int $identitasCols = 8;
 
     public function __construct(PurchaseOrder $po)
     {
@@ -45,7 +45,7 @@ class PurchaseOrderExport implements FromArray, WithEvents, WithTitle
         $idCols = $this->identitasCols;
 
         // ── Header baris 1: label group ───────────────────────────────
-        $header1 = ['No', 'Tanggal', 'No Polisi', 'No. DO', 'Tujuan', 'Penerima'];
+        $header1 = ['No', 'Tanggal', 'No Polisi', 'No. DO', 'Nama Sopir', 'No HP Sopir', 'Tujuan', 'Penerima'];
 
         // Group Jumlah Karung
         $header1[] = 'Jumlah (bag)';
@@ -62,6 +62,7 @@ class PurchaseOrderExport implements FromArray, WithEvents, WithTitle
         $header1[] = 'Ongkos Angkut';
         $header1[] = 'Jumlah(Rp)';
         $header1[] = 'CV';
+        $header1[] = 'PIC';
         $header1[] = 'Keterangan';
 
         // ── LANSIR MOBIL COLUMNS ──────────────────────────────────────
@@ -96,6 +97,7 @@ class PurchaseOrderExport implements FromArray, WithEvents, WithTitle
         $header2[] = ''; // Ongkos Angkut
         $header2[] = ''; // Jumlah (Rp)
         $header2[] = ''; // CV
+        $header2[] = ''; // PIC
         $header2[] = ''; // ket
 
         // ── LANSIR MOBIL SUB-HEADERS ──────────────────────────────────
@@ -135,7 +137,9 @@ class PurchaseOrderExport implements FromArray, WithEvents, WithTitle
                     $no++,
                     $this->po->tanggal_po->translatedFormat('d F Y'),
                     $kendaraan->no_polisi,
-                    $kendaraan->no_hp ?? '-',
+                    $penerima?->no_do ?? '-',
+                    $kendaraan->nama_sopir ?? '',
+                    $kendaraan->no_hp ?? '',
                     $namaTujuan,
                     $penerima?->nama_penerima ?? '',
                 ];
@@ -171,6 +175,9 @@ class PurchaseOrderExport implements FromArray, WithEvents, WithTitle
 
                     // CV
                     $row[] = $this->po->cv?->nama_cv ?? '';
+
+                    // PIC
+                    $row[] = $penerima->validasi_oleh ?? '';
 
                     $lansir = $penerima->lansirs->first();
 
@@ -246,7 +253,10 @@ class PurchaseOrderExport implements FromArray, WithEvents, WithTitle
                     
                     // CV
                     $row[] = $this->po->cv?->nama_cv ?? '';
-                    
+
+                    // PIC
+                    $row[] = '';
+
                     $row[] = 'Belum ada penerima';
 
                     $row[] = '';
@@ -274,7 +284,7 @@ class PurchaseOrderExport implements FromArray, WithEvents, WithTitle
                     $extraCount = max($extraMobils->count(), $extraTims->count());
 
                     for ($ei = 0; $ei < $extraCount; $ei++) {
-                        $extraRow = array_fill(0, $idCols + ($kpCount * 2) + 4, '');
+                        $extraRow = array_fill(0, $idCols + ($kpCount * 2) + 5, '');
 
                         // Mobil lansir extra
                         $mobil = $extraMobils->get($ei);
@@ -315,6 +325,7 @@ class PurchaseOrderExport implements FromArray, WithEvents, WithTitle
         $totalRow[] = ''; // Ongkos Angkut
         $totalRow[] = ''; // Jumlah (Rp)
         $totalRow[] = ''; // CV
+        $totalRow[] = ''; // PIC
         $totalRow[] = ''; // Keterangan
 
         // Lansir Mobil totals
@@ -382,13 +393,14 @@ class PurchaseOrderExport implements FromArray, WithEvents, WithTitle
                 $oaCol = $idCols + 2 * $kodePakanCount + 1;
                 $jumlahCol = $idCols + 2 * $kodePakanCount + 2;
                 $cvCol = $idCols + 2 * $kodePakanCount + 3;
-                $ketCol = $idCols + 2 * $kodePakanCount + 4;
-                $spacer1Col = $idCols + 2 * $kodePakanCount + 5;
-                $lansirStartCol = $idCols + 2 * $kodePakanCount + 6;
-                $lansirEndCol = $idCols + 2 * $kodePakanCount + 11;
-                $spacer2Col = $idCols + 2 * $kodePakanCount + 12;
-                $timStartCol = $idCols + 2 * $kodePakanCount + 13;
-                $timEndCol = $idCols + 2 * $kodePakanCount + 17;
+                $picCol = $idCols + 2 * $kodePakanCount + 4;
+                $ketCol = $idCols + 2 * $kodePakanCount + 5;
+                $spacer1Col = $idCols + 2 * $kodePakanCount + 6;
+                $lansirStartCol = $idCols + 2 * $kodePakanCount + 7;
+                $lansirEndCol = $idCols + 2 * $kodePakanCount + 12;
+                $spacer2Col = $idCols + 2 * $kodePakanCount + 13;
+                $timStartCol = $idCols + 2 * $kodePakanCount + 14;
+                $timEndCol = $idCols + 2 * $kodePakanCount + 18;
                 $totalCols = $timEndCol;
 
                 $lastCol = $this->getColumnLetter($totalCols);
@@ -402,6 +414,7 @@ class PurchaseOrderExport implements FromArray, WithEvents, WithTitle
                 $oaLetter = $this->getColumnLetter($oaCol);
                 $jumlahLetter = $this->getColumnLetter($jumlahCol);
                 $cvLetter = $this->getColumnLetter($cvCol);
+                $picLetter = $this->getColumnLetter($picCol);
                 $ketLetter = $this->getColumnLetter($ketCol);
                 $spacer1Letter = $this->getColumnLetter($spacer1Col);
                 $lansirStartLetter = $this->getColumnLetter($lansirStartCol);
@@ -460,6 +473,13 @@ class PurchaseOrderExport implements FromArray, WithEvents, WithTitle
                     ->setHorizontal(Alignment::HORIZONTAL_CENTER)
                     ->setVertical(Alignment::VERTICAL_CENTER);
 
+                // "PIC": merge 2 baris
+                $sheet->mergeCells("{$picLetter}{$hRow1}:{$picLetter}{$hRow2}");
+                $sheet->getStyle("{$picLetter}{$hRow1}:{$picLetter}{$hRow2}")
+                    ->getAlignment()
+                    ->setHorizontal(Alignment::HORIZONTAL_CENTER)
+                    ->setVertical(Alignment::VERTICAL_CENTER);
+
                 // "Keterangan": merge 2 baris
                 $sheet->mergeCells("{$ketLetter}{$hRow1}:{$ketLetter}{$hRow2}");
                 $sheet->getStyle("{$ketLetter}{$hRow1}:{$ketLetter}{$hRow2}")
@@ -506,7 +526,7 @@ class PurchaseOrderExport implements FromArray, WithEvents, WithTitle
                     );
                 }
 
-                // Lansir columns (skip spacer, skip no polisi & sopir)
+                // Lansir columns (skip no polisi & sopir)
                 for ($ci = $lansirStartCol + 2; $ci <= $lansirEndCol; $ci++) {
                     $col = $this->getColumnLetter($ci);
                     $sheet->setCellValue(
@@ -533,7 +553,7 @@ class PurchaseOrderExport implements FromArray, WithEvents, WithTitle
                         'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
                     ]);
 
-                // ── Style data rows + merge A–D per kendaraan (sampai No. DO) ─────────
+                // ── Style data rows + merge A–F per kendaraan (sampai No HP Sopir) ─────
                 $currentRow = $dataStartRow;
                 $colorIndex = 0;
                 $colors = ['FFF3F4F6', 'FFFFFFFF'];
@@ -559,10 +579,11 @@ class PurchaseOrderExport implements FromArray, WithEvents, WithTitle
 
                     $start = $currentRow;
                     $end = $currentRow + $totalRows - 1;
+                    $mergeEndCol = $this->getColumnLetter(6);
 
-                    // Merge A–D jika > 1 baris
+                    // Merge A–F jika > 1 baris
                     if ($totalRows > 1) {
-                        foreach (['A', 'B', 'C', 'D'] as $col) {
+                        foreach (range('A', $mergeEndCol) as $col) {
                             $sheet->mergeCells("{$col}{$start}:{$col}{$end}");
                             $sheet->getStyle("{$col}{$start}:{$col}{$end}")
                                 ->getAlignment()
@@ -603,7 +624,7 @@ class PurchaseOrderExport implements FromArray, WithEvents, WithTitle
 
                     $fill = $colors[$colorIndex % 2];
                     for ($r = $start; $r <= $end; $r++) {
-                        $sheet->getStyle("A{$r}:D{$r}")
+                        $sheet->getStyle("A{$r}:{$mergeEndCol}{$r}")
                             ->applyFromArray([
                                 'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FFF3F4F6']],
                                 'font' => ['name' => 'Arial', 'size' => 10],

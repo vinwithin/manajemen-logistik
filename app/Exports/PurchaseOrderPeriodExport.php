@@ -27,8 +27,8 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
 
     protected string $to;
 
-    // NO | TANGGAL | No PO | KENDARAAN | No. DO | Tujuan | PENERIMA = 7 kolom (A-G)
-    protected int $identitasCols = 7;
+    // NO | TANGGAL | No PO | KENDARAAN | No. DO | Nama Sopir | No HP Sopir | Tujuan | PENERIMA = 9 kolom (A-I)
+    protected int $identitasCols = 9;
 
     public function __construct(string $from, string $to, ?int $cvId = null)
     {
@@ -83,7 +83,7 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
         $idCols = $this->identitasCols;
 
         // ── Header baris 1 ───────────────────────────────────────────
-        $header1 = ['NO', 'TANGGAL', 'No PO', 'KENDARAAN', 'No. DO', 'Tujuan', 'PENERIMA'];
+        $header1 = ['NO', 'TANGGAL', 'No PO', 'KENDARAAN', 'No. DO', 'Nama Sopir', 'No HP Sopir', 'Tujuan', 'PENERIMA'];
 
         // Group Jumlah Karung (n kolom)
         $header1[] = 'Jumlah Karung';
@@ -101,12 +101,14 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
         $header1[] = 'Ongkos Angkut';
         $header1[] = 'Jumlah (Rp)';
         $header1[] = 'CV';
+        $header1[] = 'PIC';
         $header1[] = 'Keterangan';
         $header1[] = 'Bukti Tiba';
 
         // ── LANSIR MOBIL COLUMNS ──────────────────────────────────────
         $header1[] = ''; // Spacer
         $header1[] = 'LANSIR MOBIL';
+        $header1[] = '';
         $header1[] = '';
         $header1[] = '';
         $header1[] = '';
@@ -141,6 +143,7 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
         $header2[] = ''; // Ongkos Angkut
         $header2[] = ''; // Jumlah (Rp)
         $header2[] = ''; // CV
+        $header2[] = ''; // PIC
         $header2[] = ''; // Keterangan
         $header2[] = ''; // Bukti Tiba
 
@@ -185,6 +188,8 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                         $po->no_po,
                         $kendaraan->no_polisi,
                         $penerima?->no_do ?? '-',
+                        $kendaraan->nama_sopir ?? '',
+                        $kendaraan->no_hp ?? '',
                         $namaTujuan,
                         $penerima?->nama_penerima ?? '',
                     ];
@@ -219,6 +224,9 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                         // CV
                         $row[] = $po->cv?->nama_cv ?? '';
 
+                        // PIC
+                        $row[] = $penerima->validasi_oleh ?? '';
+
                         // Keterangan: tipe tujuan penerima (kosong jika tidak ada)
                         $row[] = $penerima->penerima?->tujuan?->type ?? '';
 
@@ -239,7 +247,7 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                                 $isFirstLansir = false;
                             } else {
                                 // Untuk lansir selanjutnya, identitas kosong
-                                $currentRow = array_fill(0, $idCols + ($kpCount * 2) + 5, '');
+                                $currentRow = array_fill(0, $idCols + ($kpCount * 2) + 6, '');
                             }
 
                             // ── LANSIR MOBIL DATA ─────────────────────────────────
@@ -291,7 +299,7 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                             $extraCount = max($extraMobils->count(), $extraTims->count());
 
                             for ($ei = 0; $ei < $extraCount; $ei++) {
-                                $extraRow = array_fill(0, $idCols + ($kpCount * 2) + 5, '');
+                                $extraRow = array_fill(0, $idCols + ($kpCount * 2) + 6, '');
 
                                 // Mobil lansir extra
                                 $mobil = $extraMobils->get($ei);
@@ -320,19 +328,9 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                         // Jika tidak ada lansir sama sekali, tambahkan row dengan identitas saja
                         if ($lansirs->count() === 0) {
                             // Tambahkan kolom lansir & tim kosong
-                            $rowWithIdentitas[] = '';
-                            $rowWithIdentitas[] = '';
-                            $rowWithIdentitas[] = '';
-                            $rowWithIdentitas[] = '';
-                            $rowWithIdentitas[] = '';
-                            $rowWithIdentitas[] = '';
-                            $rowWithIdentitas[] = '';
-                            $rowWithIdentitas[] = '';
-                            $rowWithIdentitas[] = '';
-                            $rowWithIdentitas[] = '';
-                            $rowWithIdentitas[] = '';
-                            $rowWithIdentitas[] = '';
-                            $rowWithIdentitas[] = '';
+                            for ($i = 0; $i < 14; $i++) {
+                                $rowWithIdentitas[] = '';
+                            }
                             $rows[] = $rowWithIdentitas;
                         }
                     } else {
@@ -368,6 +366,9 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                         // CV
                         $row[] = $po->cv?->nama_cv ?? '';
 
+                        // PIC
+                        $row[] = '';
+
                         $row[] = 'Belum ada penerima';
 
                         // Bukti Tiba
@@ -394,19 +395,21 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
         }
 
         // ── Baris TOTAL ───────────────────────────────────────────────
-        // Kolom identitas + n karung + n kg + oa + jumlah + cv + keterangan + bukti tiba
+        // Kolom identitas + n karung + n kg + oa + jumlah + cv + pic + keterangan + bukti tiba
         $totalRow = array_fill(0, $idCols, '');
         $totalRow[0] = 'TOTAL';
         for ($i = 0; $i < ($kpCount * 2) + 2; $i++) {
             $totalRow[] = ''; // diisi formula SUM di AfterSheet
         }
         $totalRow[] = ''; // CV
+        $totalRow[] = ''; // PIC
         $totalRow[] = ''; // Keterangan
         $totalRow[] = ''; // Bukti Tiba
 
         // Lansir Mobil totals
         $totalRow[] = 'TOTAL';
         $totalRow[] = ''; // Spacer
+        $totalRow[] = '';
         $totalRow[] = '';
         $totalRow[] = ''; // Will be formula - Jumlah (kg)
         $totalRow[] = ''; // Will be formula - Jumlah (bag)
@@ -471,14 +474,15 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                 $oaCol = $idCols + 2 * $kodePakanCount + 1;
                 $jumlahCol = $idCols + 2 * $kodePakanCount + 2;
                 $cvCol = $idCols + 2 * $kodePakanCount + 3;
-                $ketCol = $idCols + 2 * $kodePakanCount + 4;
-                $buktiTibaCol = $idCols + 2 * $kodePakanCount + 5;
-                $spacer1Col = $idCols + 2 * $kodePakanCount + 6;
-                $lansirStartCol = $idCols + 2 * $kodePakanCount + 7;
-                $lansirEndCol = $idCols + 2 * $kodePakanCount + 13; // 18+2n
-                $spacer2Col = $idCols + 2 * $kodePakanCount + 14; // 19+2n
-                $timStartCol = $idCols + 2 * $kodePakanCount + 15; // 20+2n
-                $timEndCol = $idCols + 2 * $kodePakanCount + 19;
+                $picCol = $idCols + 2 * $kodePakanCount + 4;
+                $ketCol = $idCols + 2 * $kodePakanCount + 5;
+                $buktiTibaCol = $idCols + 2 * $kodePakanCount + 6;
+                $spacer1Col = $idCols + 2 * $kodePakanCount + 7;
+                $lansirStartCol = $idCols + 2 * $kodePakanCount + 8;
+                $lansirEndCol = $idCols + 2 * $kodePakanCount + 14;
+                $spacer2Col = $idCols + 2 * $kodePakanCount + 15;
+                $timStartCol = $idCols + 2 * $kodePakanCount + 16;
+                $timEndCol = $idCols + 2 * $kodePakanCount + 20;
                 $totalCols = $timEndCol;
 
                 $lastCol = $this->getColumnLetter($totalCols);
@@ -492,6 +496,7 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                 $oaLetter = $this->getColumnLetter($oaCol);
                 $jumlahLetter = $this->getColumnLetter($jumlahCol);
                 $cvLetter = $this->getColumnLetter($cvCol);
+                $picLetter = $this->getColumnLetter($picCol);
                 $ketLetter = $this->getColumnLetter($ketCol);
                 $buktiTibaLetter = $this->getColumnLetter($buktiTibaCol);
                 $spacer1Letter = $this->getColumnLetter($spacer1Col);
@@ -545,6 +550,13 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                 // "CV" — merge 2 baris
                 $sheet->mergeCells("{$cvLetter}{$hRow1}:{$cvLetter}{$hRow2}");
                 $sheet->getStyle("{$cvLetter}{$hRow1}:{$cvLetter}{$hRow2}")
+                    ->getAlignment()
+                    ->setHorizontal(Alignment::HORIZONTAL_CENTER)
+                    ->setVertical(Alignment::VERTICAL_CENTER);
+
+                // "PIC" — merge 2 baris
+                $sheet->mergeCells("{$picLetter}{$hRow1}:{$picLetter}{$hRow2}");
+                $sheet->getStyle("{$picLetter}{$hRow1}:{$picLetter}{$hRow2}")
                     ->getAlignment()
                     ->setHorizontal(Alignment::HORIZONTAL_CENTER)
                     ->setVertical(Alignment::VERTICAL_CENTER);
