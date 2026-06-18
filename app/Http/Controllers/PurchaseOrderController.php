@@ -364,7 +364,6 @@ class PurchaseOrderController extends Controller
 
             $poCount = $query->count();
 
-            // Ambil daftar kendaraan untuk filter plat mobil
             $kendaraanList = PoKendaraan::whereHas('po', function ($q) use ($cvId, $from, $to) {
                 $q->where('cv_id', $cvId)
                     ->whereDate('tanggal_po', '>=', $from)
@@ -429,6 +428,7 @@ class PurchaseOrderController extends Controller
         // Parse tujuan_ids: bisa "6" (single) atau "6,8" (gabungan)
         $tujuanIds = array_filter(array_map('intval', explode(',', $request->tujuan_ids)));
         $noSuratInput = $request->no_surat;
+        $tanggalSurat = $request->tanggal_surat;
         $cpi = $request->cpi;
         $kendaraanIds = $request->kendaraan_ids
             ? array_filter(array_map('intval', explode(',', $request->kendaraan_ids)))
@@ -552,7 +552,7 @@ class PurchaseOrderController extends Controller
         $tujuanNamaList = Tujuan::whereIn('id', $tujuanIds)->pluck('nama')->join(' & ');
         $tujuanNama = $cpi ?? $tujuanNamaList;
 
-        $pdf = Pdf::loadView('pdf.purchase-order-period-ptsum', compact('pos', 'from', 'to', 'noSurat', 'tujuanNama'))
+        $pdf = Pdf::loadView('pdf.purchase-order-period-ptsum', compact('pos', 'from', 'to', 'noSurat', 'tujuanNama', 'tanggalSurat'))
             ->setPaper('legal', 'landscape')
             ->setOption('margin-top', 10)
             ->setOption('margin-bottom', 10)
