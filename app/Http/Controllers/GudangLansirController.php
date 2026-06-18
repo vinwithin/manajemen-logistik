@@ -627,6 +627,7 @@ class GudangLansirController extends Controller
         $supplierId = $request->supplier_id;
         $tujuanIds = array_filter(array_map('intval', explode(',', $request->tujuan_ids)));
         $noSuratInput = $request->no_surat;
+        $tanggalSurat = $request->tanggal_surat;
         $cpi = $request->cpi;
         $kendaraanIds = $request->kendaraan_ids
             ? array_filter(array_map('intval', explode(',', $request->kendaraan_ids)))
@@ -746,7 +747,7 @@ class GudangLansirController extends Controller
         $tujuanNamaList = Tujuan::whereIn('id', $tujuanIds)->pluck('nama')->join(' & ');
         $tujuanNama = $cpi ?? $tujuanNamaList;       $pdf = Pdf::loadView(
             'pdf.gudang-lansir-ptsum',
-            compact('headers', 'from', 'to', 'noSurat', 'tujuanNama')
+            compact('headers', 'from', 'to', 'noSurat', 'tujuanNama', 'tanggalSurat')
         )
             ->setPaper('legal', 'landscape')
             ->setOption('margin-top', 10)->setOption('margin-bottom', 10)

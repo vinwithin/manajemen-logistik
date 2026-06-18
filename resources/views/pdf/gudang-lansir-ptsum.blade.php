@@ -532,7 +532,7 @@
                     class="sign-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
             </td>
             <td>
-                <span class="sign-label">Jambi, {{ now()->translatedFormat('d F Y') }}</span>
+                <span class="sign-label">{{ $tanggalSurat ?: 'Jambi, ' . now()->translatedFormat('d F Y') }}</span>
                 <span
                     class="sign-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
             </td>
@@ -553,7 +553,7 @@
                         <div class="kwit-company-sub" style="margin-left: 0;">{{ $cvAlamat }}</div>
                     </td>
                     <td
-                        style="text-align:right; font-size:8px; color:#555; vertical-align:top; white-space: nowrap; font-weight:bold; width:30%;">
+                        style="text-align:right; font-size:10px; color:#555; vertical-align:top; white-space: nowrap; font-weight:bold; width:30%;">
                         No :&nbsp;&nbsp; {{ $noKwitansi }}
                     </td>
                 </tr>
@@ -626,8 +626,7 @@
                     </td>
                     <td style="vertical-align: top; text-align: left; width: 50%;">
                         <span style="display: block; margin-bottom: 45px; font-size: 12px; margin-top: 0;">
-                            Jambi,
-                            {{ now()->translatedFormat('d F Y') }}
+                            {{ $tanggalSurat ?: 'Jambi, ' . now()->translatedFormat('d F Y') }}
                         </span>
                         <span class="kwit-sign-line"></span>
                         <div style="font-weight: bold; font-size: 12px; margin-top: 4px;">{{ $cvPimpinan }}</div>

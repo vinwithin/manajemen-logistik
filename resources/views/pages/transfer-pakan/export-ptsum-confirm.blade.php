@@ -169,9 +169,9 @@
                                    
                                 </div>
                                 <div class="mb-2">
-                                    <label class="form-label small">Catatan (opsional)</label>
-                                    <input type="text" name="catatan" class="form-control form-control-sm"
-                                        value="{{ $dokumen?->catatan }}" placeholder="Catatan tambahan untuk dokumen ini">
+                                    <label class="form-label small">Tanggal Surat</label>
+                                    <input type="text" name="tanggal_surat" class="form-control form-control-sm"
+                                         placeholder="Jambi, 17 Agustus 2026">
                                 </div>
                             </div>
                         </div>

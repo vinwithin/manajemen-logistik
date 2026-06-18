@@ -395,6 +395,7 @@ class TransferPakanController extends Controller
         $to = $request->to;
         $tujuanIds = array_filter(array_map('intval', explode(',', $request->tujuan_ids)));
         $noSuratInput = $request->no_surat;
+        $tanggalSurat = $request->tanggal_surat;
         $cpi = $request->cpi;
         $kendaraanIds = $request->kendaraan_ids
             ? array_filter(array_map('intval', explode(',', $request->kendaraan_ids)))
@@ -464,7 +465,7 @@ class TransferPakanController extends Controller
         $tujuanNama = $cpi ?? $tujuanNamaList;
         // dd($tujuanNama);
 
-        $pdf = Pdf::loadView('pdf.transfer-pakan-ptsum', compact('headers', 'from', 'to', 'noSurat', 'tujuanNama', 'cv'))
+        $pdf = Pdf::loadView('pdf.transfer-pakan-ptsum', compact('headers', 'from', 'to', 'noSurat', 'tujuanNama', 'cv', 'tanggalSurat'))
             ->setPaper('legal', 'landscape')
             ->setOption('margin-top', 10)
             ->setOption('margin-bottom', 10)
