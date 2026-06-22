@@ -44,7 +44,7 @@
             <h5 class="mb-0">Pembayaran Supplier</h5>
             <div class="d-flex gap-2 flex-wrap">
                 <a href="{{ route('keuangan.pembayaran.export-pdf-confirm') }}" class="btn btn-sm btn-danger">
-                    <i class="fa fa-file-pdf-o"></i> Cetak PDF
+                    <i class="fa fa-print"></i> Cetak PDF / Excel
                 </a>
                 <select id="filterTipe" class="form-select form-select-sm" style="width:150px">
                     <option value="">Semua Tipe</option>

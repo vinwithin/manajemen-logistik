@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\PembayaranSupplierExport;
 use App\Models\OaPayment;
 use App\Models\PoKendaraan;
 use App\Models\Supplier;
@@ -11,6 +12,7 @@ use App\Traits\WithUserTujuan;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Exception;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
 use Yajra\DataTables\DataTables;
 
 class PembayaranSupplierController extends Controller
@@ -23,15 +25,13 @@ class PembayaranSupplierController extends Controller
         $tujuans = $this->getUserTujuan();
         $from = $request->from;
         $to = $request->to;
-        $supplierId = $request->supplier_id;
+        $supplierIds = $request->input('supplier_ids', []);
         $tujuanId = $request->tujuan_id;
         $tipePembayaran = $request->tipe_pembayaran;
         $paymentCount = null;
 
         if ($from && $to) {
-            $paymentCount = $this->paidPaymentQuery($request)
-                ->distinct('po_kendaraan_id')
-                ->count('po_kendaraan_id');
+            $paymentCount = $this->filteredKendaraanQuery($request)->count();
         }
 
         return view('pages.keuangan.pembayaran.export-pdf-confirm', compact(
@@ -39,7 +39,7 @@ class PembayaranSupplierController extends Controller
             'tujuans',
             'from',
             'to',
-            'supplierId',
+            'supplierIds',
             'tujuanId',
             'tipePembayaran',
             'paymentCount'
@@ -49,22 +49,11 @@ class PembayaranSupplierController extends Controller
     public function exportPdf(Request $request)
     {
         try {
-            $request->validate([
-                'from' => 'required|date',
-                'to' => 'required|date|after_or_equal:from',
-            ], [
-                'from.required' => 'Tanggal awal pembayaran wajib diisi.',
-                'to.required' => 'Tanggal akhir pembayaran wajib diisi.',
-                'to.after_or_equal' => 'Tanggal akhir harus sama atau setelah tanggal awal.',
-            ]);
+            $this->validateExportRequest($request);
 
             $from = $request->from;
             $to = $request->to;
-            $kendaraanIds = $this->paidPaymentQuery($request)
-                ->pluck('po_kendaraan_id')
-                ->filter()
-                ->unique()
-                ->values();
+            $kendaraanIds = $this->filteredKendaraanQuery($request)->pluck('id');
 
             $pos = PurchaseOrder::with([
                 'cv',
@@ -78,7 +67,7 @@ class PembayaranSupplierController extends Controller
                         ->when($request->from, fn($q) => $q->whereDate('tanggal_bayar', '>=', $request->from))
                         ->when($request->to, fn($q) => $q->whereDate('tanggal_bayar', '<=', $request->to))
                         ->when($request->tipe_pembayaran, fn($q) => $q->where('tipe_pembayaran', $request->tipe_pembayaran))
-                        ->when($request->supplier_id, fn($q) => $q->where('supplier_id', $request->supplier_id));
+                        ->when($request->supplier_ids, fn($q) => $q->whereIn('supplier_id', (array) $request->supplier_ids));
                 },
                 'kendaraans.penerimas.pakans.kodePakan',
                 'kendaraans.penerimas.tujuan',
@@ -101,6 +90,60 @@ class PembayaranSupplierController extends Controller
         } catch (Exception $e) {
             return redirect()->back()->with('error', 'Gagal export PDF pembayaran supplier: ' . $e->getMessage());
         }
+    }
+
+    public function exportExcel(Request $request)
+    {
+        $this->validateExportRequest($request);
+        $kendaraans = $this->filteredKendaraanQuery($request)
+            ->with(['po.cv', 'supplier', 'penerimas.pakans.kodePakan', 'penerimas.tujuan', 'oaPayments'])
+            ->get();
+
+        return Excel::download(
+            new PembayaranSupplierExport($kendaraans, $request->from, $request->to),
+            'Pembayaran-Supplier-' . now()->format('Ymd-His') . '.xlsx'
+        );
+    }
+
+    private function validateExportRequest(Request $request): void
+    {
+        $request->validate([
+            'from' => 'required|date',
+            'to' => 'required|date|after_or_equal:from',
+            'supplier_ids' => 'nullable|array',
+            'supplier_ids.*' => 'integer|exists:suppliers,id',
+            'status_pembayaran' => 'nullable|in:sudah_bayar,belum_bayar',
+            'tipe_pembayaran' => 'nullable|in:oa,dp_supplier',
+        ]);
+    }
+
+    private function filteredKendaraanQuery(Request $request)
+    {
+        $tujuanIds = $this->getUserTujuan()->pluck('id');
+        $activeCvId = session('active_cv');
+        $supplierIds = array_filter((array) $request->input('supplier_ids', []));
+        $status = $request->status_pembayaran;
+
+        $paymentFilter = function ($q) use ($request) {
+            $q->where('jumlah_bayar', '>', 0)
+                ->when($request->tipe_pembayaran, fn($q) => $q->where('tipe_pembayaran', $request->tipe_pembayaran));
+        };
+
+        return PoKendaraan::query()
+            ->where('status', '!=', 'batal')
+            ->when($activeCvId, fn($q) => $q->whereHas('po', fn($q) => $q->where('cv_id', $activeCvId)))
+            ->when($supplierIds, fn($q) => $q->whereIn('supplier_id', $supplierIds))
+            ->when($request->tujuan_id, fn($q) => $q->whereHas('penerimas.penerima', fn($q) => $q->where('tujuan_id', $request->tujuan_id)))
+            ->whereHas('penerimas.penerima', fn($q) => $q->whereIn('tujuan_id', $tujuanIds))
+            ->when($status === 'belum_bayar', function ($q) use ($request, $paymentFilter) {
+                $q->whereDoesntHave('oaPayments', $paymentFilter)
+                    ->whereHas('po', fn($q) => $q->whereDate('tanggal_po', '>=', $request->from)->whereDate('tanggal_po', '<=', $request->to));
+            }, function ($q) use ($request, $paymentFilter) {
+                $q->whereHas('oaPayments', function ($q) use ($request, $paymentFilter) {
+                    $paymentFilter($q);
+                    $q->whereDate('tanggal_bayar', '>=', $request->from)->whereDate('tanggal_bayar', '<=', $request->to);
+                });
+            });
     }
 
     private function paidPaymentQuery(Request $request)
