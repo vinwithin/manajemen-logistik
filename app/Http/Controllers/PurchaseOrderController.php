@@ -1350,6 +1350,87 @@ class PurchaseOrderController extends Controller
         }
     }
 
+    public function penerimaUpdateLansir(Request $request, string $lansirId)
+    {
+        $request->validate([
+            'validasi_oleh' => 'required|string|max:255',
+            'tanggal_lansir' => 'required|date',
+            'no_do' => 'nullable|string|max:100',
+            'jenis_lansir' => 'required|in:mobil_tim,tim_bongkar',
+            'mobils' => 'required_if:jenis_lansir,mobil_tim|array|min:1',
+            'mobils.*.no_polisi' => 'required_if:jenis_lansir,mobil_tim|string|max:20',
+            'mobils.*.nama_sopir' => 'nullable|string|max:255',
+            'mobils.*.berat' => 'nullable|numeric|min:0',
+            'mobils.*.jumlah_karung' => 'nullable|integer|min:0',
+            'mobils.*.ongkos' => 'nullable|numeric|min:0',
+            'mobils.*.keterangan' => 'nullable|string',
+            'tims' => 'required|array|min:1',
+            'tims.*.nama_tim' => 'nullable|string|max:255',
+            'tims.*.berat' => 'nullable|numeric|min:0',
+            'tims.*.jumlah_karung' => 'nullable|integer|min:0',
+            'tims.*.upah' => 'nullable|numeric|min:0',
+            'tims.*.keterangan' => 'nullable|string',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $lansir = PoPenerimaLansir::with(['penerima.kendaraan.po', 'mobils', 'tims'])
+                ->findOrFail(decrypt($lansirId));
+
+            if (! $lansir->penerima->kendaraan->po->isLocked()) {
+                return redirect()->back()->with('error', 'PO harus dikunci terlebih dahulu.');
+            }
+
+            $lansir->update([
+                'validasi_oleh' => $request->validasi_oleh,
+                'tanggal_lansir' => $request->tanggal_lansir,
+                'no_do' => $request->no_do,
+            ]);
+
+            $lansir->mobils()->delete();
+            foreach ($request->input('mobils', []) as $mobil) {
+                if (empty(trim($mobil['no_polisi'] ?? ''))) {
+                    continue;
+                }
+
+                PoLansirMobil::create([
+                    'lansir_id' => $lansir->id,
+                    'no_polisi' => strtoupper(trim($mobil['no_polisi'])),
+                    'nama_sopir' => $mobil['nama_sopir'] ?? null,
+                    'berat' => $mobil['berat'] ?? null,
+                    'jumlah_karung' => (int) ($mobil['jumlah_karung'] ?? 0),
+                    'ongkos' => $mobil['ongkos'] ?? null,
+                    'keterangan' => $mobil['keterangan'] ?? null,
+                ]);
+            }
+
+            $lansir->tims()->delete();
+            foreach ($request->input('tims', []) as $tim) {
+                if (empty(trim($tim['nama_tim'] ?? ''))) {
+                    continue;
+                }
+
+                PoLansirTim::create([
+                    'lansir_id' => $lansir->id,
+                    'nama_tim' => trim($tim['nama_tim']),
+                    'berat' => $tim['berat'] ?? null,
+                    'jumlah_karung' => (int) ($tim['jumlah_karung'] ?? 0),
+                    'upah' => $tim['upah'] ?? null,
+                    'keterangan' => $tim['keterangan'] ?? null,
+                ]);
+            }
+
+            DB::commit();
+
+            return redirect()->route('po-penerima.lansir-page', encrypt($lansir->po_penerima_id))
+                ->with('success', 'Riwayat lansir berhasil diperbarui.');
+        } catch (Exception $e) {
+            DB::rollBack();
+
+            return redirect()->back()->with('error', 'Gagal memperbarui riwayat lansir: ' . $e->getMessage())->withInput();
+        }
+    }
+
     public function penerimaDestroyLansir(string $lansirId)
     {
         try {

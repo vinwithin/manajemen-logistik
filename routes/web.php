@@ -83,6 +83,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/purchase-order/penerima/{penerimaId}/lansir', [PurchaseOrderController::class, 'penerimaLansirPage'])->name('po-penerima.lansir-page')->middleware('can:lansir.create');
     Route::get('/purchase-order/penerima/{penerimaId}/tim-bongkar', [PurchaseOrderController::class, 'penerimaTimBongkarPage'])->name('po-penerima.tim-bongkar-page')->middleware('can:lansir.create');
     Route::post('/purchase-order/penerima/{penerimaId}/lansir', [PurchaseOrderController::class, 'penerimaStoreLansir'])->name('po-penerima.lansir-store')->middleware('can:lansir.create');
+    Route::put('/purchase-order/lansir/{lansirId}', [PurchaseOrderController::class, 'penerimaUpdateLansir'])->name('po-penerima.lansir-update')->middleware('can:lansir.create');
     Route::delete('/purchase-order/lansir/{lansirId}', [PurchaseOrderController::class, 'penerimaDestroyLansir'])->name('po-penerima.lansir-destroy')->middleware('can:lansir.create');
 
     Route::post('/purchase-order/{id}/lock', [PurchaseOrderController::class, 'lock'])->name('purchase-order.lock')->middleware('can:po.edit');
