@@ -112,7 +112,7 @@ class PembayaranSupplierController extends Controller
             'to' => 'required|date|after_or_equal:from',
             'supplier_ids' => 'nullable|array',
             'supplier_ids.*' => 'integer|exists:suppliers,id',
-            'status_pembayaran' => 'nullable|in:lunas,belum_lunas',
+            'status_pembayaran' => 'nullable|in:semua,lunas,belum_lunas',
             'tipe_pembayaran' => 'nullable|in:oa,dp_supplier',
         ]);
     }
@@ -144,10 +144,14 @@ class PembayaranSupplierController extends Controller
             ->when($supplierIds, fn($q) => $q->whereIn('supplier_id', $supplierIds))
             ->when($request->tujuan_id, fn($q) => $tujuanFilter($q, [$request->tujuan_id]))
             ->where(fn($q) => $tujuanFilter($q, $tujuanIds))
+            ->when($status === 'semua', function ($q) use ($request) {
+                $q->whereHas('po', fn($q) => $q->whereDate('tanggal_po', '>=', $request->from)->whereDate('tanggal_po', '<=', $request->to));
+            })
             ->when($status === 'belum_lunas', function ($q) use ($request) {
                 $q->whereDoesntHave('oaPayments', fn($q) => $q->where('status', 'lunas'))
                     ->whereHas('po', fn($q) => $q->whereDate('tanggal_po', '>=', $request->from)->whereDate('tanggal_po', '<=', $request->to));
-            }, function ($q) use ($request, $paymentFilter) {
+            })
+            ->when($status === 'lunas' || ! $status, function ($q) use ($request, $paymentFilter) {
                 $q->whereHas('oaPayments', function ($q) use ($request, $paymentFilter) {
                     $paymentFilter($q);
                     $q->where('status', 'lunas');

@@ -43,10 +43,11 @@
                             <div class="col-md-4">
                                 <label class="form-label small fw-semibold">Status Pembayaran</label>
                                 <select name="status_pembayaran" class="form-select form-select-sm">
+                                    <option value="semua" {{ request('status_pembayaran') === 'semua' ? 'selected' : '' }}>Semua Status</option>
                                     <option value="lunas" {{ request('status_pembayaran', 'lunas') === 'lunas' ? 'selected' : '' }}>Lunas</option>
                                     <option value="belum_lunas" {{ request('status_pembayaran') === 'belum_lunas' ? 'selected' : '' }}>Belum Lunas</option>
                                 </select>
-                                <div class="form-text">Belum lunas mencakup yang belum membayar sama sekali dan yang baru membayar DP/sebagian. Periodenya memakai tanggal PO.</div>
+                                <div class="form-text">Belum lunas mencakup yang belum membayar sama sekali dan yang baru membayar DP/sebagian. Semua Status dan Belum Lunas memakai periode tanggal PO.</div>
                             </div>
 
                             <div class="col-md-4">
