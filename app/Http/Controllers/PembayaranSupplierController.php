@@ -124,6 +124,15 @@ class PembayaranSupplierController extends Controller
         $supplierIds = array_filter((array) $request->input('supplier_ids', []));
         $status = $request->status_pembayaran;
 
+        $tujuanFilter = function ($q, $ids) {
+            $ids = collect($ids)->filter()->values();
+            $q->where(function ($q) use ($ids) {
+                $q->whereIn('tujuan_id', $ids)
+                    ->orWhereHas('penerimas', fn($q) => $q->whereIn('tujuan_id', $ids))
+                    ->orWhereHas('penerimas.penerima', fn($q) => $q->whereIn('tujuan_id', $ids));
+            });
+        };
+
         $paymentFilter = function ($q) use ($request) {
             $q->where('jumlah_bayar', '>', 0)
                 ->when($request->tipe_pembayaran, fn($q) => $q->where('tipe_pembayaran', $request->tipe_pembayaran));
@@ -133,8 +142,8 @@ class PembayaranSupplierController extends Controller
             ->where('status', '!=', 'batal')
             ->when($activeCvId, fn($q) => $q->whereHas('po', fn($q) => $q->where('cv_id', $activeCvId)))
             ->when($supplierIds, fn($q) => $q->whereIn('supplier_id', $supplierIds))
-            ->when($request->tujuan_id, fn($q) => $q->whereHas('penerimas.penerima', fn($q) => $q->where('tujuan_id', $request->tujuan_id)))
-            ->whereHas('penerimas.penerima', fn($q) => $q->whereIn('tujuan_id', $tujuanIds))
+            ->when($request->tujuan_id, fn($q) => $tujuanFilter($q, [$request->tujuan_id]))
+            ->where(fn($q) => $tujuanFilter($q, $tujuanIds))
             ->when($status === 'belum_lunas', function ($q) use ($request) {
                 $q->whereDoesntHave('oaPayments', fn($q) => $q->where('status', 'lunas'))
                     ->whereHas('po', fn($q) => $q->whereDate('tanggal_po', '>=', $request->from)->whereDate('tanggal_po', '<=', $request->to));
