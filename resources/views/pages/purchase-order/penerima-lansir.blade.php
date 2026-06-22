@@ -80,38 +80,43 @@
             </div>
             <div class="card-body">
                 @foreach ($penerima->lansirs as $i => $lansir)
-            <div class="border rounded p-3 mb-3">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span class="fw-semibold">Trip #{{ $i + 1 }}</span>
-                    <div class="d-flex gap-2 align-items-center">
-                        <span class="text-muted small">
-                            @if ($lansir->no_do)
-                                <i class="fa fa-file-text-o"></i> {{ $lansir->no_do }}
-                                &nbsp;·&nbsp;
-                            @endif
-                            @if ($lansir->tanggal_lansir)
-                                <i class="fa fa-calendar"></i> {{ $lansir->tanggal_lansir->format('d/m/Y') }}
-                                &nbsp;·&nbsp;
-                            @endif
-                            {{ $lansir->selesai_at?->format('d/m/Y H:i') }}
-                            &nbsp;·&nbsp; {{ $lansir->validasi_oleh }}
-                        </span>
-                        <button type="button" class="btn btn-sm btn-warning text-white btn-edit-lansir"
-                            data-target="#edit-lansir-{{ $lansir->id }}">
-                            Edit
-                        </button>
-                        <form action="{{ route('po-penerima.lansir-destroy', encrypt($lansir->id)) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus riwayat lansir ini?')">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn btn-sm btn-danger text-white">
-                               Hapus
-                            </button>
-                        </form>
-                    </div>
-                </div>
+                    <div class="border rounded p-3 mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="fw-semibold">Trip #{{ $i + 1 }}</span>
+                            <div class="d-flex gap-2 align-items-center">
+                                <span class="text-muted small">
+                                    @if ($lansir->no_do)
+                                        <i class="fa fa-file-text-o"></i> {{ $lansir->no_do }}
+                                        &nbsp;·&nbsp;
+                                    @endif
+                                    @if ($lansir->tanggal_lansir)
+                                        <i class="fa fa-calendar"></i> {{ $lansir->tanggal_lansir->format('d/m/Y') }}
+                                        &nbsp;·&nbsp;
+                                    @endif
+                                    {{ $lansir->selesai_at?->format('d/m/Y H:i') }}
+                                    &nbsp;·&nbsp; {{ $lansir->validasi_oleh }}
+                                </span>
+                                <button type="button" class="btn btn-sm btn-warning text-white btn-edit-lansir"
+                                    data-target="#edit-lansir-{{ $lansir->id }}">
+                                    Edit
+                                </button>
+                                <form action="{{ route('po-penerima.lansir-destroy', encrypt($lansir->id)) }}"
+                                    method="POST"
+                                    onsubmit="return confirm('Apakah Anda yakin ingin menghapus riwayat lansir ini?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-danger text-white">
+                                        Hapus
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
 
-                        <div id="edit-lansir-{{ $lansir->id }}" class="border rounded bg-light p-3 mb-3 edit-lansir-form"
+                        <div id="edit-lansir-{{ $lansir->id }}" class="border rounded bg-white p-3 mb-3 edit-lansir-form"
                             style="display: none;">
+                            <div class="alert alert-warning">
+                                <p class="text-dark">Dalam Mode Edit</p>
+                            </div>
                             <form method="POST" action="{{ route('po-penerima.lansir-update', encrypt($lansir->id)) }}">
                                 @csrf
                                 @method('PUT')
@@ -120,14 +125,17 @@
 
                                 <div class="row g-2 mb-3">
                                     <div class="col-md-4">
-                                        <label class="form-label small">Nama Validator <span class="text-danger">*</span></label>
+                                        <label class="form-label small">Nama Validator <span
+                                                class="text-danger">*</span></label>
                                         <input type="text" name="validasi_oleh" class="form-control form-control-sm"
                                             value="{{ old('validasi_oleh', $lansir->validasi_oleh) }}" required>
                                     </div>
                                     <div class="col-md-4">
-                                        <label class="form-label small">Tanggal Lansir <span class="text-danger">*</span></label>
+                                        <label class="form-label small">Tanggal Lansir <span
+                                                class="text-danger">*</span></label>
                                         <input type="date" name="tanggal_lansir" class="form-control form-control-sm"
-                                            value="{{ old('tanggal_lansir', $lansir->tanggal_lansir?->format('Y-m-d')) }}" required>
+                                            value="{{ old('tanggal_lansir', $lansir->tanggal_lansir?->format('Y-m-d')) }}"
+                                            required>
                                     </div>
                                     <div class="col-md-4">
                                         <label class="form-label small">No DO</label>
@@ -136,16 +144,22 @@
                                     </div>
                                 </div>
 
-                                @if ($lansir->mobils->count())
-                                    <div class="mb-3">
-                                        <div class="fw-semibold small mb-2">Edit Kendaraan Lansir</div>
+                                <div class="mb-3 edit-mobil-section">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <div class="fw-semibold small">Edit Kendaraan Lansir</div>
+                                        <button type="button" class="btn btn-sm btn-outline-primary btn-tambah-edit-mobil">
+                                            <i class="fa fa-plus"></i> Tambah Kendaraan
+                                        </button>
+                                    </div>
+                                    <div class="edit-list-mobil" data-next-index="{{ $lansir->mobils->count() }}">
                                         @foreach ($lansir->mobils as $mobilIndex => $mobil)
-                                            <div class="row g-2 align-items-end mb-2">
+                                            <div class="row g-2 align-items-end mb-2 edit-item-mobil">
                                                 <div class="col-md-2">
                                                     <label class="form-label small">No. Polisi</label>
                                                     <input type="text" name="mobils[{{ $mobilIndex }}][no_polisi]"
                                                         class="form-control form-control-sm text-uppercase"
-                                                        value="{{ old("mobils.$mobilIndex.no_polisi", $mobil->no_polisi) }}" required>
+                                                        value="{{ old("mobils.$mobilIndex.no_polisi", $mobil->no_polisi) }}"
+                                                        required>
                                                 </div>
                                                 <div class="col-md-2">
                                                     <label class="form-label small">Nama Sopir</label>
@@ -157,19 +171,22 @@
                                                     <label class="form-label small">Berat</label>
                                                     <input type="number" name="mobils[{{ $mobilIndex }}][berat]"
                                                         class="form-control form-control-sm edit-input-berat"
-                                                        value="{{ old("mobils.$mobilIndex.berat", $mobil->berat) }}" step="0.01" min="0">
+                                                        value="{{ old("mobils.$mobilIndex.berat", $mobil->berat) }}"
+                                                        step="0.01" min="0">
                                                 </div>
                                                 <div class="col-md-1">
                                                     <label class="form-label small">Karung</label>
                                                     <input type="number" name="mobils[{{ $mobilIndex }}][jumlah_karung]"
                                                         class="form-control form-control-sm edit-input-karung"
-                                                        value="{{ old("mobils.$mobilIndex.jumlah_karung", $mobil->jumlah_karung) }}" min="0" readonly>
+                                                        value="{{ old("mobils.$mobilIndex.jumlah_karung", $mobil->jumlah_karung) }}"
+                                                        min="0" readonly>
                                                 </div>
                                                 <div class="col-md-2">
                                                     <label class="form-label small">Ongkos/kg</label>
                                                     <input type="number" name="mobils[{{ $mobilIndex }}][ongkos]"
                                                         class="form-control form-control-sm"
-                                                        value="{{ old("mobils.$mobilIndex.ongkos", $mobil->ongkos) }}" step="0.01" min="0">
+                                                        value="{{ old("mobils.$mobilIndex.ongkos", $mobil->ongkos) }}"
+                                                        step="0.01" min="0">
                                                 </div>
                                                 <div class="col-md-4">
                                                     <label class="form-label small">Keterangan</label>
@@ -177,15 +194,27 @@
                                                         class="form-control form-control-sm"
                                                         value="{{ old("mobils.$mobilIndex.keterangan", $mobil->keterangan) }}">
                                                 </div>
+                                                <div class="col-md-12">
+                                                    <button type="button"
+                                                        class="btn btn-sm btn-outline-danger btn-hapus-edit-mobil">
+                                                        <i class="fa fa-times"></i> Hapus Kendaraan
+                                                    </button>
+                                                </div>
                                             </div>
                                         @endforeach
                                     </div>
-                                @endif
+                                </div>
 
                                 <div class="mb-3">
-                                    <div class="fw-semibold small mb-2">Edit Tim Bongkar</div>
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <div class="fw-semibold small">Edit Tim Bongkar</div>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary btn-tambah-edit-tim">
+                                            <i class="fa fa-plus"></i> Tambah Tim
+                                        </button>
+                                    </div>
+                                    <div class="edit-list-tim" data-next-index="{{ max($lansir->tims->count(), 1) }}">
                                     @forelse ($lansir->tims as $timIndex => $tim)
-                                        <div class="row g-2 align-items-end mb-2">
+                                        <div class="row g-2 align-items-end mb-2 edit-item-tim">
                                             <div class="col-md-2">
                                                 <label class="form-label small">Nama Tim</label>
                                                 <input type="text" name="tims[{{ $timIndex }}][nama_tim]"
@@ -196,19 +225,22 @@
                                                 <label class="form-label small">Berat</label>
                                                 <input type="number" name="tims[{{ $timIndex }}][berat]"
                                                     class="form-control form-control-sm edit-input-berat-tim"
-                                                    value="{{ old("tims.$timIndex.berat", $tim->berat) }}" step="0.01" min="0">
+                                                    value="{{ old("tims.$timIndex.berat", $tim->berat) }}" step="0.01"
+                                                    min="0">
                                             </div>
                                             <div class="col-md-1">
                                                 <label class="form-label small">Karung</label>
                                                 <input type="number" name="tims[{{ $timIndex }}][jumlah_karung]"
                                                     class="form-control form-control-sm edit-input-karung-tim"
-                                                    value="{{ old("tims.$timIndex.jumlah_karung", $tim->jumlah_karung) }}" min="0" readonly>
+                                                    value="{{ old("tims.$timIndex.jumlah_karung", $tim->jumlah_karung) }}"
+                                                    min="0" readonly>
                                             </div>
                                             <div class="col-md-2">
                                                 <label class="form-label small">Upah/kg</label>
                                                 <input type="number" name="tims[{{ $timIndex }}][upah]"
                                                     class="form-control form-control-sm"
-                                                    value="{{ old("tims.$timIndex.upah", $tim->upah) }}" step="0.01" min="0">
+                                                    value="{{ old("tims.$timIndex.upah", $tim->upah) }}" step="0.01"
+                                                    min="0">
                                             </div>
                                             <div class="col-md-5">
                                                 <label class="form-label small">Keterangan</label>
@@ -216,31 +248,51 @@
                                                     class="form-control form-control-sm"
                                                     value="{{ old("tims.$timIndex.keterangan", $tim->keterangan) }}">
                                             </div>
+                                            <div class="col-md-12">
+                                                <button type="button"
+                                                    class="btn btn-sm btn-outline-danger btn-hapus-edit-tim">
+                                                    <i class="fa fa-times"></i> Hapus Tim
+                                                </button>
+                                            </div>
                                         </div>
                                     @empty
-                                        <div class="row g-2 align-items-end mb-2">
+                                        <div class="row g-2 align-items-end mb-2 edit-item-tim">
                                             <div class="col-md-2">
                                                 <label class="form-label small">Nama Tim</label>
-                                                <input type="text" name="tims[0][nama_tim]" class="form-control form-control-sm">
+                                                <input type="text" name="tims[0][nama_tim]"
+                                                    class="form-control form-control-sm">
                                             </div>
                                             <div class="col-md-2">
                                                 <label class="form-label small">Berat</label>
-                                                <input type="number" name="tims[0][berat]" class="form-control form-control-sm edit-input-berat-tim" step="0.01" min="0">
+                                                <input type="number" name="tims[0][berat]"
+                                                    class="form-control form-control-sm edit-input-berat-tim"
+                                                    step="0.01" min="0">
                                             </div>
                                             <div class="col-md-1">
                                                 <label class="form-label small">Karung</label>
-                                                <input type="number" name="tims[0][jumlah_karung]" class="form-control form-control-sm edit-input-karung-tim" min="0" readonly>
+                                                <input type="number" name="tims[0][jumlah_karung]"
+                                                    class="form-control form-control-sm edit-input-karung-tim"
+                                                    min="0" readonly>
                                             </div>
                                             <div class="col-md-2">
                                                 <label class="form-label small">Upah/kg</label>
-                                                <input type="number" name="tims[0][upah]" class="form-control form-control-sm" step="0.01" min="0">
+                                                <input type="number" name="tims[0][upah]"
+                                                    class="form-control form-control-sm" step="0.01" min="0">
                                             </div>
                                             <div class="col-md-5">
                                                 <label class="form-label small">Keterangan</label>
-                                                <input type="text" name="tims[0][keterangan]" class="form-control form-control-sm">
+                                                <input type="text" name="tims[0][keterangan]"
+                                                    class="form-control form-control-sm">
+                                            </div>
+                                            <div class="col-md-12">
+                                                <button type="button"
+                                                    class="btn btn-sm btn-outline-danger btn-hapus-edit-tim">
+                                                    <i class="fa fa-times"></i> Hapus Tim
+                                                </button>
                                             </div>
                                         </div>
                                     @endforelse
+                                    </div>
                                 </div>
 
                                 <div class="d-flex gap-2">
@@ -395,7 +447,7 @@
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
-            
+
                     </div>
                     <input type="hidden" name="jenis_lansir" id="jenisLansir" value="{{ $jenisLansirDefault }}">
                     @error('jenis_lansir')
@@ -629,6 +681,108 @@
         $(document).on('input', '.edit-input-berat-tim', function() {
             var berat = parseFloat($(this).val()) || 0;
             $(this).closest('.row').find('.edit-input-karung-tim').val(berat > 0 ? Math.ceil(berat / 50) : '');
+        });
+
+        function editMobilRow(index) {
+            return `<div class="row g-2 align-items-end mb-2 edit-item-mobil">
+                <div class="col-md-2">
+                    <label class="form-label small">No. Polisi</label>
+                    <input type="text" name="mobils[${index}][no_polisi]" class="form-control form-control-sm text-uppercase" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small">Nama Sopir</label>
+                    <input type="text" name="mobils[${index}][nama_sopir]" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label small">Berat</label>
+                    <input type="number" name="mobils[${index}][berat]" class="form-control form-control-sm edit-input-berat" step="0.01" min="0">
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label small">Karung</label>
+                    <input type="number" name="mobils[${index}][jumlah_karung]" class="form-control form-control-sm edit-input-karung" min="0" readonly>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small">Ongkos/kg</label>
+                    <input type="number" name="mobils[${index}][ongkos]" class="form-control form-control-sm" step="0.01" min="0">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small">Keterangan</label>
+                    <input type="text" name="mobils[${index}][keterangan]" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-12">
+                    <button type="button" class="btn btn-sm btn-outline-danger btn-hapus-edit-mobil">
+                        <i class="fa fa-times"></i> Hapus Kendaraan
+                    </button>
+                </div>
+            </div>`;
+        }
+
+        function editTimRow(index) {
+            return `<div class="row g-2 align-items-end mb-2 edit-item-tim">
+                <div class="col-md-2">
+                    <label class="form-label small">Nama Tim</label>
+                    <input type="text" name="tims[${index}][nama_tim]" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small">Berat</label>
+                    <input type="number" name="tims[${index}][berat]" class="form-control form-control-sm edit-input-berat-tim" step="0.01" min="0">
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label small">Karung</label>
+                    <input type="number" name="tims[${index}][jumlah_karung]" class="form-control form-control-sm edit-input-karung-tim" min="0" readonly>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small">Upah/kg</label>
+                    <input type="number" name="tims[${index}][upah]" class="form-control form-control-sm" step="0.01" min="0">
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label small">Keterangan</label>
+                    <input type="text" name="tims[${index}][keterangan]" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-12">
+                    <button type="button" class="btn btn-sm btn-outline-danger btn-hapus-edit-tim">
+                        <i class="fa fa-times"></i> Hapus Tim
+                    </button>
+                </div>
+            </div>`;
+        }
+
+        $(document).on('click', '.btn-tambah-edit-mobil', function() {
+            var $form = $(this).closest('.edit-lansir-form');
+            var $list = $form.find('.edit-list-mobil');
+            var index = parseInt($list.data('next-index'), 10) || 0;
+
+            $list.append(editMobilRow(index));
+            $list.data('next-index', index + 1);
+            $form.find('input[name="jenis_lansir"]').val('mobil_tim');
+        });
+
+        $(document).on('click', '.btn-hapus-edit-mobil', function() {
+            var $form = $(this).closest('.edit-lansir-form');
+            $(this).closest('.edit-item-mobil').remove();
+
+            if ($form.find('.edit-item-mobil').length === 0) {
+                $form.find('input[name="jenis_lansir"]').val('tim_bongkar');
+            }
+        });
+
+        $(document).on('click', '.btn-tambah-edit-tim', function() {
+            var $list = $(this).closest('.mb-3').find('.edit-list-tim');
+            var index = parseInt($list.data('next-index'), 10) || 0;
+
+            $list.append(editTimRow(index));
+            $list.data('next-index', index + 1);
+        });
+
+        $(document).on('click', '.btn-hapus-edit-tim', function() {
+            var $list = $(this).closest('.edit-list-tim');
+            $(this).closest('.edit-item-tim').remove();
+
+            if ($list.find('.edit-item-tim').length === 0) {
+                var index = parseInt($list.data('next-index'), 10) || 0;
+                $list.append(editTimRow(index));
+                $list.data('next-index', index + 1);
+            }
         });
     </script>
 @endsection
