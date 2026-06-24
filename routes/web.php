@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\EstimasiRekapLansirController;
 use App\Http\Controllers\GpsAssignmentController;
 use App\Http\Controllers\GudangLansirController;
 use App\Http\Controllers\GudangStokController;
@@ -177,6 +178,11 @@ Route::middleware('auth')->group(function () {
     });
 
     // Rekap Lansir
+    Route::prefix('keuangan/estimasi-rekap-lansir')->name('estimasi-rekap-lansir.')->group(function () {
+        Route::get('/', [EstimasiRekapLansirController::class, 'index'])->name('index')->middleware('can:estimasi-lansir.view');
+        Route::get('/export', [EstimasiRekapLansirController::class, 'export'])->name('export')->middleware('can:estimasi-lansir.view');
+    });
+
     Route::prefix('keuangan/rekap-lansir')->name('rekap-lansir.')->group(function () {
         Route::get('/', [RekapLansirController::class, 'index'])->name('index')->middleware('can:rekap-lansir.view');
         Route::get('/export/periode/excel', [RekapLansirController::class, 'exportPeriodExcel'])->name('export-period-excel')->middleware('can:report.payment.export');

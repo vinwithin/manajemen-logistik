@@ -345,7 +345,7 @@
             <div class="card-body py-2">
                 <input type="hidden" name="kendaraan[__KI__][penerima][__PI__][id]" value="">
                 <div class="row g-2 mb-2">
-                    <div class="col-md-5">
+                    <div class="col-md-4">
                         <label class="form-label small">Nama Penerima <span class="text-danger">*</span></label>
                         <input type="hidden" name="kendaraan[__KI__][penerima][__PI__][penerima_id]"
                             class="input-penerima-id" value="">
@@ -361,7 +361,7 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label small">Tujuan</label>
                         <input type="hidden" name="kendaraan[__KI__][penerima][__PI__][tujuan_id]"
                             class="input-tujuan-id" value="">
@@ -372,6 +372,11 @@
                         <label class="form-label small">No. Surat Jalan</label>
                         <input type="text" name="kendaraan[__KI__][penerima][__PI__][no_surat_jalan]"
                             class="form-control form-control-sm" placeholder="Opsional">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small">Estimasi Tiba</label>
+                        <input type="date" name="kendaraan[__KI__][penerima][__PI__][estimasi_tiba]"
+                            class="form-control form-control-sm">
                     </div>
                     <div class="col-md-3" style="display:none">
                         <label class="form-label small">Status Penerima </label>
@@ -671,6 +676,7 @@
                 }
 
                 $card.find('[name="kendaraan[' + ki + '][penerima][' + pi + '][no_surat_jalan]"]').val(data.no_do || '');
+                $card.find('[name="kendaraan[' + ki + '][penerima][' + pi + '][estimasi_tiba]"]').val(data.estimasi_tiba || '');
                 $card.find('[name="kendaraan[' + ki + '][penerima][' + pi + '][status]"]').val(data.status || 'pending');
 
                 // Set data-ongkos-oa dari pakan pertama (jika ada) untuk auto-fill baris pakan baru
@@ -1127,6 +1133,7 @@
                                     'tujuan_id' => $p->tujuan_id,
                                     'tujuan_nama' => $p->tujuan->nama ?? '',
                                     'no_do' => $p->no_do,
+                                    'estimasi_tiba' => $p->estimasi_tiba?->format('Y-m-d'),
                                     'status' => $p->status,
                                     'pakans' => $p->pakans
                                         ->map(function ($pk) {

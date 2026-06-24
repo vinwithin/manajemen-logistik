@@ -11,7 +11,6 @@ use Maatwebsite\Excel\Concerns\WithTitle;
 use Maatwebsite\Excel\Events\AfterSheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use App\Traits\WithUserTujuan;
-use Illuminate\Support\Facades\Log;
 use PhpOffice\PhpSpreadsheet\Cell\Hyperlink;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
@@ -47,8 +46,6 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
             'kendaraans.penerimas.pakans.kodePakan',
             'kendaraans.penerimas.tujuan',
             'kendaraans.penerimas.penerima.tujuan',
-            'kendaraans.penerimas.lansirs.mobils',
-            'kendaraans.penerimas.lansirs.tims',
         ])
             ->where(function ($q) use ($tujuans) {
                 $q->whereHas('kendaraans.penerimas.penerima', function ($q) use ($tujuans) {
@@ -105,24 +102,6 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
         $header1[] = 'Keterangan';
         $header1[] = 'Bukti Tiba';
 
-        // ── LANSIR MOBIL COLUMNS ──────────────────────────────────────
-        $header1[] = ''; // Spacer
-        $header1[] = 'LANSIR MOBIL';
-        $header1[] = '';
-        $header1[] = '';
-        $header1[] = '';
-        $header1[] = '';
-        $header1[] = '';
-        $header1[] = '';
-
-        // ── TIM BONGKAR COLUMNS ───────────────────────────────────────
-        $header1[] = ''; // Spacer
-        $header1[] = 'TIM BONGKAR';
-        $header1[] = '';
-        $header1[] = '';
-        $header1[] = '';
-        $header1[] = '';
-
         $rows[] = $header1;
 
         // ── Header baris 2 ───────────────────────────────────────────
@@ -147,24 +126,6 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
         $header2[] = ''; // Keterangan
         $header2[] = ''; // Bukti Tiba
 
-        // ── LANSIR MOBIL SUB-HEADERS ──────────────────────────────────
-        $header2[] = ''; // Spacer
-        $header2[] = 'Tanggal';
-        $header2[] = 'No Polisi';
-        $header2[] = 'Sopir';
-        $header2[] = 'Jumlah (kg)';
-        $header2[] = 'Jumlah (bag)';
-        $header2[] = 'Ongkos';
-        $header2[] = 'Total';
-
-        // ── TIM BONGKAR SUB-HEADERS ───────────────────────────────────
-        $header2[] = ''; // Spacer
-        $header2[] = 'Tanggal';
-        $header2[] = 'Nama Tim';
-        $header2[] = 'Jumlah (kg)';
-        $header2[] = 'Upah/kg';
-        $header2[] = 'Total';
-
         $rows[] = $header2;
 
         // ── Data: 1 baris per penerima ────────────────────────────────
@@ -177,8 +138,6 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                         ? $kendaraan->penerimas
                         : [null] as $penerima
                 ) {
-                    $lansir = null;
-
                     $namaTujuan = $penerima !== null
                         ? ($penerima->tujuan?->nama ?? '')
                         : ($kendaraan->tujuan?->nama ?? '');
@@ -233,106 +192,7 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                         // Bukti Tiba: store path for later hyperlink setup
                         $row[] = $penerima->bukti_tiba ?? '';
 
-                        // Simpan row pertama dengan identitas untuk nanti
-                        $rowWithIdentitas = $row;
-
-                        // ── Loop SEMUA lansir penerima ──
-                        $lansirs = $penerima->lansirs;
-                        $isFirstLansir = true;
-
-                        foreach ($lansirs as $lansir) {
-                            if ($isFirstLansir) {
-                                // Pakai row dengan identitas untuk lansir pertama
-                                $currentRow = $rowWithIdentitas;
-                                $isFirstLansir = false;
-                            } else {
-                                // Untuk lansir selanjutnya, identitas kosong
-                                $currentRow = array_fill(0, $idCols + ($kpCount * 2) + 6, '');
-                            }
-
-                            // ── LANSIR MOBIL DATA ─────────────────────────────────
-                            if ($lansir->mobils->count() > 0) {
-                                $firstMobil = $lansir->mobils->first();
-                                $currentRow[] = ''; // Spacer
-                                $currentRow[] = $lansir->tanggal_lansir?->translatedFormat('d F Y') ?? '';
-                                $currentRow[] = $firstMobil->no_polisi ?? '';
-                                $currentRow[] = $firstMobil->nama_sopir ?? '';
-                                $currentRow[] = $firstMobil->berat ?? '';
-                                $currentRow[] = $firstMobil->jumlah_karung ?? '';
-                                $currentRow[] = number_format($firstMobil->ongkos, '0', ',', '.') ?? '';
-                                $currentRow[] = (float) ($firstMobil->berat ?? 0) * (float) ($firstMobil->ongkos ?? 0);
-                            } else {
-                                $currentRow[] = ''; // Spacer
-                                $currentRow[] = ''; // Spacer
-                                $currentRow[] = '';
-                                $currentRow[] = '';
-                                $currentRow[] = '';
-                                $currentRow[] = '';
-                                $currentRow[] = '';
-                                $currentRow[] = '';
-                            }
-
-                            // ── TIM BONGKAR DATA ──────────────────────────────────
-                            if ($lansir->tims->count() > 0) {
-                                $firstTim = $lansir->tims->first();
-                                $totalBerat = $lansir->mobils->sum('berat');
-                                $currentRow[] = ''; // Spacer
-                                $currentRow[] = $lansir->tanggal_lansir?->translatedFormat('d F Y') ?? '';
-                                $currentRow[] = $firstTim->nama_tim ?? '';
-                                $currentRow[] = $firstTim->berat ?? $totalBerat;
-                                $currentRow[] = $firstTim->upah ?? '';
-                                $currentRow[] = (float) ($firstTim->berat ?? $totalBerat) * (float) ($firstTim->upah ?? 0);
-                            } else {
-                                $currentRow[] = ''; // Spacer
-                                $currentRow[] = '';
-                                $currentRow[] = '';
-                                $currentRow[] = '';
-                                $currentRow[] = '';
-                                $currentRow[] = '';
-                            }
-
-                            $rows[] = $currentRow;
-
-                            // ── Extra mobils/tims untuk lansir ini ──
-                            $extraMobils = $lansir->mobils->slice(1)->values();
-                            $extraTims = $lansir->tims->slice(1)->values();
-                            $extraCount = max($extraMobils->count(), $extraTims->count());
-
-                            for ($ei = 0; $ei < $extraCount; $ei++) {
-                                $extraRow = array_fill(0, $idCols + ($kpCount * 2) + 6, '');
-
-                                // Mobil lansir extra
-                                $mobil = $extraMobils->get($ei);
-                                $extraRow[] = ''; // Spacer
-                                $extraRow[] = $mobil ? ($lansir->tanggal_lansir?->translatedFormat('d F Y') ?? '') : '';
-                                $extraRow[] = $mobil ? ($mobil->no_polisi ?? '') : '';
-                                $extraRow[] = $mobil ? ($mobil->nama_sopir ?? '') : '';
-                                $extraRow[] = $mobil ? ($mobil->berat ?? '') : '';
-                                $extraRow[] = $mobil ? ($mobil->jumlah_karung ?? '') : '';
-                                $extraRow[] = $mobil ? (number_format($mobil->ongkos, '0', ',', '.') ?? '') : '';
-                                $extraRow[] = $mobil ? (float) ($mobil->berat ?? 0) * (float) ($mobil->ongkos ?? 0) : '';
-
-                                // Tim bongkar extra
-                                $tim = $extraTims->get($ei);
-                                $extraRow[] = ''; // Spacer
-                                $extraRow[] = $tim ? ($lansir->tanggal_lansir?->translatedFormat('d F Y') ?? '') : '';
-                                $extraRow[] = $tim ? ($tim->nama_tim ?? '') : '';
-                                $extraRow[] = $tim ? ($tim->berat ?? '') : '';
-                                $extraRow[] = $tim ? ($tim->upah ?? '') : '';
-                                $extraRow[] = $tim ? (float) ($tim->berat ?? 0) * (float) ($tim->upah ?? 0) : '';
-
-                                $rows[] = $extraRow;
-                            }
-                        }
-
-                        // Jika tidak ada lansir sama sekali, tambahkan row dengan identitas saja
-                        if ($lansirs->count() === 0) {
-                            // Tambahkan kolom lansir & tim kosong
-                            for ($i = 0; $i < 14; $i++) {
-                                $rowWithIdentitas[] = '';
-                            }
-                            $rows[] = $rowWithIdentitas;
-                        }
+                        $rows[] = $row;
                     } else {
                         // Kendaraan belum punya penerima: muatan & OA dari level kendaraan
                         // (karung/kg di kolom kode pakan pertama agar SUM per kolom tetap benar)
@@ -374,20 +234,6 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                         // Bukti Tiba
                         $row[] = '';
 
-                        $row[] = '';
-                        $row[] = '';
-                        $row[] = '';
-                        $row[] = '';
-                        $row[] = '';
-                        $row[] = '';
-                        $row[] = '';
-                        $row[] = '';
-
-                        $row[] = '';
-                        $row[] = '';
-                        $row[] = '';
-                        $row[] = '';
-                        $row[] = '';
                         $rows[] = $row;
                     }
                 }
@@ -405,24 +251,6 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
         $totalRow[] = ''; // PIC
         $totalRow[] = ''; // Keterangan
         $totalRow[] = ''; // Bukti Tiba
-
-        // Lansir Mobil totals
-        $totalRow[] = 'TOTAL';
-        $totalRow[] = ''; // Spacer
-        $totalRow[] = '';
-        $totalRow[] = '';
-        $totalRow[] = ''; // Will be formula - Jumlah (kg)
-        $totalRow[] = ''; // Will be formula - Jumlah (bag)
-        $totalRow[] = ''; // Will be formula - Ongkos
-        $totalRow[] = ''; // Will be formula - Total
-
-        // Tim Bongkar totals
-        $totalRow[] = ''; // Spacer
-        $totalRow[] = '';
-        $totalRow[] = 'TOTAL';
-        $totalRow[] = ''; // Will be formula - Jumlah (kg)
-        $totalRow[] = ''; // Will be formula - Upah/kg
-        $totalRow[] = ''; // Will be formula - Total
 
         $rows[] = $totalRow;
 
@@ -477,13 +305,7 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                 $picCol = $idCols + 2 * $kodePakanCount + 4;
                 $ketCol = $idCols + 2 * $kodePakanCount + 5;
                 $buktiTibaCol = $idCols + 2 * $kodePakanCount + 6;
-                $spacer1Col = $idCols + 2 * $kodePakanCount + 7;
-                $lansirStartCol = $idCols + 2 * $kodePakanCount + 8;
-                $lansirEndCol = $idCols + 2 * $kodePakanCount + 14;
-                $spacer2Col = $idCols + 2 * $kodePakanCount + 15;
-                $timStartCol = $idCols + 2 * $kodePakanCount + 16;
-                $timEndCol = $idCols + 2 * $kodePakanCount + 20;
-                $totalCols = $timEndCol;
+                $totalCols = $buktiTibaCol;
 
                 $lastCol = $this->getColumnLetter($totalCols);
                 $lastIdentitasCol = $this->getColumnLetter($idCols);
@@ -499,12 +321,6 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                 $picLetter = $this->getColumnLetter($picCol);
                 $ketLetter = $this->getColumnLetter($ketCol);
                 $buktiTibaLetter = $this->getColumnLetter($buktiTibaCol);
-                $spacer1Letter = $this->getColumnLetter($spacer1Col);
-                $lansirStartLetter = $this->getColumnLetter($lansirStartCol);
-                $lansirEndLetter = $this->getColumnLetter($lansirEndCol);
-                $spacer2Letter = $this->getColumnLetter($spacer2Col);
-                $timStartLetter = $this->getColumnLetter($timStartCol);
-                $timEndLetter = $this->getColumnLetter($timEndCol);
 
                 // Kolom identitas (A–G): merge 2 baris header
                 foreach (range('A', $lastIdentitasCol) as $col) {
@@ -575,26 +391,6 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                     ->setHorizontal(Alignment::HORIZONTAL_CENTER)
                     ->setVertical(Alignment::VERTICAL_CENTER);
 
-                // Spacer 1 column: merge 2 baris
-                $sheet->mergeCells("{$spacer1Letter}{$hRow1}:{$spacer1Letter}{$hRow2}");
-
-                // "LANSIR MOBIL": merge horizontal di row 1
-                $sheet->mergeCells("{$lansirStartLetter}{$hRow1}:{$lansirEndLetter}{$hRow1}");
-                $sheet->getStyle("{$lansirStartLetter}{$hRow1}:{$lansirEndLetter}{$hRow1}")
-                    ->getAlignment()
-                    ->setHorizontal(Alignment::HORIZONTAL_CENTER)
-                    ->setVertical(Alignment::VERTICAL_CENTER);
-
-                // Spacer 2 column: merge 2 baris
-                $sheet->mergeCells("{$spacer2Letter}{$hRow1}:{$spacer2Letter}{$hRow2}");
-
-                // "TIM BONGKAR": merge horizontal di row 1
-                $sheet->mergeCells("{$timStartLetter}{$hRow1}:{$timEndLetter}{$hRow1}");
-                $sheet->getStyle("{$timStartLetter}{$hRow1}:{$timEndLetter}{$hRow1}")
-                    ->getAlignment()
-                    ->setHorizontal(Alignment::HORIZONTAL_CENTER)
-                    ->setVertical(Alignment::VERTICAL_CENTER);
-
                 // ── Style kedua baris header ──────────────────────────
                 $headerStyle = [
                     'font' => ['bold' => true, 'color' => ['argb' => 'FFFFFFFF'], 'name' => 'Arial', 'size' => 10],
@@ -607,24 +403,6 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                 // ── Formula SUM di baris TOTAL ────────────────────────
                 // Main table columns (karung, kg, oa, jumlah)
                 for ($ci = $karungStartCol; $ci <= $jumlahCol; $ci++) {
-                    $col = $this->getColumnLetter($ci);
-                    $sheet->setCellValue(
-                        "{$col}{$totalRowNum}",
-                        "=SUM({$col}{$dataStartRow}:{$col}" . ($totalRowNum - 1) . ')'
-                    );
-                }
-
-                // Lansir columns (skip spacer, skip no polisi & sopir)
-                for ($ci = $lansirStartCol + 3; $ci <= $lansirEndCol; $ci++) {
-                    $col = $this->getColumnLetter($ci);
-                    $sheet->setCellValue(
-                        "{$col}{$totalRowNum}",
-                        "=SUM({$col}{$dataStartRow}:{$col}" . ($totalRowNum - 1) . ')'
-                    );
-                }
-
-                // Tim Bongkar columns (skip tanggal & nama tim)
-                for ($ci = $timStartCol + 2; $ci <= $timEndCol; $ci++) {
                     $col = $this->getColumnLetter($ci);
                     $sheet->setCellValue(
                         "{$col}{$totalRowNum}",
@@ -647,33 +425,9 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                 $currentRow = $dataStartRow;
                 $colorIndex = 0;
                 $colors = ['FFF3F4F6', 'FFFFFFFF'];
-                $tujuanColLetter = $this->getColumnLetter($idCols - 1);
-                $penerimaColLetter = $lastIdentitasCol;
-
                 foreach ($pos as $po) {
                     foreach ($po->kendaraans->where('status', '!=', 'batal')->sortBy('no_polisi') as $kendaraan) {
-                        // Hitung total baris per kendaraan
-                        $totalRows = 0;
-
-                        if ($kendaraan->penerimas->count() > 0) {
-                            foreach ($kendaraan->penerimas as $penerima) {
-                                // Hitung total baris untuk penerima ini
-                                $lansirs = $penerima->lansirs;
-                                if ($lansirs->count() > 0) {
-                                    foreach ($lansirs as $lansir) {
-                                        $totalRows++; // 1 baris untuk lansir ini
-                                        // Tambah baris untuk extra mobils/tims
-                                        $extraMobils = $lansir->mobils->slice(1)->values();
-                                        $extraTims = $lansir->tims->slice(1)->values();
-                                        $totalRows += max($extraMobils->count(), $extraTims->count());
-                                    }
-                                } else {
-                                    $totalRows += 1; 
-                                }
-                            }
-                        } else {
-                            $totalRows = 1;
-                        }
+                        $totalRows = max($kendaraan->penerimas->count(), 1);
                         $kendaraanStart = $currentRow;
                         $kendaraanEnd = $currentRow + $totalRows - 1;
 
@@ -689,29 +443,6 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                             }
                         }
 
-                        // Per penerima: NO MORE merging! Show all data on every row!
-                        $penerimaRow = $currentRow;
-                        if ($kendaraan->penerimas->count() > 0) {
-                            foreach ($kendaraan->penerimas as $penerima) {
-                                $penerimaRows = 0;
-
-                                // Hitung total baris untuk penerima ini
-                                $lansirs = $penerima->lansirs;
-                                if ($lansirs->count() > 0) {
-                                    foreach ($lansirs as $lansir) {
-                                        $penerimaRows++; // 1 baris untuk lansir ini
-                                        // Tambah baris untuk extra mobils/tims
-                                        $extraMobils = $lansir->mobils->slice(1)->values();
-                                        $extraTims = $lansir->tims->slice(1)->values();
-                                        $penerimaRows += max($extraMobils->count(), $extraTims->count());
-                                    }
-                                } else {
-                                    $penerimaRows = 1; // Tidak ada lansir, cuma 1 baris identitas
-                                }
-                                $penerimaRow += $penerimaRows;
-                            }
-                        }
-
                         $fill = $colors[$colorIndex % 2];
                         for ($r = $kendaraanStart; $r <= $kendaraanEnd; $r++) {
                             $sheet->getStyle("A{$r}:{$lastIdentitasCol}{$r}")
@@ -723,18 +454,6 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                             $sheet->getStyle("{$nextDataCol}{$r}:{$buktiTibaLetter}{$r}")
                                 ->applyFromArray([
                                     'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => $fill]],
-                                    'font' => ['name' => 'Arial', 'size' => 10],
-                                    'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
-                                ]);
-                            $sheet->getStyle("{$lansirStartLetter}{$r}:{$lansirEndLetter}{$r}")
-                                ->applyFromArray([
-                                    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FFFEF3C7']],
-                                    'font' => ['name' => 'Arial', 'size' => 10],
-                                    'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
-                                ]);
-                            $sheet->getStyle("{$timStartLetter}{$r}:{$timEndLetter}{$r}")
-                                ->applyFromArray([
-                                    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FFD1FAE5']],
                                     'font' => ['name' => 'Arial', 'size' => 10],
                                     'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
                                 ]);

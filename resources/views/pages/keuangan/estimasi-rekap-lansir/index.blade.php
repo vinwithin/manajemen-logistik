@@ -5,49 +5,49 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="fa fa-list text-primary"></i> Rekap Lansir</h5>
-                    <small class="text-muted">Hanya PO yang sudah dikunci</small>
+                    <div>
+                        <h5 class="mb-0">Estimasi Lansir & Bongkar</h5>
+                        <small class="text-muted">Penerima berdasarkan estimasi tiba dan status proses lansir.</small>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="row g-2 align-items-end mb-3">
                         <div class="col-12 col-md-3">
-                            <label for="filterFrom" class="form-label">Dari Tanggal</label>
-                            <input type="date" id="filterFrom" class="form-control">
+                            <label for="filterFrom" class="form-label">Dari Tanggal PO</label>
+                            <input type="date" id="filterFrom" class="form-control" value="{{ $filters['from'] }}">
                         </div>
                         <div class="col-12 col-md-3">
-                            <label for="filterTo" class="form-label">Sampai Tanggal</label>
-                            <input type="date" id="filterTo" class="form-control">
+                            <label for="filterTo" class="form-label">Sampai Tanggal PO</label>
+                            <input type="date" id="filterTo" class="form-control" value="{{ $filters['to'] }}">
                         </div>
                         <div class="col-12 col-md-auto">
                             <button type="button" id="resetFilter" class="btn btn-sm btn-secondary">
                                 Reset
                             </button>
                         </div>
-                        @can('report.payment.export')
-                            <div class="col-12 col-md-auto ms-md-auto">
-                                <button type="button" class="btn btn-sm btn-success btn-export"
-                                    data-url="{{ route('rekap-lansir.export-period-excel') }}">
-                                    <i class="fa fa-file-excel-o"></i> Export Excel
-                                </button>
-                                <button type="button" class="btn btn-sm btn-danger btn-export"
-                                    data-url="{{ route('rekap-lansir.export-period-pdf') }}">
-                                    <i class="fa fa-file-pdf-o"></i> Export PDF
-                                </button>
-                            </div>
-                        @endcan
+                        <div class="col-12 col-md-auto ms-md-auto">
+                            <button type="button" class="btn btn-sm btn-success btn-export"
+                                data-url="{{ route('estimasi-rekap-lansir.export') }}">
+                                <i class="fa fa-file-excel"></i> Export Excel
+                            </button>
+                        </div>
                     </div>
-                    <div class="table-responsive">
 
+                    <div class="table-responsive">
                         <table class="table table-striped table-bordered" id="table">
                             <thead>
                                 <tr>
                                     <th>No</th>
-                                    <th>Tipe</th>
-                                    <th>No. Referensi</th>
-                                    <th>Tanggal Lansir</th>
-                                    <th>Penerima</th>
-                                    <th>CV</th>
+                                    <th>Estimasi Tiba</th>
+                                    <th>No PO</th>
+                                    <th>No DO</th>
                                     <th>Kendaraan</th>
+                                    <th>Penerima</th>
+                                    <th>Tujuan</th>
+                                    <th>Pakan</th>
+                                    <th>Kg</th>
+                                    <th>Karung</th>
+                                    <th>Status</th>
                                     <th>Aksi</th>
                                 </tr>
                             </thead>
@@ -68,10 +68,10 @@
                 serverSide: true,
                 bDestroy: true,
                 order: [
-                    [3, 'desc']
+                    [1, 'asc']
                 ],
                 ajax: {
-                    url: '{{ route('rekap-lansir.index') }}',
+                    url: '{{ route('estimasi-rekap-lansir.index') }}',
                     data: function(data) {
                         data.from = $('#filterFrom').val();
                         data.to = $('#filterTo').val();
@@ -84,33 +84,57 @@
                         width: '50px'
                     },
                     {
-                        data: 'tipe',
-                        name: 'tipe',
-                        searchable: false
+                        data: 'estimasi_tiba_display',
+                        name: 'estimasi_tiba'
                     },
                     {
-                        data: 'no_referensi',
-                        name: 'no_referensi',
-                        searchable: false
+                        data: 'no_po',
+                        name: 'no_po',
+                        orderable: false
                     },
                     {
-                        data: 'tanggal_lansir',
-                        name: 'tanggal_lansir'
+                        data: 'no_do',
+                        name: 'no_do'
                     },
                     {
-                        data: 'nama_tujuan',
-                        name: 'nama_tujuan',
-                        searchable: false
+                        data: 'kendaraan_display',
+                        name: 'kendaraan.no_polisi',
+                        orderable: false
                     },
                     {
-                        data: 'cv_name',
-                        name: 'cv_name',
-                        searchable: false
+                        data: 'nama_penerima',
+                        name: 'nama_penerima'
                     },
                     {
-                        data: 'jumlah_kendaraan',
-                        name: 'jumlah_kendaraan',
-                        searchable: false,
+                        data: 'tujuan_display',
+                        name: 'tujuan_display',
+                        orderable: false
+                    },
+                    {
+                        data: 'pakan_display',
+                        name: 'pakan_display',
+                        orderable: false
+                    },
+                    {
+                        data: 'total_kg',
+                        name: 'total_kg',
+                        orderable: false,
+                        className: 'text-end',
+                        render: data => Number(data || 0).toLocaleString('id-ID', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        })
+                    },
+                    {
+                        data: 'total_karung',
+                        name: 'total_karung',
+                        orderable: false,
+                        className: 'text-end',
+                        render: data => Number(data || 0).toLocaleString('id-ID')
+                    },
+                    {
+                        data: 'status_lansir',
+                        name: 'status_lansir',
                         orderable: false
                     },
                     {
@@ -128,13 +152,6 @@
             });
 
             $('#filterFrom, #filterTo').on('change', function() {
-                const from = $('#filterFrom').val();
-                const to = $('#filterTo').val();
-
-                if (!from || !to || from > to) {
-                    return;
-                }
-
                 table.ajax.reload();
             });
 

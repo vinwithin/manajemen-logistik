@@ -652,6 +652,7 @@ class PurchaseOrderController extends Controller
             'kendaraan.*.penerima.*.nama_penerima' => 'nullable|string|max:255',
             'kendaraan.*.penerima.*.tujuan_id' => 'nullable|exists:tujuan,id',
             'kendaraan.*.penerima.*.no_surat_jalan' => 'nullable|string|max:100',
+            'kendaraan.*.penerima.*.estimasi_tiba' => 'nullable|date',
             'kendaraan.*.penerima.*.pakans' => 'nullable|array|min:0',
             'kendaraan.*.penerima.*.pakans.*.kode_pakan_id' => 'nullable|exists:kode_pakan,id',
             'kendaraan.*.penerima.*.pakans.*.jumlah_kg' => 'nullable|numeric|min:0.01',
@@ -703,6 +704,7 @@ class PurchaseOrderController extends Controller
             'kendaraan.*.penerima.*.tujuan_id.exists' => 'Tujuan penerima yang dipilih tidak valid.',
             'kendaraan.*.penerima.*.no_surat_jalan.string' => 'Nomor surat jalan harus berupa teks.',
             'kendaraan.*.penerima.*.no_surat_jalan.max' => 'Nomor surat jalan maksimal 100 karakter.',
+            'kendaraan.*.penerima.*.estimasi_tiba.date' => 'Estimasi tiba harus berupa tanggal yang valid.',
             'kendaraan.*.penerima.*.pakans.array' => 'Data pakan harus berupa array.',
             'kendaraan.*.penerima.*.pakans.*.kode_pakan_id.exists' => 'Kode pakan yang dipilih tidak valid.',
             'kendaraan.*.penerima.*.pakans.*.jumlah_kg.numeric' => 'Jumlah kg pakan harus berupa angka.',
@@ -771,6 +773,7 @@ class PurchaseOrderController extends Controller
                         'nama_penerima' => $penerimaData['nama_penerima'],
                         'tujuan_id' => $penerimaData['tujuan_id'] ?? null,
                         'no_do' => $penerimaData['no_surat_jalan'] ?? null,
+                        'estimasi_tiba' => $penerimaData['estimasi_tiba'] ?? null,
                         'status' => 'pending',
                     ]);
 
@@ -954,6 +957,7 @@ class PurchaseOrderController extends Controller
             'kendaraan.*.penerima.*.nama_penerima' => 'nullable|string|max:255',
             'kendaraan.*.penerima.*.tujuan_id' => 'nullable|exists:tujuan,id',
             'kendaraan.*.penerima.*.no_surat_jalan' => 'nullable|string|max:100',
+            'kendaraan.*.penerima.*.estimasi_tiba' => 'nullable|date',
             'kendaraan.*.penerima.*.status' => 'nullable|in:pending,berangkat,tiba,selesai,batal',
             'kendaraan.*.penerima.*.pakans' => 'nullable|array',
             'kendaraan.*.penerima.*.pakans.*.kode_pakan_id' => 'nullable|exists:kode_pakan,id',
@@ -1004,6 +1008,7 @@ class PurchaseOrderController extends Controller
             'kendaraan.*.penerima.*.tujuan_id.exists' => 'Tujuan penerima yang dipilih tidak valid.',
             'kendaraan.*.penerima.*.no_surat_jalan.string' => 'Nomor surat jalan harus berupa teks.',
             'kendaraan.*.penerima.*.no_surat_jalan.max' => 'Nomor surat jalan maksimal 100 karakter.',
+            'kendaraan.*.penerima.*.estimasi_tiba.date' => 'Estimasi tiba harus berupa tanggal yang valid.',
             'kendaraan.*.penerima.*.status.in' => 'Status penerima harus berupa pending, berangkat, tiba, selesai, atau batal.',
             'kendaraan.*.penerima.*.pakans.array' => 'Data pakan harus berupa array.',
             'kendaraan.*.penerima.*.pakans.*.kode_pakan_id.exists' => 'Kode pakan yang dipilih tidak valid.',
@@ -1156,6 +1161,7 @@ class PurchaseOrderController extends Controller
                         'nama_penerima' => $penerimaData['nama_penerima'],
                         'tujuan_id' => $penerimaData['tujuan_id'] ?? null,
                         'no_do' => $penerimaData['no_surat_jalan'] ?? null,
+                        'estimasi_tiba' => $penerimaData['estimasi_tiba'] ?? null,
                         'status' => $penerimaData['status'] === 'pending' && $statusKendaraan === 'berangkat' ? 'berangkat' : $penerimaData['status'],
                     ]);
                     $penerima->save();

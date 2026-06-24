@@ -217,12 +217,12 @@
             <div class="card-body py-2">
                 <input type="hidden" name="kendaraan[__KI__][penerima][__PI__][id]" value="">
                 <div class="row g-2 mb-2">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label small">Nama Penerima <span class="text-danger">*</span></label>
                         <input type="text" name="kendaraan[__KI__][penerima][__PI__][nama_penerima]"
                             class="form-control form-control-sm input-nama-penerima" placeholder="Nama peternak">
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label small">Tujuan</label>
                         <select name="kendaraan[__KI__][penerima][__PI__][tujuan_id]" class="form-select form-select-sm">
                             <option value="">-- Pilih Tujuan --</option>
@@ -231,7 +231,7 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label small">Status Penerima</label>
                         <select name="kendaraan[__KI__][penerima][__PI__][status]"
                             class="form-select form-select-sm select-status-penerima">
@@ -240,6 +240,11 @@
                             <option value="selesai">Selesai</option>
                             <option value="batal">Batal</option>
                         </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small">Estimasi Tiba</label>
+                        <input type="date" name="kendaraan[__KI__][penerima][__PI__][estimasi_tiba]"
+                            class="form-control form-control-sm">
                     </div>
                 </div>
 
@@ -396,6 +401,7 @@
                     '');
                 $card.find('[name="kendaraan[' + ki + '][penerima][' + pi + '][tujuan_id]"]').val(data.tujuan_id || '');
                 $card.find('[name="kendaraan[' + ki + '][penerima][' + pi + '][status]"]').val(data.status || 'pending');
+                $card.find('[name="kendaraan[' + ki + '][penerima][' + pi + '][estimasi_tiba]"]').val(data.estimasi_tiba || '');
 
                 var pakans = data.pakans || [];
                 for (var pki = 0; pki < pakans.length; pki++) {
@@ -576,6 +582,7 @@
                                     'nama_penerima' => $p->nama_penerima,
                                     'tujuan_id' => $p->tujuan_id,
                                     'status' => $p->status,
+                                    'estimasi_tiba' => $p->estimasi_tiba?->format('Y-m-d'),
                                     'pakans' => $p->pakans
                                         ->map(function ($pk) {
                                             return [

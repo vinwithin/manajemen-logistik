@@ -23,7 +23,9 @@ class permissionSeeder extends Seeder
         //  11 = Daftar PO       (child of PO)
         //  20 = Rekap OA        (child of Keuangan)
         //  21 = Pembayaran      (child of Keuangan)
-        //  22 = Rekap Lansir    (child of Keuangan)
+        //  22 = Estimasi Lansir & Bongkar (child of Keuangan)
+        //  23 = Rekap Lansir    (child of Keuangan)
+        //  24 = Rugi Laba       (child of Keuangan)
         //  30 = Suplier CV      (child of Master Data)
         //  31 = Kode Pakan      (child of Master Data)
         //  32 = Tujuan Kirim    (child of Master Data)
@@ -53,9 +55,10 @@ class permissionSeeder extends Seeder
             ['name' => 'payment.view',          'menu_id' => 21],
             ['name' => 'payment.create',        'menu_id' => 21],
             ['name' => 'payment.confirm',       'menu_id' => 21],
-            ['name' => 'rekap-lansir.view',     'menu_id' => 22],
-            ['name' => 'rekap-lansir.bayar',    'menu_id' => 22],
-            ['name' => 'rugi-laba.view',     'menu_id' => 23],
+            ['name' => 'estimasi-lansir.view',  'menu_id' => 22],
+            ['name' => 'rekap-lansir.view',     'menu_id' => 23],
+            ['name' => 'rekap-lansir.bayar',    'menu_id' => 23],
+            ['name' => 'rugi-laba.view',        'menu_id' => 24],
 
             // Master Data
             ['name' => 'supplier.view',         'menu_id' => 30],
@@ -131,6 +134,7 @@ class permissionSeeder extends Seeder
             'payment.view',
             'payment.create',
             'payment.confirm',
+            'estimasi-lansir.view',
             'supplier.view',
             'supplier.create',
             'supplier.edit',
@@ -161,6 +165,7 @@ class permissionSeeder extends Seeder
             'po.view',
             'oa.view',
             'payment.view',
+            'estimasi-lansir.view',
             'supplier.view',
             'feed_code.view',
             'destination.view',

@@ -306,7 +306,7 @@
             </div>
             <div class="card-body py-2">
                 <div class="row g-2 mb-2">
-                    <div class="col-md-5">
+                    <div class="col-md-4">
                         <label class="form-label small">Nama Penerima <span class="text-danger">*</span></label>
                         <input type="hidden" name="kendaraan[__KI__][penerima][__PI__][penerima_id]"
                             class="input-penerima-id" value="">
@@ -322,7 +322,7 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label small">Tujuan</label>
                         <input type="hidden" name="kendaraan[__KI__][penerima][__PI__][tujuan_id]"
                             class="input-tujuan-id" value="">
@@ -333,6 +333,11 @@
                         <label class="form-label small">No. Surat Jalan</label>
                         <input type="text" name="kendaraan[__KI__][penerima][__PI__][no_surat_jalan]"
                             class="form-control form-control-sm" placeholder="Opsional">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small">Estimasi Tiba</label>
+                        <input type="date" name="kendaraan[__KI__][penerima][__PI__][estimasi_tiba]"
+                            class="form-control form-control-sm">
                     </div>
                     <div class="col-md-3" style="display: none;">
                         <label class="form-label small">Status Penerima</label>
@@ -623,9 +628,10 @@
                         'tujuan-nama') || '';
                     $card.find('.input-tujuan-display').val(tujuanNama);
                 }
-                
+
                 // Set No. Surat Jalan
                 $card.find('[name="kendaraan[' + ki + '][penerima][' + pi + '][no_surat_jalan]"]').val(oldData.no_do || '');
+                $card.find('[name="kendaraan[' + ki + '][penerima][' + pi + '][estimasi_tiba]"]').val(oldData.estimasi_tiba || '');
 
                 var pakans = oldData.pakans || [];
                 for (var pki = 0; pki < pakans.length; pki++) {
@@ -1068,6 +1074,7 @@
                                         'nama_penerima' => $p['nama_penerima'] ?? '',
                                         'tujuan_id' => $p['tujuan_id'] ?? '',
                                         'no_do' => $p['no_surat_jalan'] ?? '',
+                                        'estimasi_tiba' => $p['estimasi_tiba'] ?? '',
                                         'pakans' => array_values($p['pakans'] ?? []),
                                     ];
                                 }, $kend['penerima'] ?? []),
