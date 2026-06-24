@@ -22,7 +22,6 @@ class EstimasiRekapLansirExport implements FromArray, ShouldAutoSize, WithEvents
         'Kendaraan PO',
         'Tujuan',
         'Penerima',
-        'Mobil Lansir',
         'Berat (kg)',
         'Jumlah Karung',
         'Tarif (Rp/kg)',
@@ -36,7 +35,6 @@ class EstimasiRekapLansirExport implements FromArray, ShouldAutoSize, WithEvents
         'Kendaraan PO',
         'Tujuan',
         'Penerima',
-        'Tim Bongkar',
         'Berat (kg)',
         'Jumlah Karung',
         'Tarif (Rp/kg)',
@@ -109,7 +107,6 @@ class EstimasiRekapLansirExport implements FromArray, ShouldAutoSize, WithEvents
                 ?? $penerima->kendaraan?->tujuan?->nama
                 ?? '-',
             'penerima' => $penerima->nama_penerima ?? '-',
-            'pelaksana' => '-',
             'berat' => $berat,
             'karung' => $karung,
             'tarif' => $tarif,
@@ -126,7 +123,6 @@ class EstimasiRekapLansirExport implements FromArray, ShouldAutoSize, WithEvents
             $row['kendaraan_po'],
             $row['tujuan'],
             $row['penerima'],
-            $row['pelaksana'],
             $row['berat'],
             $row['karung'],
             $row['tarif'],
@@ -138,7 +134,6 @@ class EstimasiRekapLansirExport implements FromArray, ShouldAutoSize, WithEvents
     {
         return [
             'GRAND TOTAL',
-            '',
             '',
             '',
             '',
@@ -165,15 +160,15 @@ class EstimasiRekapLansirExport implements FromArray, ShouldAutoSize, WithEvents
             AfterSheet::class => function (AfterSheet $event) {
                 $sheet = $event->sheet->getDelegate();
                 $sheet->freezePane('A5');
-                $sheet->getStyle("A{$this->mobilHeaderRow}:K{$this->mobilHeaderRow}")
+                $sheet->getStyle("A{$this->mobilHeaderRow}:J{$this->mobilHeaderRow}")
                     ->applyFromArray($this->headerStyle());
-                $sheet->getStyle("A{$this->timHeaderRow}:K{$this->timHeaderRow}")
+                $sheet->getStyle("A{$this->timHeaderRow}:J{$this->timHeaderRow}")
                     ->applyFromArray($this->headerStyle());
-                $sheet->getStyle("A{$this->mobilTotalRow}:K{$this->mobilTotalRow}")
+                $sheet->getStyle("A{$this->mobilTotalRow}:J{$this->mobilTotalRow}")
                     ->applyFromArray($this->totalStyle());
-                $sheet->getStyle("A{$this->timTotalRow}:K{$this->timTotalRow}")
+                $sheet->getStyle("A{$this->timTotalRow}:J{$this->timTotalRow}")
                     ->applyFromArray($this->totalStyle());
-                $sheet->getStyle('A'.($this->timHeaderRow - 1).':K'.($this->timHeaderRow - 1))
+                $sheet->getStyle('A'.($this->timHeaderRow - 1).':J'.($this->timHeaderRow - 1))
                     ->applyFromArray([
                         'font' => ['bold' => true, 'size' => 12],
                         'fill' => [
