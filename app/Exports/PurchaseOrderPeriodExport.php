@@ -11,7 +11,6 @@ use Maatwebsite\Excel\Concerns\WithTitle;
 use Maatwebsite\Excel\Events\AfterSheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use App\Traits\WithUserTujuan;
-use PhpOffice\PhpSpreadsheet\Cell\Hyperlink;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 
@@ -100,7 +99,7 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
         $header1[] = 'CV';
         $header1[] = 'PIC';
         $header1[] = 'Keterangan';
-        $header1[] = 'Bukti Tiba';
+        $header1[] = 'Supplier';
 
         $rows[] = $header1;
 
@@ -124,7 +123,7 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
         $header2[] = ''; // CV
         $header2[] = ''; // PIC
         $header2[] = ''; // Keterangan
-        $header2[] = ''; // Bukti Tiba
+        $header2[] = ''; // Supplier
 
         $rows[] = $header2;
 
@@ -189,8 +188,8 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                         // Keterangan: tipe tujuan penerima (kosong jika tidak ada)
                         $row[] = $penerima->penerima?->tujuan?->type ?? '';
 
-                        // Bukti Tiba: store path for later hyperlink setup
-                        $row[] = $penerima->bukti_tiba ?? '';
+                        // Supplier
+                        $row[] = $kendaraan->supplier?->nama ?? '';
 
                         $rows[] = $row;
                     } else {
@@ -231,8 +230,8 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
 
                         $row[] = 'Belum ada penerima';
 
-                        // Bukti Tiba
-                        $row[] = '';
+                        // Supplier
+                        $row[] = $kendaraan->supplier?->nama ?? '';
 
                         $rows[] = $row;
                     }
@@ -250,7 +249,7 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
         $totalRow[] = ''; // CV
         $totalRow[] = ''; // PIC
         $totalRow[] = ''; // Keterangan
-        $totalRow[] = ''; // Bukti Tiba
+        $totalRow[] = ''; // Supplier
 
         $rows[] = $totalRow;
 
@@ -304,8 +303,8 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                 $cvCol = $idCols + 2 * $kodePakanCount + 3;
                 $picCol = $idCols + 2 * $kodePakanCount + 4;
                 $ketCol = $idCols + 2 * $kodePakanCount + 5;
-                $buktiTibaCol = $idCols + 2 * $kodePakanCount + 6;
-                $totalCols = $buktiTibaCol;
+                $supplierCol = $idCols + 2 * $kodePakanCount + 6;
+                $totalCols = $supplierCol;
 
                 $lastCol = $this->getColumnLetter($totalCols);
                 $lastIdentitasCol = $this->getColumnLetter($idCols);
@@ -320,7 +319,7 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                 $cvLetter = $this->getColumnLetter($cvCol);
                 $picLetter = $this->getColumnLetter($picCol);
                 $ketLetter = $this->getColumnLetter($ketCol);
-                $buktiTibaLetter = $this->getColumnLetter($buktiTibaCol);
+                $supplierLetter = $this->getColumnLetter($supplierCol);
 
                 // Kolom identitas (A–G): merge 2 baris header
                 foreach (range('A', $lastIdentitasCol) as $col) {
@@ -384,9 +383,9 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                     ->setHorizontal(Alignment::HORIZONTAL_CENTER)
                     ->setVertical(Alignment::VERTICAL_CENTER);
 
-                // "Bukti Tiba" — merge 2 baris
-                $sheet->mergeCells("{$buktiTibaLetter}{$hRow1}:{$buktiTibaLetter}{$hRow2}");
-                $sheet->getStyle("{$buktiTibaLetter}{$hRow1}:{$buktiTibaLetter}{$hRow2}")
+                // "Supplier" — merge 2 baris
+                $sheet->mergeCells("{$supplierLetter}{$hRow1}:{$supplierLetter}{$hRow2}");
+                $sheet->getStyle("{$supplierLetter}{$hRow1}:{$supplierLetter}{$hRow2}")
                     ->getAlignment()
                     ->setHorizontal(Alignment::HORIZONTAL_CENTER)
                     ->setVertical(Alignment::VERTICAL_CENTER);
@@ -451,7 +450,7 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                                     'font' => ['name' => 'Arial', 'size' => 10],
                                     'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
                                 ]);
-                            $sheet->getStyle("{$nextDataCol}{$r}:{$buktiTibaLetter}{$r}")
+                            $sheet->getStyle("{$nextDataCol}{$r}:{$supplierLetter}{$r}")
                                 ->applyFromArray([
                                     'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => $fill]],
                                     'font' => ['name' => 'Arial', 'size' => 10],
@@ -469,24 +468,6 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                     ->getBorders()
                     ->getAllBorders()
                     ->setBorderStyle(Border::BORDER_THIN);
-
-                // ── Add hyperlinks for Bukti Tiba ──────────────────────
-                for ($r = $dataStartRow; $r < $totalRowNum; $r++) {
-                    $cell = $sheet->getCell("{$buktiTibaLetter}{$r}");
-                    $value = $cell->getValue();
-                    if (!empty($value)) {
-                        // Generate full URL to storage file
-                        $url = url(\Illuminate\Support\Facades\Storage::url($value));
-                        $cell->setHyperlink(new Hyperlink($url, $url));
-                        // Style the link as blue and underlined
-                        $sheet->getStyle("{$buktiTibaLetter}{$r}")->applyFromArray([
-                            'font' => [
-                                'color' => ['argb' => 'FF2563EB'],
-                                'underline' => true,
-                            ],
-                        ]);
-                    }
-                }
 
                 // ── Auto size kolom ───────────────────────────────────
                 foreach (range('A', $lastCol) as $col) {
