@@ -186,7 +186,10 @@ class EstimasiRekapLansirController extends Controller
         }
 
         return $query
-            ->orderBy('estimasi_tiba')
-            ->orderBy('id');
+            ->select('po_penerima.*')
+            ->leftJoin('po_kendaraan', 'po_kendaraan.id', '=', 'po_penerima.po_kendaraan_id')
+            ->leftJoin('purchase_orders', 'purchase_orders.id', '=', 'po_kendaraan.po_id')
+            ->orderBy('purchase_orders.tanggal_po')
+            ->orderBy('po_penerima.id');
     }
 }
