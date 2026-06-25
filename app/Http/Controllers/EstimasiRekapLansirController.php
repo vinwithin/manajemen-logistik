@@ -160,11 +160,11 @@ class EstimasiRekapLansirController extends Controller
             'pakans.kodePakan',
             'lansirs',
         ])
-            ->whereNotIn('status', ['selesai', 'batal'])
+            ->whereNotIn('po_penerima.status', ['selesai', 'batal'])
             ->where(function ($q) use ($tujuanIds) {
-                $q->whereIn('tujuan_id', $tujuanIds)
+                $q->whereIn('po_penerima.tujuan_id', $tujuanIds)
                     ->orWhereHas('penerima', fn($p) => $p->whereIn('tujuan_id', $tujuanIds))
-                    ->orWhereNull('tujuan_id');
+                    ->orWhereNull('po_penerima.tujuan_id');
             });
 
         if (! empty($filters['from'])) {
@@ -178,8 +178,8 @@ class EstimasiRekapLansirController extends Controller
         if ($filters['search'] !== '') {
             $search = $filters['search'];
             $query->where(function ($q) use ($search) {
-                $q->where('nama_penerima', 'like', "%{$search}%")
-                    ->orWhere('no_do', 'like', "%{$search}%")
+                $q->where('po_penerima.nama_penerima', 'like', "%{$search}%")
+                    ->orWhere('po_penerima.no_do', 'like', "%{$search}%")
                     ->orWhereHas('kendaraan', fn($k) => $k->where('no_polisi', 'like', "%{$search}%"))
                     ->orWhereHas('kendaraan.po', fn($po) => $po->where('no_po', 'like', "%{$search}%"));
             });
@@ -189,6 +189,6 @@ class EstimasiRekapLansirController extends Controller
             ->select('po_penerima.*')
             ->leftJoin('po_kendaraan', 'po_kendaraan.id', '=', 'po_penerima.po_kendaraan_id')
             ->leftJoin('purchase_orders', 'purchase_orders.id', '=', 'po_kendaraan.po_id')
-            ->orderBy('purchase_orders.tanggal_po');
+            ->orderBy('purchase_orders.tanggal_po', 'desc');
     }
 }
