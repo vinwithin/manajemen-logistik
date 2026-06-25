@@ -3,7 +3,7 @@
     @php
         $isEdit = isset($rl);
         $title = $isEdit ? 'Edit Rugi Laba' : 'Input Rugi Laba';
-        $action = $isEdit ? route('keuangan.rugi-laba.store') : route('keuangan.rugi-laba.store');
+        $action = route('keuangan.rugi-laba.store');
         $typeLabels = [
             'gudang' => 'Gudang',
             'tr_kerinci' => 'TR Kerinci',
@@ -24,9 +24,12 @@
                     <h5 class="mb-0">{{ $title }}</h5>
                     <div class="d-flex gap-2">
 
-                        <a href="{{ route('keuangan.rugi-laba.show', $rl->id) }}" class="btn btn-sm btn-info text-white">
-                            <i class="fa fa-eye"></i> Lihat Laporan
-                        </a>
+                        @if ($isEdit)
+                            <a href="{{ route('keuangan.rugi-laba.show', $rl->id) }}"
+                                class="btn btn-sm btn-info text-white">
+                                <i class="fa fa-eye"></i> Lihat Laporan
+                            </a>
+                        @endif
                         <a href="{{ route('keuangan.rugi-laba.index', ['cv_id' => $cvId]) }}"
                             class="btn btn-sm btn-secondary">
                             <i class="fa fa-arrow-left"></i> Kembali
