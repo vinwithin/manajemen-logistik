@@ -82,12 +82,7 @@ class PurchaseOrderPtSumRekapSheet implements FromArray, ShouldAutoSize, WithEve
         $rows[] = ['TOTAL', '', '', '', '', '', '', $grandTotalKg, $grandTotalKarung, '', $grandTotalHarga];
         $rows[] = [];
         $rows[] = [];
-        $rows[] = ['Diverifikasi Oleh,', '', '', 'Diketahui Oleh,', '', '', $this->tanggalSurat ?: 'Jambi, ' . now()->translatedFormat('d F Y')];
-        $rows[] = ['Finance Accounting', '', '', 'Branch Manager'];
-        $rows[] = [];
-        $rows[] = [];
-        $rows[] = [];
-        $rows[] = ['________________', '', '', '________________', '', '', '________________'];
+      
 
         return $rows;
     }

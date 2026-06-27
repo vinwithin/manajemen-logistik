@@ -153,13 +153,7 @@ class PurchaseOrderSupplierPeriodExport implements FromArray, WithEvents, WithTi
             '',
         ];
         $rows[] = [];
-        $rows[] = ['Diverifikasi Oleh,', '', '', 'Diketahui Oleh,', '', '', '', '', '', '', '', 'Jambi, ' . now()->translatedFormat('d F Y')];
-        $rows[] = ['Finance Accounting', '', '', 'Branch Manager'];
-        $rows[] = [];
-        $rows[] = [];
-        $rows[] = [];
-        $rows[] = ['________________', '', '', '________________', '', '', '', '', '', '', '', '________________'];
-
+       
         return $rows;
     }
 
