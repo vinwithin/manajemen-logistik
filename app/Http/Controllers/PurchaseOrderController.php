@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Exports\ExportToPT;
 use App\Exports\PurchaseOrderExport;
 use App\Exports\PurchaseOrderPeriodExport;
+use App\Exports\PurchaseOrderPtSumPeriodExport;
+use App\Exports\PurchaseOrderSupplierPeriodExport;
 use App\Models\Cv;
 use App\Models\KodePakan;
 use App\Models\Mobil;
@@ -330,6 +332,23 @@ class PurchaseOrderController extends Controller
         }
     }
 
+    public function exportExcelSupplier(Request $request)
+    {
+        $request->validate(['from' => 'required|date', 'to' => 'required|date']);
+
+        $from = $request->from;
+        $to = $request->to;
+        $cvId = $request->cv_id ? (int) $request->cv_id : null;
+        $supplierId = $request->supplier_id ? (int) $request->supplier_id : null;
+        $tujuanId = $request->tujuan_id ? (int) $request->tujuan_id : null;
+        $filename = 'PO-Periode-Supplier-' . now()->format('Ymd-His') . '.xlsx';
+
+        return Excel::download(
+            new PurchaseOrderSupplierPeriodExport($from, $to, $cvId, $supplierId, $tujuanId),
+            $filename
+        );
+    }
+
     public function exportPdfPtSumConfirm(Request $request)
     {
         $suppliers = Supplier::orderBy('nama')->get();
@@ -566,6 +585,56 @@ class PurchaseOrderController extends Controller
         // } catch (Exception $e) {
         //     return redirect()->back()->with('error', 'Gagal export PDF PT Sum: ' . $e->getMessage());
         // }
+    }
+
+    public function exportExcelPtSum(Request $request)
+    {
+        $request->validate([
+            'from' => 'required|date',
+            'to' => 'required|date|after_or_equal:from',
+            'tujuan_ids' => 'required|string',
+        ], [
+            'from.required' => 'Tanggal awal periode wajib diisi.',
+            'to.required' => 'Tanggal akhir periode wajib diisi.',
+            'to.after_or_equal' => 'Tanggal akhir harus sama atau setelah tanggal awal.',
+            'tujuan_ids.required' => 'Pilih tujuan terlebih dahulu.',
+        ]);
+
+        $cvId = $request->cv_id ?? session('active_cv');
+
+        if (! $cvId) {
+            return redirect()->route('purchase-order.export-ptsum-confirm')
+                ->with('error', 'Pilih CV terlebih dahulu.');
+        }
+
+        $from = $request->from;
+        $to = $request->to;
+        $supplierId = $request->supplier_id ? (int) $request->supplier_id : null;
+        $tujuanIds = array_filter(array_map('intval', explode(',', $request->tujuan_ids)));
+        $kendaraanIds = $request->kendaraan_ids
+            ? array_filter(array_map('intval', explode(',', $request->kendaraan_ids)))
+            : [];
+
+        $cpi = $request->cpi;
+        $tujuanNamaList = Tujuan::whereIn('id', $tujuanIds)->pluck('nama')->join(' & ');
+        $tujuanNama = $cpi ?: $tujuanNamaList;
+        $cvNama = Cv::find($cvId)?->nama_cv ?? 'CV';
+        $filename = 'PO-Periode-PTSum-' . str_replace(' ', '-', $cvNama) . '-' . now()->format('Ymd-His') . '.xlsx';
+
+        return Excel::download(
+            new PurchaseOrderPtSumPeriodExport(
+                $from,
+                $to,
+                (int) $cvId,
+                $supplierId,
+                $tujuanIds,
+                $kendaraanIds,
+                $request->no_surat,
+                $tujuanNama,
+                $request->tanggal_surat
+            ),
+            $filename
+        );
     }
 
     public function index(Request $request)

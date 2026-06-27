@@ -19,7 +19,8 @@
                         </div>
                     @endif
 
-                    <form method="GET" action="{{ route('purchase-order.export-pdf-supplier') }}" target="_blank">
+                    <form method="GET" action="{{ route('purchase-order.export-pdf-supplier') }}" target="_blank"
+                        id="formExportSupplier">
 
                         <div class="row g-3">
 
@@ -107,6 +108,9 @@
                                 <button type="submit" class="btn btn-danger">
                                     <i class="fa fa-file-pdf-o"></i> Export PDF
                                 </button>
+                                <button type="button" class="btn btn-success" id="btnExportExcel">
+                                    <i class="fa fa-file-excel-o"></i> Export Excel
+                                </button>
                                 <button type="button" class="btn btn-outline-secondary" id="btnPreview">
                                     <i class="fa fa-search"></i> Preview Jumlah PO
                                 </button>
@@ -119,6 +123,14 @@
     </div>
 
     <script>
+        document.getElementById('btnExportExcel').addEventListener('click', function() {
+            var form = document.getElementById('formExportSupplier');
+            var originalAction = form.action;
+            form.action = '{{ route('purchase-order.export-excel-supplier') }}';
+            form.submit();
+            form.action = originalAction;
+        });
+
         document.getElementById('btnPreview').addEventListener('click', function() {
             var form = this.closest('form');
             var from = form.querySelector('[name=from]').value;

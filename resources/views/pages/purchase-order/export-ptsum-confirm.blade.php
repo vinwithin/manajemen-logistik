@@ -34,7 +34,8 @@
                         </div>
                     @endif
 
-                    <form method="GET" action="{{ route('purchase-order.export-pdf-ptsum') }}" target="_blank">
+                    <form method="GET" action="{{ route('purchase-order.export-pdf-ptsum') }}" target="_blank"
+                        id="formExportPtSum">
 
                         {{-- Filter Periode --}}
                         <div class="card border-0 bg-light mb-4">
@@ -209,6 +210,9 @@
                             <button type="submit" class="btn btn-danger">
                                 <i class="fa fa-file-pdf-o"></i> Export PDF
                             </button>
+                            <button type="button" class="btn btn-success" id="btnExportExcel">
+                                <i class="fa fa-file-excel-o"></i> Export Excel
+                            </button>
                             <button type="button" class="btn btn-outline-secondary" id="btnPreview">
                                 <i class="fa fa-search"></i> Preview Jumlah PO
                             </button>
@@ -254,6 +258,16 @@
                 syncKendaraanIds();
             });
         }
+
+        document.getElementById('btnExportExcel').addEventListener('click', function() {
+            syncKendaraanIds();
+
+            var form = document.getElementById('formExportPtSum');
+            var originalAction = form.action;
+            form.action = '{{ route('purchase-order.export-excel-ptsum') }}';
+            form.submit();
+            form.action = originalAction;
+        });
 
         // Preview jumlah PO
         document.getElementById('btnPreview').addEventListener('click', function() {

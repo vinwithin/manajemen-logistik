@@ -15,11 +15,11 @@
                             <i class="fa fa-file-excel-o"></i> Export Excel
                         </a>
                         <a href="#" id="btnExportPdfSupplier" class="btn btn-sm btn-danger">
-                            <i class="fa fa-file-pdf-o"></i> PDF Supplier
+                            <i class="fa fa-file-pdf-o"></i> Rekap Supplier
                         </a>
                         <a href="{{ route('purchase-order.export-ptsum-confirm') }}" id="btnExportPdfPtSum"
                             class="btn btn-sm btn-warning">
-                            <i class="fa fa-file-pdf-o"></i> PDF PT Sum
+                            <i class="fa fa-file-pdf-o"></i> Rekap PT Sum
                         </a>
                         <a href="{{ route('purchase-order.create') }}" class="btn btn-sm btn-primary">
                             <i class="fa fa-plus"></i> Input PO

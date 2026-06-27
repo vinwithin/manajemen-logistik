@@ -99,8 +99,10 @@ Route::middleware('auth')->group(function () {
     // PDF exports
     Route::get('/purchase-order-export-pdf', [PurchaseOrderController::class, 'exportPdf'])->name('purchase-order.export-pdf');
     Route::get('/purchase-order-export-pdf-supplier', [PurchaseOrderController::class, 'exportPdfSupplier'])->name('purchase-order.export-pdf-supplier');
+    Route::get('/purchase-order-export-excel-supplier', [PurchaseOrderController::class, 'exportExcelSupplier'])->name('purchase-order.export-excel-supplier');
     Route::get('/purchase-order-export-pdf-supplier-confirm', [PurchaseOrderController::class, 'exportPdfSupplierConfirm'])->name('purchase-order.export-supplier-confirm');
     Route::get('/purchase-order-export-pdf-ptsum', [PurchaseOrderController::class, 'exportPdfPtSum'])->name('purchase-order.export-pdf-ptsum');
+    Route::get('/purchase-order-export-excel-ptsum', [PurchaseOrderController::class, 'exportExcelPtSum'])->name('purchase-order.export-excel-ptsum');
     Route::get('/purchase-order-export-pdf-ptsum-confirm', [PurchaseOrderController::class, 'exportPdfPtSumConfirm'])->name('purchase-order.export-ptsum-confirm');
     Route::get('/purchase-order/{id}/export-pdf', [PurchaseOrderController::class, 'exportPoPdf'])->name('purchase-order.export-po-pdf');
     Route::get('/purchase-order/{id}/export-pdf-supplier', [PurchaseOrderController::class, 'exportPoPdfSupplier'])->name('purchase-order.export-po-pdf-supplier');
