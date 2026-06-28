@@ -230,7 +230,8 @@
             document.querySelectorAll('.kendaraan-check:checked').forEach(function(el) {
                 checked.push(el.value);
             });
-            document.getElementById('inputKendaraanIds').value = checked.join(',');
+            var inputKendaraanIds = document.getElementById('inputKendaraanIds');
+            if (inputKendaraanIds) inputKendaraanIds.value = checked.join(',');
             var countEl = document.getElementById('countSelected');
             if (countEl) countEl.textContent = checked.length;
         }
@@ -274,6 +275,13 @@
         }
 
         document.getElementById('btnExportExcel').addEventListener('click', function() {
+            var button = this;
+            var form = document.getElementById('formExportPtSum');
+
+            if (!form.reportValidity()) {
+                return;
+            }
+
             syncKendaraanIds();
 
             if (!hasKendaraanSelection()) {
@@ -281,11 +289,17 @@
                 return;
             }
 
-            var form = document.getElementById('formExportPtSum');
-            var originalAction = form.action;
-            form.action = '{{ route('purchase-order.export-excel-ptsum') }}';
-            form.submit();
-            form.action = originalAction;
+            var originalHtml = button.innerHTML;
+            button.disabled = true;
+            button.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Memproses...';
+
+            var params = new URLSearchParams(new FormData(form));
+            window.open('{{ route('purchase-order.export-excel-ptsum') }}?' + params.toString(), '_blank');
+
+            setTimeout(function() {
+                button.disabled = false;
+                button.innerHTML = originalHtml;
+            }, 1500);
         });
 
         // Preview jumlah PO
