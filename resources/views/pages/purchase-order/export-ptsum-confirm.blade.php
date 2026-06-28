@@ -87,9 +87,9 @@
                                         </select>
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label small">Tujuan<span class="text-danger">*</span></label>
-                                        <select name="tujuan_ids" id="selectTujuan" class="form-select form-select-sm"
-                                            required>
+                                        <label class="form-label small">Tujuan <span
+                                                class="text-muted">(opsional)</span></label>
+                                        <select name="tujuan_ids" id="selectTujuan" class="form-select form-select-sm">
                                             <option value="">-- Semua Tujuan --</option>
                                             {{-- Opsi gabungan --}}
                                             @php $currentTujuanIds = request('tujuan_ids', isset($tujuanIds) ? implode(',', $tujuanIds) : ''); @endphp
@@ -120,7 +120,7 @@
                                                     kendaraan)</span>
                                             </label>
                                             <input type="hidden" name="kendaraan_ids" id="inputKendaraanIds"
-                                                value="{{ implode(',', $selectedKendaraanIds) }}">
+                                                value="{{ empty($selectedKendaraanIds) ? $kendaraanList->pluck('id')->join(',') : implode(',', $selectedKendaraanIds) }}">
                                             <div class="border rounded p-2 bg-white"
                                                 style="max-height: 200px; overflow-y: auto;">
                                                 <div class="mb-1">
@@ -235,6 +235,20 @@
             if (countEl) countEl.textContent = checked.length;
         }
 
+        function hasKendaraanSelection() {
+            var kendaraanChecks = document.querySelectorAll('.kendaraan-check');
+            return kendaraanChecks.length === 0 || document.querySelectorAll('.kendaraan-check:checked').length > 0;
+        }
+
+        document.getElementById('formExportPtSum').addEventListener('submit', function(e) {
+            syncKendaraanIds();
+
+            if (!hasKendaraanSelection()) {
+                e.preventDefault();
+                alert('Pilih minimal satu kendaraan terlebih dahulu.');
+            }
+        });
+
         document.querySelectorAll('.kendaraan-check').forEach(function(el) {
             el.addEventListener('change', syncKendaraanIds);
         });
@@ -262,6 +276,11 @@
         document.getElementById('btnExportExcel').addEventListener('click', function() {
             syncKendaraanIds();
 
+            if (!hasKendaraanSelection()) {
+                alert('Pilih minimal satu kendaraan terlebih dahulu.');
+                return;
+            }
+
             var form = document.getElementById('formExportPtSum');
             var originalAction = form.action;
             form.action = '{{ route('purchase-order.export-excel-ptsum') }}';
@@ -280,6 +299,11 @@
 
             if (!from || !to) {
                 alert('Isi Dari Tanggal dan Sampai Tanggal terlebih dahulu.');
+                return;
+            }
+
+            if (!hasKendaraanSelection()) {
+                alert('Pilih minimal satu kendaraan terlebih dahulu.');
                 return;
             }
 

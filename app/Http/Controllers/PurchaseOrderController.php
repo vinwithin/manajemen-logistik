@@ -317,6 +317,30 @@ class PurchaseOrderController extends Controller
 
             $pos = $query->get();
 
+            if ($supplierId || $tujuanId) {
+                foreach ($pos as $po) {
+                    if ($supplierId) {
+                        $po->setRelation('kendaraans', $po->kendaraans->filter(
+                            fn($kendaraan) => (int) $kendaraan->supplier_id === (int) $supplierId
+                        )->values());
+                    }
+
+                    if ($tujuanId) {
+                        foreach ($po->kendaraans as $kendaraan) {
+                            $kendaraan->setRelation('penerimas', $kendaraan->penerimas->filter(
+                                fn($penerima) => (int) $penerima->tujuan_id === (int) $tujuanId
+                            )->values());
+                        }
+
+                        $po->setRelation('kendaraans', $po->kendaraans->filter(
+                            fn($kendaraan) => $kendaraan->penerimas->isNotEmpty()
+                        )->values());
+                    }
+                }
+
+                $pos = $pos->filter(fn($po) => $po->kendaraans->isNotEmpty())->values();
+            }
+
             $pdf = Pdf::loadView('pdf.purchase-order-period-supplier', compact('pos', 'from', 'to'))
                 ->setPaper('legal', 'landscape')
                 ->setOption('margin-top', 10)
@@ -361,7 +385,9 @@ class PurchaseOrderController extends Controller
         $tujuanIds = $request->tujuan_ids
             ? array_filter(array_map('intval', explode(',', $request->tujuan_ids)))
             : [];
-        $selectedKendaraanIds = $request->kendaraan_ids ? array_filter(explode(',', $request->kendaraan_ids)) : [];
+        $selectedKendaraanIds = $request->kendaraan_ids
+            ? array_filter(array_map('intval', explode(',', $request->kendaraan_ids)))
+            : [];
         $poCount = null;
         $cvNama = null;
         $dokumen = null;
@@ -379,6 +405,10 @@ class PurchaseOrderController extends Controller
 
             if (! empty($tujuanIds)) {
                 $query->whereHas('kendaraans.penerimas', fn($q) => $q->whereIn('tujuan_id', $tujuanIds));
+            }
+
+            if (! empty($selectedKendaraanIds)) {
+                $query->whereHas('kendaraans', fn($q) => $q->whereIn('id', $selectedKendaraanIds));
             }
 
             $poCount = $query->count();
@@ -432,12 +462,11 @@ class PurchaseOrderController extends Controller
         $request->validate([
             'from' => 'required|date',
             'to' => 'required|date|after_or_equal:from',
-            'tujuan_ids' => 'required|string',
+            'tujuan_ids' => 'nullable|string',
         ], [
             'from.required' => 'Tanggal awal periode wajib diisi.',
             'to.required' => 'Tanggal akhir periode wajib diisi.',
             'to.after_or_equal' => 'Tanggal akhir harus sama atau setelah tanggal awal.',
-            'tujuan_ids.required' => 'Pilih tujuan terlebih dahulu.',
         ]);
 
         $cvId = $request->cv_id ?? session('active_cv');
@@ -565,11 +594,15 @@ class PurchaseOrderController extends Controller
                     fn($k) => in_array($k->id, $kendaraanIds)
                 )->values());
             }
+
+            $pos = $pos->filter(fn($po) => $po->kendaraans->isNotEmpty())->values();
         }
 
-        // Nama tujuan untuk dokumen — gabungkan jika multiple
-        $tujuanNamaList = Tujuan::whereIn('id', $tujuanIds)->pluck('nama')->join(' & ');
-        $tujuanNama = $cpi ?? $tujuanNamaList;
+        // Nama tujuan untuk dokumen — gabungkan jika multiple, atau tampilkan semua tujuan.
+        $tujuanNamaList = empty($tujuanIds)
+            ? 'Semua Tujuan'
+            : Tujuan::whereIn('id', $tujuanIds)->pluck('nama')->join(' & ');
+        $tujuanNama = $cpi ?: $tujuanNamaList;
 
         $pdf = Pdf::loadView('pdf.purchase-order-period-ptsum', compact('pos', 'from', 'to', 'noSurat', 'tujuanNama', 'tanggalSurat'))
             ->setPaper('legal', 'landscape')
@@ -592,12 +625,11 @@ class PurchaseOrderController extends Controller
         $request->validate([
             'from' => 'required|date',
             'to' => 'required|date|after_or_equal:from',
-            'tujuan_ids' => 'required|string',
+            'tujuan_ids' => 'nullable|string',
         ], [
             'from.required' => 'Tanggal awal periode wajib diisi.',
             'to.required' => 'Tanggal akhir periode wajib diisi.',
             'to.after_or_equal' => 'Tanggal akhir harus sama atau setelah tanggal awal.',
-            'tujuan_ids.required' => 'Pilih tujuan terlebih dahulu.',
         ]);
 
         $cvId = $request->cv_id ?? session('active_cv');
@@ -616,7 +648,9 @@ class PurchaseOrderController extends Controller
             : [];
 
         $cpi = $request->cpi;
-        $tujuanNamaList = Tujuan::whereIn('id', $tujuanIds)->pluck('nama')->join(' & ');
+        $tujuanNamaList = empty($tujuanIds)
+            ? 'Semua Tujuan'
+            : Tujuan::whereIn('id', $tujuanIds)->pluck('nama')->join(' & ');
         $tujuanNama = $cpi ?: $tujuanNamaList;
         $cvNama = Cv::find($cvId)?->nama_cv ?? 'CV';
         $filename = 'PO-Periode-PTSum-' . str_replace(' ', '-', $cvNama) . '-' . now()->format('Ymd-His') . '.xlsx';

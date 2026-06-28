@@ -271,7 +271,33 @@ class PurchaseOrderSupplierPeriodExport implements FromArray, WithEvents, WithTi
             $query->whereHas('kendaraans.penerimas', fn($q) => $q->where('tujuan_id', $this->tujuanId));
         }
 
-        return $query->get();
+        $pos = $query->get();
+
+        if ($this->supplierId || $this->tujuanId) {
+            foreach ($pos as $po) {
+                if ($this->supplierId) {
+                    $po->setRelation('kendaraans', $po->kendaraans->filter(
+                        fn($kendaraan) => (int) $kendaraan->supplier_id === (int) $this->supplierId
+                    )->values());
+                }
+
+                if ($this->tujuanId) {
+                    foreach ($po->kendaraans as $kendaraan) {
+                        $kendaraan->setRelation('penerimas', $kendaraan->penerimas->filter(
+                            fn($penerima) => (int) $penerima->tujuan_id === (int) $this->tujuanId
+                        )->values());
+                    }
+
+                    $po->setRelation('kendaraans', $po->kendaraans->filter(
+                        fn($kendaraan) => $kendaraan->penerimas->isNotEmpty()
+                    )->values());
+                }
+            }
+
+            $pos = $pos->filter(fn($po) => $po->kendaraans->isNotEmpty())->values();
+        }
+
+        return $pos;
     }
 
     private function formatPeriode(): string
