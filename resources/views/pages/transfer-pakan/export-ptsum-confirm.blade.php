@@ -73,9 +73,8 @@
                                 {{-- Filter Tujuan --}}
                                 <div class="row g-3 mt-2">
                                     <div class="col-md-12">
-                                        <label class="form-label small">Tujuan <span class="text-danger">*</span></label>
-                                        <select name="tujuan_ids" id="selectTujuan" class="form-select form-select-sm"
-                                            required>
+                                        <label class="form-label small">Tujuan <span class="text-muted">(opsional)</span></label>
+                                        <select name="tujuan_ids" id="selectTujuan" class="form-select form-select-sm">
                                             <option value="">-- Semua Tujuan --</option>
                                             {{-- Opsi gabungan --}}
                                             @php $currentTujuanIds = request('tujuan_ids', isset($tujuanIds) ? implode(',', $tujuanIds) : ''); @endphp

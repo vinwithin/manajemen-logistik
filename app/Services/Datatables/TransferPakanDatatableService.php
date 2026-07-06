@@ -13,7 +13,7 @@ class TransferPakanDatatableService
         $from = $request->input('from');
         $to = $request->input('to');
 
-        $query = TransferPakanHeader::with(['cv', 'tujuan', 'kendaraans.penerimas'])
+        $query = TransferPakanHeader::with(['cv', 'kendaraans.penerimas.tujuan'])
             ->when($activeCvId, fn ($q) => $q->where('cv_id', $activeCvId))
             ->when($from, fn ($q) => $q->whereDate('tanggal_transfer', '>=', $from))
             ->when($to, fn ($q) => $q->whereDate('tanggal_transfer', '<=', $to))
@@ -38,7 +38,21 @@ class TransferPakanDatatableService
                 return $names->map(fn ($n) => '<span class="badge bg-light text-dark border">'.e($n).'</span>')
                     ->implode(' ');
             })
-            ->addColumn('tujuan_nama', fn ($q) => $q->tujuan?->nama ?? '-')
+            ->addColumn('tujuan_nama', function ($q) {
+                $names = $q->kendaraans
+                    ->flatMap(fn ($k) => $k->penerimas)
+                    ->map(fn ($p) => $p->tujuan?->nama)
+                    ->filter()
+                    ->unique()
+                    ->values();
+
+                if ($names->isEmpty()) {
+                    return '-';
+                }
+
+                return $names->map(fn ($n) => '<span class="badge bg-light text-dark border">'.e($n).'</span>')
+                    ->implode(' ');
+            })
             ->addColumn('status', function ($q) {
                 $statusMap = [
                     'pending' => ['bg' => 'warning', 'text' => 'dark',  'label' => 'Pending'],
@@ -83,7 +97,7 @@ class TransferPakanDatatableService
                 ";
             })
             ->addIndexColumn()
-            ->rawColumns(['action', 'penerima', 'status'])
+            ->rawColumns(['action', 'penerima', 'tujuan_nama', 'status'])
             ->make(true);
     }
 }

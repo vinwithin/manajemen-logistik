@@ -382,18 +382,19 @@ class TransferPakanController extends Controller
         $request->validate([
             'from' => 'required|date',
             'to' => 'required|date|after_or_equal:from',
-            'tujuan_ids' => 'required|string',
+            'tujuan_ids' => 'nullable|string',
         ], [
             'from.required' => 'Tanggal awal periode wajib diisi.',
             'to.required' => 'Tanggal akhir periode wajib diisi.',
             'to.after_or_equal' => 'Tanggal akhir harus sama atau setelah tanggal awal.',
-            'tujuan_ids.required' => 'Pilih tujuan terlebih dahulu.',
         ]);
 
         $cvId = $request->cv_id ?? session('active_cv');
         $from = $request->from;
         $to = $request->to;
-        $tujuanIds = array_filter(array_map('intval', explode(',', $request->tujuan_ids)));
+        $tujuanIds = $request->tujuan_ids
+            ? array_filter(array_map('intval', explode(',', $request->tujuan_ids)))
+            : [];
         $noSuratInput = $request->no_surat;
         $tanggalSurat = $request->tanggal_surat;
         $cpi = $request->cpi;
@@ -461,8 +462,10 @@ class TransferPakanController extends Controller
         $headers = $headers->filter(fn ($h) => $h->kendaraans->isNotEmpty())->values();
 
         // Nama tujuan untuk dokumen
-        $tujuanNamaList = Tujuan::whereIn('id', $tujuanIds)->pluck('nama')->join(' & ');
-        $tujuanNama = $cpi ?? $tujuanNamaList;
+        $tujuanNamaList = ! empty($tujuanIds)
+            ? Tujuan::whereIn('id', $tujuanIds)->pluck('nama')->join(' & ')
+            : 'Semua Tujuan';
+        $tujuanNama = $cpi ?: $tujuanNamaList;
         // dd($tujuanNama);
 
         $pdf = Pdf::loadView('pdf.transfer-pakan-ptsum', compact('headers', 'from', 'to', 'noSurat', 'tujuanNama', 'cv', 'tanggalSurat'))
