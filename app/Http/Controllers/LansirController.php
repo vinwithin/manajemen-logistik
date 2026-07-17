@@ -41,9 +41,16 @@ class LansirController extends Controller
                 ->orderBy('purchase_orders.created_at', 'desc')
                 ->select('po_penerima.*');
 
+            if ($request->from && $request->to) {
+                $query->whereHas('lansirs', function ($q) use ($request) {
+                    $q->whereDate('tanggal_lansir', '>=', $request->from)
+                        ->whereDate('tanggal_lansir', '<=', $request->to);
+                });
+            }
+
             return DataTables::of($query)
                 ->addColumn('no_po', fn($q) => $q->kendaraan->po->no_po ?? '-')
-                ->addColumn('tanggal_po', fn($q) => $q->kendaraan->po->tanggal_po?->format('d/m/Y') ?? '-')
+                ->addColumn('tanggal_po', fn($q) => $q->lansirs->first()->tanggal_lansir?->format('d/m/Y') ?? '-')
                 ->addColumn('cv_name', fn($q) => $q->kendaraan->po->cv?->nama_cv ?? '-')
                 ->addColumn('no_polisi', fn($q) => $q->kendaraan->no_polisi ?? '-')
                 ->addColumn('tujuan_nama', fn($q) => $q->tujuan?->nama ?? '-')
@@ -52,8 +59,8 @@ class LansirController extends Controller
                 ->addColumn('action', function ($q) {
                     $url = route('po-penerima.lansir-page', encrypt($q->id));
 
-                    return "<a href='{$url}' class='btn btn-xs btn-info text-white'>
-                                <i class='fa fa-history'></i> Lihat Riwayat
+                    return "<a href='{$url}' class='btn btn-xs btn-primary text-white'>
+                                <i class='fa fa-history'></i> Lihat 
                             </a>";
                 })
                 ->addIndexColumn()

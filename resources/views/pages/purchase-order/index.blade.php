@@ -61,7 +61,11 @@
                     [1, 'desc']
                 ],
                 ajax: {
-                    url: '/purchase-order'
+                    url: '/purchase-order',
+                    data: function(d) {
+                        d.from = $('#exportFrom').val();
+                        d.to = $('#exportTo').val();
+                    }
                 },
                 columns: [{
                         data: 'DT_RowIndex',
@@ -132,7 +136,13 @@
             $('#btnExportPdfPtSum').attr('href', urlPdfPtSum);
         }
 
-        $('#exportFrom, #exportTo').on('change', updateExportUrl);
+        $('#exportFrom, #exportTo').on('change', function() {
+            updateExportUrl();
+
+            if ($('#exportFrom').val() && $('#exportTo').val()) {
+                $('#table').DataTable().ajax.reload();
+            }
+        });
         updateExportUrl();
 
         // Validasi sebelum export Excel

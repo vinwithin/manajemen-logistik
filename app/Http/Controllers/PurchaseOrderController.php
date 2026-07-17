@@ -694,6 +694,11 @@ class PurchaseOrderController extends Controller
                 $query->where('cv_id', $activeCvId);
             }
 
+            if ($request->from && $request->to) {
+                $query->whereDate('tanggal_po', '>=', $request->from)
+                    ->whereDate('tanggal_po', '<=', $request->to);
+            }
+
             return $this->poService->getData($query);
         }
 

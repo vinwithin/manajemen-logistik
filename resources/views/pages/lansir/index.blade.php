@@ -7,7 +7,12 @@
                     <h5 class="mb-0">
                         <i class="fa fa-truck text-info"></i> Riwayat Lansir
                     </h5>
-                    <span class="text-muted small">Daftar penerima yang memiliki riwayat lansir</span>
+                    <div class="d-flex gap-2 align-items-center flex-wrap">
+                        <input type="date" id="filterFrom" class="form-control form-control-sm" style="width:140px"
+                            title="Tanggal Lansir Mulai">
+                        <input type="date" id="filterTo" class="form-control form-control-sm" style="width:140px"
+                            title="Tanggal Lansir Akhir">
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
@@ -17,7 +22,7 @@
                                 <tr>
                                     <th>No</th>
                                     <th>No. PO</th>
-                                    <th>Tanggal</th>
+                                    <th>Tanggal Lansir</th>
                                     <th>CV</th>
                                     <th>No. Polisi</th>
                                     <th>Nama Penerima</th>
@@ -45,7 +50,11 @@
                 bDestroy: true,
                 bStateSave: true,
                 ajax: {
-                    url: '/purchase-order/lansir'
+                    url: '/purchase-order/lansir',
+                    data: function(d) {
+                        d.from = $('#filterFrom').val();
+                        d.to = $('#filterTo').val();
+                    }
                 },
                 columns: [{
                         data: 'DT_RowIndex',
@@ -103,6 +112,12 @@
                     [10, 15, 25, 50]
                 ],
                 responsive: !0
+            });
+
+            $('#filterFrom, #filterTo').on('change', function() {
+                if ($('#filterFrom').val() && $('#filterTo').val()) {
+                    $('#table').DataTable().ajax.reload();
+                }
             });
         });
     </script>

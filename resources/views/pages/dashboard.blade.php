@@ -19,7 +19,7 @@
                     <div class="col-12 col-md-6 col-xl-4 mb-3">
                         <div class="card h-100 shadow-sm border-0">
                             <div class="card-body d-flex align-items-center gap-3">
-                                <div class="avatar bg-gradient-primary text-white rounded d-flex align-items-center justify-content-center"
+                                <div class="bg-primary text-white rounded d-flex align-items-center justify-content-center"
                                     style="width:50px;height:50px;font-size:16px;font-weight:700;flex-shrink:0">
                                     {{ strtoupper(substr($cv->nama_cv, 0, 2)) }}
                                 </div>

@@ -25,11 +25,16 @@
                 @csrf
 
                 {{-- Email --}}
-                <div class="mb-3">
+                <div class="mb-3 mt-2">
                     <label for="email" class="form-label">Email</label>
-                    <input id="email" type="email" name="email"
-                        class="form-control @error('email') is-invalid @enderror" value="{{ old('email') }}" required
-                        autofocus autocomplete="username" placeholder="nama@email.com">
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i data-feather="mail"></i>
+                        </span>
+                        <input id="email" type="email" name="email"
+                            class="form-control @error('email') is-invalid @enderror" value="{{ old('email') }}"
+                            required autofocus autocomplete="username" placeholder="nama@email.com">
+                    </div>
                     @error('email')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
@@ -40,44 +45,25 @@
                     <div class="d-flex justify-content-between align-items-center mb-1">
                         <label for="password" class="form-label mb-0">Password</label>
                         @if (Route::has('password.request'))
-                            <a href="{{ route('password.request') }}" class="text-decoration-none small"
-                                style="color:#435ebe;font-size:.8rem">
+                            <a href="{{ route('password.request') }}" class="auth-link text-decoration-none">
                                 Lupa password?
                             </a>
                         @endif
                     </div>
                     <div class="input-group">
+                        <span class="input-group-text">
+                            <i data-feather="lock"></i>
+                        </span>
                         <input id="password" type="password" name="password"
                             class="form-control @error('password') is-invalid @enderror" required
                             autocomplete="current-password" placeholder="••••••••">
-                        <button class="btn btn-outline-secondary" type="button" id="togglePassword"
-                            style="border-top-left-radius: 0; border-bottom-left-radius: 0;">
+                        <button class="btn password-toggle" type="button" id="togglePassword" aria-label="Tampilkan password">
                             <i data-feather="eye"></i>
-
                         </button>
                     </div>
                     @error('password')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
-
-                    <script>
-                        document.getElementById('togglePassword').addEventListener('click', function() {
-                            const passwordInput = document.getElementById('password');
-                            const icon = this.querySelector('i');
-                            
-                            if (passwordInput.type === 'password') {
-                                passwordInput.type = 'text';
-                                icon.setAttribute('data-feather', 'eye-off');
-                            } else {
-                                passwordInput.type = 'password';
-                                icon.setAttribute('data-feather', 'eye');
-                            }
-                            
-                            if (typeof feather !== 'undefined') {
-                                feather.replace();
-                            }
-                        });
-                    </script>
                 </div>
 
                 {{-- Remember Me --}}
@@ -104,4 +90,20 @@
             </div>
         @endif
     </div>
+
+    <script>
+        document.getElementById('togglePassword').addEventListener('click', function() {
+            const passwordInput = document.getElementById('password');
+            const icon = this.querySelector('i');
+            const showPassword = passwordInput.type === 'password';
+
+            passwordInput.type = showPassword ? 'text' : 'password';
+            icon.setAttribute('data-feather', showPassword ? 'eye-off' : 'eye');
+            this.setAttribute('aria-label', showPassword ? 'Sembunyikan password' : 'Tampilkan password');
+
+            if (typeof feather !== 'undefined') {
+                feather.replace();
+            }
+        });
+    </script>
 </x-guest-layout>
