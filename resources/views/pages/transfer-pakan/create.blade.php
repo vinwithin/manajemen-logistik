@@ -46,7 +46,7 @@
                                         <label class="form-label">CV <span class="text-danger">*</span></label>
                                         <select name="cv_id" class="form-select" required>
                                             <option value="">-- Pilih CV --</option>
-                                            @foreach ($cvList as $cv)
+                                            @foreach ($userCvs as $cv)
                                                 <option value="{{ $cv->id }}"
                                                     data-omzet="{{ $cv->omzet_tahun }}"
                                                     data-persen="{{ $cv->persen_omzet }}"
