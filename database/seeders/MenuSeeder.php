@@ -191,6 +191,26 @@ class MenuSeeder extends Seeder
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
+            [
+                'id' => 25,
+                'nama_menu' => 'Rekap PT Sum',
+                'url' => '/keuangan/rekap-pt-sum',
+                'icon' => 'file-text',
+                'parent_id' => '3',
+                'order' => '6',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'id' => 26,
+                'nama_menu' => 'Rekap PT Sum Lansir',
+                'url' => '/keuangan/rekap-pt-sum-lansir',
+                'icon' => 'truck',
+                'parent_id' => '3',
+                'order' => '7',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
 
             // ── Master Data (parent_id = 4) ────────────────────
             [

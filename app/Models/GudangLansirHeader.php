@@ -44,6 +44,11 @@ class GudangLansirHeader extends Model
         return $this->hasMany(GudangLansirKendaraan::class, 'lansir_header_id');
     }
 
+    public function lansirPayments(): HasMany
+    {
+        return $this->hasMany(LansirPayment::class, 'gudang_lansir_header_id');
+    }
+
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
@@ -71,6 +76,14 @@ class GudangLansirHeader extends Model
     public function getJumlahPenerimaAttribute(): int
     {
         return $this->kendaraans->flatMap->penerimas->count();
+    }
+
+    public function getTotalPtSumAttribute(): float
+    {
+        return (float) $this->kendaraans
+            ->flatMap->penerimas
+            ->flatMap->pakans
+            ->sum(fn ($p) => $p->jumlah_kg * $p->harga_pt_sum);
     }
 
     // Generate nomor lansir otomatis

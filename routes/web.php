@@ -22,6 +22,8 @@ use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\RekapLansirController;
 use App\Http\Controllers\RekapOaController;
 use App\Http\Controllers\RekapPoController;
+use App\Http\Controllers\RekapPtSumLansirController;
+use App\Http\Controllers\RekapPtSumController;
 use App\Http\Controllers\RekapRugiLabaController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\TransferPakanController;
@@ -65,6 +67,13 @@ Route::middleware('auth')->group(function () {
         Route::get('/pembayaran/export-pdf', [PembayaranSupplierController::class, 'exportPdf'])->name('pembayaran.export-pdf')->middleware('can:payment.view');
         Route::get('/pembayaran/export-excel', [PembayaranSupplierController::class, 'exportExcel'])->name('pembayaran.export-excel')->middleware('can:payment.view');
         Route::delete('/pembayaran/{id}', [PembayaranSupplierController::class, 'destroy'])->name('pembayaran.destroy')->middleware('can:payment.confirm');
+
+        Route::get('/rekap-pt-sum', [RekapPtSumController::class, 'index'])->name('rekap-pt-sum.index')->middleware('can:rekap-pt-sum.view');
+        Route::get('/rekap-pt-sum/export-excel', [RekapPtSumController::class, 'exportExcel'])->name('rekap-pt-sum.export-excel')->middleware('can:rekap-pt-sum.export');
+        Route::post('/rekap-pt-sum/{id}/bayar', [RekapPtSumController::class, 'storeBayar'])->name('rekap-pt-sum.store-bayar')->middleware('can:rekap-pt-sum.bayar');
+        Route::get('/rekap-pt-sum-lansir', [RekapPtSumLansirController::class, 'index'])->name('rekap-pt-sum-lansir.index')->middleware('can:rekap-pt-sum-lansir.view');
+        Route::get('/rekap-pt-sum-lansir/export-excel', [RekapPtSumLansirController::class, 'exportExcel'])->name('rekap-pt-sum-lansir.export-excel')->middleware('can:rekap-pt-sum-lansir.export');
+        Route::post('/rekap-pt-sum-lansir/{id}/bayar', [RekapPtSumLansirController::class, 'storeBayar'])->name('rekap-pt-sum-lansir.store-bayar')->middleware('can:rekap-pt-sum-lansir.bayar');
 
         Route::get('/rugi-laba', [RekapRugiLabaController::class, 'index'])->name('rugi-laba.index')->middleware('can:rugi-laba.view');
         Route::get('/rugi-laba/create', [RekapRugiLabaController::class, 'create'])->name('rugi-laba.create')->middleware('can:rugi-laba.view');

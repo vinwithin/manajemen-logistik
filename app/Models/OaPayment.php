@@ -20,6 +20,7 @@ class OaPayment extends Model
     const TIPE = [
         'oa' => 'Pembayaran OA',
         'dp_supplier' => 'Down Payment Supplier',
+        'pt_sum' => 'Pembayaran PT Sum',
     ];
 
     const METODE = [

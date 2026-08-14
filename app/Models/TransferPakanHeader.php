@@ -50,6 +50,11 @@ class TransferPakanHeader extends Model
         return $this->hasMany(TransferPakanKendaraan::class, 'header_id');
     }
 
+    public function lansirPayments(): HasMany
+    {
+        return $this->hasMany(LansirPayment::class, 'transfer_pakan_header_id');
+    }
+
     public function getTotalKgAttribute(): float
     {
         return (float) $this->kendaraans->sum('total_kg');

@@ -17,6 +17,8 @@ class LansirPayment extends Model
 
     const TIPE_TIM = 'tim';
 
+    const TIPE_PT_SUM = 'pt_sum';
+
     const STATUS_BELUM = 'belum_bayar';
 
     const STATUS_SUDAH = 'sudah_bayar';

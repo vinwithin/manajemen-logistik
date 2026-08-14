@@ -103,6 +103,24 @@ class PoKendaraan extends Model
         return $this->hasOne(OaPayment::class, 'po_kendaraan_id')
             ->where('tipe_pembayaran', 'dp_supplier');
     }
+
+    public function ptSumPaymentOnly()
+    {
+        return $this->hasOne(OaPayment::class, 'po_kendaraan_id')
+            ->where('tipe_pembayaran', 'pt_sum');
+    }
+
+    public function ptSumPayments()
+    {
+        return $this->hasMany(OaPayment::class, 'po_kendaraan_id')
+            ->where('tipe_pembayaran', 'pt_sum');
+    }
+
+    public function getTotalBayarPtSumAttribute(): float
+    {
+        return (float) $this->ptSumPaymentOnly()->sum('jumlah_bayar');
+    }
+
     public function getTotalBayarOngkosAttribute(): float
     {
         return (float) $this->oaPaymentOnly()->sum('jumlah_bayar');

@@ -26,6 +26,8 @@ class permissionSeeder extends Seeder
         //  22 = Estimasi Lansir & Bongkar (child of Keuangan)
         //  23 = Rekap Lansir    (child of Keuangan)
         //  24 = Rugi Laba       (child of Keuangan)
+        //  25 = Rekap PT Sum    (child of Keuangan)
+        //  26 = Rekap PT Sum Lansir (child of Keuangan)
         //  30 = Suplier CV      (child of Master Data)
         //  31 = Kode Pakan      (child of Master Data)
         //  32 = Tujuan Kirim    (child of Master Data)
@@ -59,6 +61,12 @@ class permissionSeeder extends Seeder
             ['name' => 'rekap-lansir.view',     'menu_id' => 23],
             ['name' => 'rekap-lansir.bayar',    'menu_id' => 23],
             ['name' => 'rugi-laba.view',        'menu_id' => 24],
+            ['name' => 'rekap-pt-sum.view',     'menu_id' => 25],
+            ['name' => 'rekap-pt-sum.export',   'menu_id' => 25],
+            ['name' => 'rekap-pt-sum.bayar',    'menu_id' => 25],
+            ['name' => 'rekap-pt-sum-lansir.view',   'menu_id' => 26],
+            ['name' => 'rekap-pt-sum-lansir.export', 'menu_id' => 26],
+            ['name' => 'rekap-pt-sum-lansir.bayar',  'menu_id' => 26],
 
             // Master Data
             ['name' => 'supplier.view',         'menu_id' => 30],
@@ -135,6 +143,12 @@ class permissionSeeder extends Seeder
             'payment.create',
             'payment.confirm',
             'estimasi-lansir.view',
+            'rekap-pt-sum.view',
+            'rekap-pt-sum.export',
+            'rekap-pt-sum.bayar',
+            'rekap-pt-sum-lansir.view',
+            'rekap-pt-sum-lansir.export',
+            'rekap-pt-sum-lansir.bayar',
             'supplier.view',
             'supplier.create',
             'supplier.edit',
@@ -166,6 +180,8 @@ class permissionSeeder extends Seeder
             'oa.view',
             'payment.view',
             'estimasi-lansir.view',
+            'rekap-pt-sum.view',
+            'rekap-pt-sum-lansir.view',
             'supplier.view',
             'feed_code.view',
             'destination.view',
