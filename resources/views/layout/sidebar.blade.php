@@ -3,7 +3,7 @@
           <div class="sidebar-header position-relative">
               <div class="d-flex justify-content-between align-items-center">
                   <div class="logo">
-                      <a href="index.html"><img src="/assets/logo.webp" alt="Logo" srcset=""
+                      <a href="index.html"><img src="/assets/logo1.png" alt="Logo" srcset=""
                               style="width: 70px; height:auto;"></a>
                   </div>
                   <div class="theme-toggle d-flex gap-2  align-items-center mt-2">

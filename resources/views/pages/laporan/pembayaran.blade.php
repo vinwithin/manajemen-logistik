@@ -1,5 +1,50 @@
 @extends('layout.app')
 @section('content')
+    <style>
+        .summary-card .card-header {
+            min-height: 58px;
+        }
+
+        .summary-metric {
+            min-width: 0;
+        }
+
+        .summary-label {
+            color: #6c757d;
+            font-size: 11px;
+            line-height: 1.2;
+        }
+
+        .summary-value {
+            font-size: 15px;
+            font-weight: 700;
+            line-height: 1.25;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .summary-value-main {
+            font-size: 18px;
+        }
+
+        .summary-status {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        @media (min-width: 1400px) {
+            .summary-value {
+                font-size: 14px;
+            }
+
+            .summary-value-main {
+                font-size: 17px;
+            }
+        }
+    </style>
 
     {{-- Header --}}
     <div class="card mb-3">
@@ -57,30 +102,30 @@
     <div class="row g-3 mb-4">
 
         {{-- OA Payment --}}
-        <div class="col-12 col-md-3">
-            <div class="card h-100 border-0 shadow-sm">
+        <div class="col-12 col-lg-6 col-xxl-3">
+            <div class="card h-100 border-0 shadow-sm summary-card">
                 <div class="card-header bg-primary bg-opacity-10 p-3">
                     <h6 class="mb-0 fw-bold text-primary small">
                         <i class="fa fa-credit-card"></i> OA Payment (dari PO)
                     </h6>
                 </div>
-                <div class="card-body p-2">
+                <div class="card-body p-3">
                     <div class="row g-2 text-center">
-                        <div class="col-6">
-                            <div class="text-muted" style="font-size:11px;">Total Tagihan</div>
-                            <div class="fw-bold text-primary">Rp {{ number_format($oaTotalTagihan, 0, ',', '.') }}</div>
+                        <div class="col-12 col-sm-6 summary-metric">
+                            <div class="summary-label">Total Tagihan</div>
+                            <div class="summary-value text-primary">Rp {{ number_format($oaTotalTagihan, 0, ',', '.') }}</div>
                         </div>
-                        <div class="col-6">
-                            <div class="text-muted" style="font-size:11px;">Sudah Dibayar</div>
-                            <div class="fw-bold text-success">Rp {{ number_format($oaTotalBayar, 0, ',', '.') }}</div>
+                        <div class="col-12 col-sm-6 summary-metric">
+                            <div class="summary-label">Sudah Dibayar</div>
+                            <div class="summary-value text-success">Rp {{ number_format($oaTotalBayar, 0, ',', '.') }}</div>
                         </div>
-                        <div class="col-6">
-                            <div class="text-muted" style="font-size:11px;">Outstanding</div>
-                            <div class="fw-bold text-danger">Rp {{ number_format($oaTotalSisa, 0, ',', '.') }}</div>
+                        <div class="col-12 col-sm-6 summary-metric">
+                            <div class="summary-label">Outstanding</div>
+                            <div class="summary-value text-danger">Rp {{ number_format($oaTotalSisa, 0, ',', '.') }}</div>
                         </div>
-                        <div class="col-6">
-                            <div class="text-muted" style="font-size:11px;">Status</div>
-                            <div>
+                        <div class="col-12 col-sm-6 summary-metric">
+                            <div class="summary-label">Status</div>
+                            <div class="summary-status">
                                 <span class="badge bg-success">{{ $oaLunas }} Lunas</span>
                                 <span class="badge bg-warning text-dark">{{ $oaBelum }} Belum</span>
                             </div>
@@ -96,26 +141,26 @@
         </div>
 
         {{-- Lansir PO --}}
-        <div class="col-12 col-md-3">
-            <div class="card h-100 border-0 shadow-sm">
+        <div class="col-12 col-lg-6 col-xxl-3">
+            <div class="card h-100 border-0 shadow-sm summary-card">
                 <div class="card-header bg-info bg-opacity-10 p-3">
                     <h6 class="mb-0 fw-bold text-info small">
                         <i class="fa fa-truck"></i> Lansir PO (Mobil & Tim)
                     </h6>
                 </div>
-                <div class="card-body p-2">
+                <div class="card-body p-3">
                     <div class="row g-2 text-center">
-                        <div class="col-12">
-                            <div class="text-muted" style="font-size:11px;">Total Tagihan OA Lansir</div>
-                            <div class="fw-bold text-info">Rp {{ number_format($lansirPoTotalOa, 0, ',', '.') }}</div>
+                        <div class="col-12 summary-metric">
+                            <div class="summary-label">Total Tagihan OA Lansir</div>
+                            <div class="summary-value text-info">Rp {{ number_format($lansirPoTotalOa, 0, ',', '.') }}</div>
                         </div>
-                        <div class="col-12">
-                            <div class="text-muted" style="font-size:11px;">Total Tagihan Upah Mobil Lokal</div>
-                            <div class="fw-bold text-info">Rp {{ number_format($lansirPoSudahBayarMobil, 0, ',', '.') }}</div>
+                        <div class="col-12 summary-metric">
+                            <div class="summary-label">Total Tagihan Upah Mobil Lokal</div>
+                            <div class="summary-value text-info">Rp {{ number_format($lansirPoSudahBayarMobil, 0, ',', '.') }}</div>
                         </div>
-                        <div class="col-12">
-                            <div class="text-muted" style="font-size:11px;">Total Upah Tim Bongkar</div>
-                            <div class="fw-bold text-info">Rp {{ number_format($lansirPoSudahBayarTim, 0, ',', '.') }}</div>
+                        <div class="col-12 summary-metric">
+                            <div class="summary-label">Total Upah Tim Bongkar</div>
+                            <div class="summary-value text-info">Rp {{ number_format($lansirPoSudahBayarTim, 0, ',', '.') }}</div>
                         </div>
                         
                     </div>
@@ -129,30 +174,28 @@
         </div>
 
         {{-- Lansir Gudang --}}
-        <div class="col-12 col-md-3">
-            <div class="card h-100 border-0 shadow-sm">
+        <div class="col-12 col-lg-6 col-xxl-3">
+            <div class="card h-100 border-0 shadow-sm summary-card">
                 <div class="card-header bg-warning bg-opacity-10 p-3">
                     <h6 class="mb-0 fw-bold text-warning small">
                         <i class="fa fa-archive"></i> Lansir Gudang
                         <span class="badge bg-secondary fw-normal ms-1" style="font-size:9px;">Informatif</span>
                     </h6>
                 </div>
-                <div class="card-body p-2">
+                <div class="card-body p-3">
                     <div class="row g-2 text-center">
-                        <div class="col-6">
-                            <div class="text-muted" style="font-size:11px;">Ongkos OA</div>
-                            <div class="fw-bold text-warning">Rp {{ number_format($gudangTotalOa, 0, ',', '.') }}</div>
+                        <div class="col-12 col-sm-6 summary-metric">
+                            <div class="summary-label">Ongkos OA</div>
+                            <div class="summary-value text-warning">Rp {{ number_format($gudangTotalOa, 0, ',', '.') }}</div>
                         </div>
-                        <div class="col-6">
-                            <div class="text-muted" style="font-size:11px;">Upah Angkut</div>
-                            <div class="fw-bold" style="color:#ea580c;">Rp
-                                {{ number_format($gudangTotalAngkut, 0, ',', '.') }}</div>
+                        <div class="col-12 col-sm-6 summary-metric">
+                            <div class="summary-label">Upah Angkut</div>
+                            <div class="summary-value" style="color:#ea580c;">Rp {{ number_format($gudangTotalAngkut, 0, ',', '.') }}</div>
                         </div>
-                        <div class="col-12">
-                            <div class="text-muted" style="font-size:11px;">Total Keseluruhan</div>
-                            <div class="fw-bold fs-5 text-dark">Rp
-                                {{ number_format($gudangTotalOa + $gudangTotalAngkut, 0, ',', '.') }}</div>
-                            <div class="text-muted" style="font-size:11px;">dari {{ $gudangHeaders->count() }} lansir
+                        <div class="col-12 summary-metric">
+                            <div class="summary-label">Total Keseluruhan</div>
+                            <div class="summary-value summary-value-main text-dark">Rp {{ number_format($gudangTotalOa + $gudangTotalAngkut, 0, ',', '.') }}</div>
+                            <div class="summary-label">dari {{ $gudangHeaders->count() }} lansir
                             </div>
                         </div>
                     </div>
@@ -166,30 +209,28 @@
         </div>
 
         {{-- Transfer Pakan --}}
-        <div class="col-12 col-md-3">
-            <div class="card h-100 border-0 shadow-sm">
+        <div class="col-12 col-lg-6 col-xxl-3">
+            <div class="card h-100 border-0 shadow-sm summary-card">
                 <div class="card-header bg-success bg-opacity-10 p-3">
                     <h6 class="mb-0 fw-bold text-success small">
                         <i class="fa fa-exchange"></i> Transfer Pakan
                         <span class="badge bg-secondary fw-normal ms-1" style="font-size:9px;">Informatif</span>
                     </h6>
                 </div>
-                <div class="card-body p-2">
+                <div class="card-body p-3">
                     <div class="row g-2 text-center">
-                        <div class="col-6">
-                            <div class="text-muted" style="font-size:11px;">Ongkos OA</div>
-                            <div class="fw-bold text-success">Rp {{ number_format($transferTotalOa, 0, ',', '.') }}</div>
+                        <div class="col-12 col-sm-6 summary-metric">
+                            <div class="summary-label">Ongkos OA</div>
+                            <div class="summary-value text-success">Rp {{ number_format($transferTotalOa, 0, ',', '.') }}</div>
                         </div>
-                        <div class="col-6">
-                            <div class="text-muted" style="font-size:11px;">Upah Angkut</div>
-                            <div class="fw-bold" style="color:#15803d;">Rp
-                                {{ number_format($transferTotalAngkut, 0, ',', '.') }}</div>
+                        <div class="col-12 col-sm-6 summary-metric">
+                            <div class="summary-label">Upah Angkut</div>
+                            <div class="summary-value" style="color:#15803d;">Rp {{ number_format($transferTotalAngkut, 0, ',', '.') }}</div>
                         </div>
-                        <div class="col-12">
-                            <div class="text-muted" style="font-size:11px;">Total Keseluruhan</div>
-                            <div class="fw-bold fs-5 text-dark">Rp
-                                {{ number_format($transferTotalOa + $transferTotalAngkut, 0, ',', '.') }}</div>
-                            <div class="text-muted" style="font-size:11px;">dari {{ $transferHeaders->count() }} transfer
+                        <div class="col-12 summary-metric">
+                            <div class="summary-label">Total Keseluruhan</div>
+                            <div class="summary-value summary-value-main text-dark">Rp {{ number_format($transferTotalOa + $transferTotalAngkut, 0, ',', '.') }}</div>
+                            <div class="summary-label">dari {{ $transferHeaders->count() }} transfer
                             </div>
                         </div>
                     </div>
