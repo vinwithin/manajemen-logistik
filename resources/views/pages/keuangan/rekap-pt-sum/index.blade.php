@@ -49,7 +49,7 @@
                                     <th>Penerima</th>
                                     <th>Supplier</th>
                                     <th>Total KG</th>
-                                    <th>Harga Rata-rata</th>
+                                    <th>Harga</th>
                                     <th>Total PT Sum</th>
                                     <th>Status PT Sum</th>
                                     <th>Aksi</th>
