@@ -132,7 +132,6 @@
                                 ['BBM', $rl->bbm],
                                 ['LISTRIK', $rl->listrik],
                                 ['PDAM', $rl->pdam],
-                                ['POTONGAN VOUCHER', $rl->potongan_voucher],
                                 ['LINGKUNGAN', $rl->lingkungan],
                             ];
                         @endphp
@@ -166,11 +165,13 @@
                             <td>Pph 21 (LABA KOTOR X 0.5%)</td>
                             <td class="text-end">{{ $fmt($data['pph21']) }}</td>
                         </tr>
-                        <tr>
-                            <td class="fw-bold">F.</td>
-                            <td>Potongan Voucher</td>
-                            <td class="text-end">{{ $fmt($data['voucher']) }}</td>
-                        </tr>
+                        @if ($data['voucherAktif'])
+                            <tr>
+                                <td class="fw-bold">F.</td>
+                                <td>Potongan Voucher</td>
+                                <td class="text-end">{{ $fmt($data['voucher']) }}</td>
+                            </tr>
+                        @endif
 
                         <tr>
                             <td colspan="3" class="py-1 bg-white border-0"></td>
@@ -179,7 +180,9 @@
                         {{-- G. LABA BERSIH --}}
                         <tr class="table-dark">
                             <td class="fw-bold text-dark">G.</td>
-                            <td class="fw-bold text-dark">LABA BERSIH (D - C - E - F)</td>
+                            <td class="fw-bold text-dark">
+                                LABA BERSIH {{ $data['voucherAktif'] ? '(D - C - E - F)' : '(D - C - E)' }}
+                            </td>
                             <td class="text-end fw-bold {{ $data['labaBersih'] >= 0 ? 'text-success' : 'text-danger' }}">
                                 {{ $fmt($data['labaBersih']) }}
                             </td>

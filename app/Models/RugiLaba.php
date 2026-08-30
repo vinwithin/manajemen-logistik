@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class RugiLaba extends Model
 {
@@ -19,25 +20,25 @@ class RugiLaba extends Model
     ];
 
     protected $casts = [
-        'gaji'                       => 'decimal:2',
-        'atk'                        => 'decimal:2',
-        'pembayaran_supplier_lintas'  => 'decimal:2',
-        'pembayaran_mobil_lokal'     => 'decimal:2',
-        'sharing_fee'                => 'decimal:2',
-        'sharing_profit'             => 'decimal:2',
-        'perjalanan_dinas'           => 'decimal:2',
-        'entertain'                  => 'decimal:2',
-        'adm_bank'                   => 'decimal:2',
-        'upah_bongkar'               => 'decimal:2',
-        'upah_muat'                  => 'decimal:2',
-        'upah_bongkar_muat'          => 'decimal:2',
-        'biaya_lain_lain'            => 'decimal:2',
-        'bbm'                        => 'decimal:2',
-        'listrik'                    => 'decimal:2',
-        'pdam'                       => 'decimal:2',
-        'potongan_voucher'           => 'decimal:2',
-        'lingkungan'                 => 'decimal:2',
-        'biaya_sewa'                 => 'decimal:2',
+        'gaji' => 'decimal:2',
+        'atk' => 'decimal:2',
+        'pembayaran_supplier_lintas' => 'decimal:2',
+        'pembayaran_mobil_lokal' => 'decimal:2',
+        'sharing_fee' => 'decimal:2',
+        'sharing_profit' => 'decimal:2',
+        'perjalanan_dinas' => 'decimal:2',
+        'entertain' => 'decimal:2',
+        'adm_bank' => 'decimal:2',
+        'upah_bongkar' => 'decimal:2',
+        'upah_muat' => 'decimal:2',
+        'upah_bongkar_muat' => 'decimal:2',
+        'biaya_lain_lain' => 'decimal:2',
+        'bbm' => 'decimal:2',
+        'listrik' => 'decimal:2',
+        'pdam' => 'decimal:2',
+        'potongan_voucher' => 'decimal:2',
+        'lingkungan' => 'decimal:2',
+        'biaya_sewa' => 'decimal:2',
     ];
 
     public function cv(): BelongsTo
@@ -50,7 +51,7 @@ class RugiLaba extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    public function harianEntries(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function harianEntries(): HasMany
     {
         return $this->hasMany(RugiLabaHarian::class, 'rugi_laba_id');
     }
@@ -65,7 +66,7 @@ class RugiLaba extends Model
             ->selectRaw('kode_biaya, SUM(nominal) as total')
             ->groupBy('kode_biaya')
             ->pluck('total', 'kode_biaya')
-            ->map(fn($v) => (float) $v)
+            ->map(fn ($v) => (float) $v)
             ->toArray();
     }
 
@@ -76,7 +77,7 @@ class RugiLaba extends Model
             $this->pembayaran_mobil_lokal + $this->sharing_fee + $this->sharing_profit +
             $this->perjalanan_dinas + $this->entertain + $this->adm_bank +
             $this->upah_bongkar + $this->upah_muat +
-            $this->biaya_lain_lain + $this->bbm + $this->listrik + $this->pdam + $this->potongan_voucher + $this->lingkungan
+            $this->biaya_lain_lain + $this->bbm + $this->listrik + $this->pdam + $this->lingkungan
         );
     }
 

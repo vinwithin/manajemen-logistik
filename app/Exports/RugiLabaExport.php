@@ -13,27 +13,29 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
 class RugiLabaExport implements FromArray, WithEvents, WithTitle
 {
     protected array $data;
+
     protected string $cvNama;
+
     protected string $periode;
 
     public function __construct(array $data, string $cvNama, string $periode)
     {
-        $this->data    = $data;
-        $this->cvNama  = $cvNama;
+        $this->data = $data;
+        $this->cvNama = $cvNama;
         $this->periode = $periode;
     }
 
     public function array(): array
     {
         $d = $this->data;
-        $fmt = fn($v) => (float) $v;
+        $fmt = fn ($v) => (float) $v;
 
         $rows = [];
 
         // Header
         $rows[] = ['LAPORAN RUGI LABA'];
         $rows[] = [$this->cvNama];
-        $rows[] = ['Periode: ' . $this->periode];
+        $rows[] = ['Periode: '.$this->periode];
         $rows[] = [];
 
         // A. PEMBELIAN
@@ -67,18 +69,23 @@ class RugiLabaExport implements FromArray, WithEvents, WithTitle
         $rows[] = ['', 'GAJI',                      $fmt($d['rl']->gaji)];
         $rows[] = ['', 'Biaya Sewa',                      $fmt($d['rl']->biaya_sewa)];
         $rows[] = ['', 'ATK',                       $fmt($d['rl']->atk)];
-        $rows[] = ['', 'PEMBAYARAN MOBIL LOKAL',     $fmt($d['rl']->pembayaran_mobil_lokal) + $fmt($d['mobilLokalOtomatis'])];
+        $rows[] = ['', 'PEMBAYARAN MOBIL LOKAL',     $fmt(
+            (float) $d['rl']->pembayaran_mobil_lokal + (float) $d['mobilLokalOtomatis']
+        )];
         $rows[] = ['', 'SHARING FEE',               $fmt($d['rl']->sharing_fee)];
         $rows[] = ['', 'SHARING PROFIT',            $fmt($d['rl']->sharing_profit)];
         $rows[] = ['', 'PERJALANAN DINAS',           $fmt($d['rl']->perjalanan_dinas)];
         $rows[] = ['', 'ENTERTAIN',                 $fmt($d['rl']->entertain)];
         $rows[] = ['', 'ADM BANK',                  $fmt($d['rl']->adm_bank)];
-        $rows[] = ['', 'UPAH BONGKAR UPAH MUAT',    $fmt($d['rl']->upah_bongkar) + $fmt($d['rl']->upah_muat) + $fmt($d['upahBongkarOtomatis'])];
+        $rows[] = ['', 'UPAH BONGKAR UPAH MUAT',    $fmt(
+            (float) $d['rl']->upah_bongkar
+            + (float) $d['rl']->upah_muat
+            + (float) $d['upahBongkarOtomatis']
+        )];
         $rows[] = ['', 'BIAYA LAIN LAIN',           $fmt($d['rl']->biaya_lain_lain)];
         $rows[] = ['', 'BBM',                       $fmt($d['rl']->bbm)];
         $rows[] = ['', 'LISTRIK',                   $fmt($d['rl']->listrik)];
         $rows[] = ['', 'PDAM',                      $fmt($d['rl']->pdam)];
-        $rows[] = ['', 'POTONGAN VOUCHER',          $fmt($d['rl']->potongan_voucher)];
         $rows[] = ['', 'LINGKUNGAN',                $fmt($d['rl']->lingkungan)];
         $rows[] = ['', 'TOTAL',                     $fmt($d['totalBiayaOperasional'])];
         $rows[] = [];
@@ -86,16 +93,22 @@ class RugiLabaExport implements FromArray, WithEvents, WithTitle
         // D-G
         $rows[] = ['D.', 'LABA KOTOR (B - A)',              $fmt($d['labaKotor'])];
         $rows[] = ['E.', 'Pph 21 (LABA KOTOR X 0.5%)',     $fmt($d['pph21'])];
-        $rows[] = ['F.', 'Potongan Voucher',                $fmt($d['pph21'])];
+        if ($d['voucherAktif']) {
+            $rows[] = ['F.', 'Potongan Voucher (LABA KOTOR X 0.5%)', $fmt($d['voucher'])];
+        }
         $rows[] = [];
-        $rows[] = ['G.', 'LABA BERSIH (D - C - E - F)',    $fmt($d['labaBersih'])];
+        $rows[] = [
+            'G.',
+            $d['voucherAktif'] ? 'LABA BERSIH (D - C - E - F)' : 'LABA BERSIH (D - C - E)',
+            $fmt($d['labaBersih']),
+        ];
 
         return $rows;
     }
 
     public function title(): string
     {
-        return substr('RL ' . $this->periode, 0, 31);
+        return substr('RL '.$this->periode, 0, 31);
     }
 
     public function registerEvents(): array
@@ -150,14 +163,14 @@ class RugiLabaExport implements FromArray, WithEvents, WithTitle
                 // Style LABA BERSIH row
                 for ($r = 1; $r <= $lastRow; $r++) {
                     $val = $sheet->getCell("B{$r}")->getValue();
-                    if (str_contains((string)$val, 'LABA BERSIH')) {
+                    if (str_contains((string) $val, 'LABA BERSIH')) {
                         $sheet->getStyle("A{$r}:C{$r}")->applyFromArray([
                             'font' => ['bold' => true, 'size' => 12],
                             'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FF1F3864']],
                             'font' => ['bold' => true, 'size' => 12, 'color' => ['argb' => 'FFFFFFFF']],
                         ]);
                     }
-                    if (str_contains((string)$val, 'LABA KOTOR')) {
+                    if (str_contains((string) $val, 'LABA KOTOR')) {
                         $sheet->getStyle("A{$r}:C{$r}")->applyFromArray([
                             'font' => ['bold' => true],
                             'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FFFEF3C7']],

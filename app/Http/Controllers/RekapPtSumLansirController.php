@@ -21,7 +21,7 @@ class RekapPtSumLansirController extends Controller
         if ($request->ajax()) {
             return DataTables::of($this->rows($request))
                 ->addColumn('status_bayar', function ($row) {
-                    $color = $row['is_paid'] ? 'success' : 'secondary';
+                    $color = $row['is_paid'] ? 'success' : 'warning';
 
                     return "<span class='badge bg-{$color}'>{$row['status_label']}</span>";
                 })
