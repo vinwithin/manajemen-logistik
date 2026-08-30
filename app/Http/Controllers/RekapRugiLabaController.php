@@ -16,7 +16,7 @@ class RekapRugiLabaController extends Controller
 {
     use WithUserTujuan;
 
-    private const VOUCHER_CUTOFF_DATE = '2026-08-15';
+    private const VOUCHER_CUTOFF_DATE = '2026-08-1';
 
     // ── Daftar per CV ─────────────────────────────────────────────────────────
     public function index(Request $request)
