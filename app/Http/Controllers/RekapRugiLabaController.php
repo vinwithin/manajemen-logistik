@@ -16,7 +16,7 @@ class RekapRugiLabaController extends Controller
 {
     use WithUserTujuan;
 
-    private const VOUCHER_CUTOFF_DATE = '2026-08-1';
+    private const VOUCHER_CUTOFF_DATE = '2026-08-01';
 
     // ── Daftar per CV ─────────────────────────────────────────────────────────
     public function index(Request $request)
@@ -286,6 +286,7 @@ class RekapRugiLabaController extends Controller
 
         $dari = "{$tahun}-".str_pad($bulan, 2, '0', STR_PAD_LEFT).'-01';
         $sampai = date('Y-m-t', strtotime($dari));
+        $voucherCutoffDate = date('Y-m-d', strtotime(self::VOUCHER_CUTOFF_DATE));
         $types = ['gudang', 'direct', 'co_farm', 'rent_farm', 'tr_kerinci', 'gudang_ke_peternak', 'transfer_pakan'];
 
         $pembelian = array_fill_keys($types, 0);
@@ -353,7 +354,7 @@ class RekapRugiLabaController extends Controller
         $pakans = $pakansPo->merge($pakansGudang)->merge($pakansTransfer);
 
         $pakansVoucher = $pakans
-            ->filter(fn ($p) => date('Y-m-d', strtotime($p->tanggal_transaksi)) < self::VOUCHER_CUTOFF_DATE);
+            ->filter(fn ($p) => date('Y-m-d', strtotime($p->tanggal_transaksi)) < $voucherCutoffDate);
         $voucherPenjualan = $pakansVoucher
             ->sum(fn ($p) => (float) $p->jumlah_kg * (float) ($p->harga_pt_sum ?? 0));
         $voucherPembelian = $pakansVoucher
@@ -413,7 +414,7 @@ class RekapRugiLabaController extends Controller
 
         $totalPembelian = array_sum($pembelian);
         $totalPenjualan = array_sum($penjualan);
-        $voucherAktif = $dari < self::VOUCHER_CUTOFF_DATE;
+        $voucherAktif = $dari < $voucherCutoffDate;
 
         return [
             'pembelian' => $pembelian,
@@ -422,7 +423,7 @@ class RekapRugiLabaController extends Controller
             'totalPenjualan' => $totalPenjualan,
             'voucher' => $voucherAktif && $voucherLabaKotor > 0 ? $voucherLabaKotor * 0.005 : 0,
             'voucherAktif' => $voucherAktif,
-            'voucherCutoffDate' => self::VOUCHER_CUTOFF_DATE,
+            'voucherCutoffDate' => $voucherCutoffDate,
             'upahBongkarOtomatis' => (float) $upahGudang + (float) $upahPo + (float) $upahTransfer,
             'mobilLokalOtomatis' => (float) $mobilPo,
             'types' => $types,
