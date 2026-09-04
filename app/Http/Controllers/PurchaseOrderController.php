@@ -478,6 +478,7 @@ class PurchaseOrderController extends Controller
         $noSuratInput = $request->no_surat;
         $tanggalSurat = $request->tanggal_surat;
         $cpi = $request->cpi;
+        $pabrikAsal = $request->pabrik_asal ?: 'Pabrik CPI Padang';
         $kendaraanIds = $request->kendaraan_ids
             ? array_filter(array_map('intval', explode(',', $request->kendaraan_ids)))
             : [];
@@ -604,7 +605,7 @@ class PurchaseOrderController extends Controller
             : Tujuan::whereIn('id', $tujuanIds)->pluck('nama')->join(' & ');
         $tujuanNama = $cpi ?: $tujuanNamaList;
 
-        $pdf = Pdf::loadView('pdf.purchase-order-period-ptsum', compact('pos', 'from', 'to', 'noSurat', 'tujuanNama', 'tanggalSurat'))
+        $pdf = Pdf::loadView('pdf.purchase-order-period-ptsum', compact('pos', 'from', 'to', 'noSurat', 'tujuanNama', 'tanggalSurat', 'pabrikAsal'))
             ->setPaper('legal', 'landscape')
             ->setOption('margin-top', 10)
             ->setOption('margin-bottom', 10)

@@ -622,7 +622,7 @@
                     <td class="kwit-label">Untuk pembayaran</td>
                     <td class="kwit-colon">:</td>
                     <td class="kwit-value">
-                        Pembayaran Angkutan Pakan dari Pabrik CPI Padang ke {{ $tujuanNama }}<br>
+                        Pembayaran Angkutan Pakan dari {{ $pabrikAsal ?? 'Pabrik CPI Padang' }} ke {{ $tujuanNama }}<br>
                         Periode :
                         @if ($from && $to)
                             @php

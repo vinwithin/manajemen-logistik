@@ -165,7 +165,7 @@
                         {{-- Nomor Surat --}}
                         <div class="card border-warning mb-4">
                             <div class="card-header bg-warning bg-opacity-10 py-2">
-                                <h6 class="mb-0 small fw-bold">
+                                <h6 class="mb-3 small fw-bold">
                                     <i class="fa fa-file-text-o text-warning"></i>
                                     Nomor Surat Kwitansi
                                 </h6>
@@ -176,8 +176,19 @@
                                     <input type="text" name="no_surat" class="form-control form-control-sm"
                                         value="" placeholder="Masukkan nomor surat">
 
-                                    <label class="form-label small">Masukkan Tujuan (Dari Pabrik CPI Padang ke
-                                        .......)</label>
+                                    <label class="form-label small">Dari Pabrik</label>
+                                    <select name="pabrik_asal" class="form-control form-control-sm form-select">
+                                        <option value="Pabrik CPI Padang"
+                                            {{ old('pabrik_asal', request('pabrik_asal') ?? 'Pabrik CPI Padang') == 'Pabrik CPI Padang' ? 'selected' : '' }}>
+                                            Pabrik CPI Padang
+                                        </option>
+                                        <option value="Pabrik CPI Lampung"
+                                            {{ old('pabrik_asal', request('pabrik_asal') ?? 'Pabrik CPI Padang') == 'Pabrik CPI Lampung' ? 'selected' : '' }}>
+                                            Pabrik CPI Lampung
+                                        </option>
+                                    </select>
+
+                                    <label class="form-label small">Tujuan (ke .......)</label>
                                     <input type="text" name="cpi" class="form-control form-control-sm"
                                         value="{{ $dokumen?->cpi }}" placeholder="Masukkan tujuan">
 
