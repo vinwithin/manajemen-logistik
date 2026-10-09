@@ -103,7 +103,7 @@ class EstimasiRekapLansirController extends Controller
 
                 if (auth()->user()?->can('po.view') && $penerima->kendaraan?->po) {
                     $url = route('purchase-order.show', encrypt($penerima->kendaraan->po->id));
-                    $actions[] = "<a href=\"{$url}\" class=\"btn btn-sm btn-outline-secondary\">Detail</a>";
+                    $actions[] = "<a href=\"{$url}\" class=\"btn btn-sm btn-primary\">Detail</a>";
                 }
 
                 return '<div class="d-flex gap-1">' . implode('', $actions) . '</div>';
