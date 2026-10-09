@@ -26,7 +26,9 @@
                     <a href="{{ route('transfer-pakan.edit', encrypt($header->id)) }}" class="btn btn-sm btn-warning">
                         <i class="fa fa-edit"></i> Edit
                     </a>
-                    <form action="{{ route('transfer-pakan.destroy', encrypt($header->id)) }}" method="POST" style="display: inline;" onsubmit="return confirm('Apakah Anda yakin ingin menghapus transfer pakan ini?')">
+                    <form action="{{ route('transfer-pakan.destroy', encrypt($header->id)) }}" method="POST"
+                        style="display: inline;"
+                        onsubmit="return confirm('Apakah Anda yakin ingin menghapus transfer pakan ini?')">
                         @csrf
                         @method('DELETE')
                         <button type="submit" class="btn btn-sm btn-danger">
@@ -91,14 +93,17 @@
             <div class="card-header text-dark py-2">
                 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <h6 class="mb-0">
-                        <i class="fa fa-truck"></i> Kendaraan {{ $ki + 1 }}: <strong>{{ $kendaraan->no_polisi }}</strong>
+                        <i class="fa fa-truck"></i> Kendaraan {{ $ki + 1 }}:
+                        <strong>{{ $kendaraan->no_polisi }}</strong>
                         @if ($kendaraan->nama_sopir)
                             <span class="fw-normal opacity-75">({{ $kendaraan->nama_sopir }})</span>
                         @endif
                     </h6>
                     <div class="d-flex gap-1 flex-wrap">
-                        <span class="badge bg-warning text-dark">{{ number_format($kendaraan->total_kg, 0, ',', '.') }} kg</span>
-                        <span class="badge bg-light text-dark">{{ number_format($kendaraan->total_karung, 0, ',', '.') }} karung</span>
+                        <span class="badge bg-warning text-dark">{{ number_format($kendaraan->total_kg, 0, ',', '.') }}
+                            kg</span>
+                        <span class="badge bg-light text-dark">{{ number_format($kendaraan->total_karung, 0, ',', '.') }}
+                            karung</span>
                     </div>
                 </div>
             </div>
@@ -136,16 +141,17 @@
                                 <span class="badge bg-{{ $badge }}">{{ $label }}</span>
                             </div>
                             <div class="d-flex align-items-center gap-2 flex-wrap">
-                                <span class="badge bg-primary">{{ number_format($penerima->total_kg, 0, ',', '.') }} kg</span>
+                                <span class="badge bg-primary">{{ number_format($penerima->total_kg, 0, ',', '.') }}
+                                    kg</span>
 
                                 @if ($penerima->status === 'pending')
                                     <button class="btn btn-xs btn-info text-white btn-tiba"
-                                        data-id="{{ encrypt($penerima->id) }}"
-                                        data-nama="{{ $penerima->nama_penerima }}">
+                                        data-id="{{ encrypt($penerima->id) }}" data-nama="{{ $penerima->nama_penerima }}">
                                         <i class="fa fa-map-marker"></i> Tiba
                                     </button>
                                 @elseif ($penerima->status === 'tiba')
-                                    <form action="{{ route('transfer-pakan.penerima.update-status', encrypt($penerima->id)) }}"
+                                    <form
+                                        action="{{ route('transfer-pakan.penerima.update-status', encrypt($penerima->id)) }}"
                                         method="POST" class="d-inline">
                                         @csrf
                                         <input type="hidden" name="status" value="selesai">
@@ -164,7 +170,8 @@
                                     <div class="row g-2 small">
                                         <div class="col-md-4">
                                             <span class="text-muted">Waktu Tiba:</span>
-                                            <strong class="ms-1">{{ $penerima->tiba_at?->format('d/m/Y H:i') ?? '-' }}</strong>
+                                            <strong
+                                                class="ms-1">{{ $penerima->tiba_at?->format('d/m/Y H:i') ?? '-' }}</strong>
                                         </div>
                                         <div class="col-md-4">
                                             <span class="text-muted">Validasi Oleh:</span>
@@ -248,12 +255,16 @@
                                         <tfoot class="table-light fw-bold">
                                             <tr>
                                                 <td colspan="2" class="text-end">Total</td>
-                                                <td class="text-end">{{ number_format($penerima->total_kg, 0, ',', '.') }}</td>
-                                                <td class="text-end">{{ number_format($penerima->total_karung, 0, ',', '.') }}</td>
+                                                <td class="text-end">{{ number_format($penerima->total_kg, 0, ',', '.') }}
+                                                </td>
+                                                <td class="text-end">
+                                                    {{ number_format($penerima->total_karung, 0, ',', '.') }}</td>
                                                 <td></td>
-                                                <td class="text-end text-primary">Rp {{ number_format($totalOaPenerima, 0, ',', '.') }}</td>
+                                                <td class="text-end text-primary">Rp
+                                                    {{ number_format($totalOaPenerima, 0, ',', '.') }}</td>
                                                 <td></td>
-                                                <td class="text-end text-success">Rp {{ number_format($penerima->total_pt_sum, 0, ',', '.') }}</td>
+                                                <td class="text-end text-success">Rp
+                                                    {{ number_format($penerima->total_pt_sum, 0, ',', '.') }}</td>
                                                 <td></td>
                                             </tr>
                                         </tfoot>
@@ -288,8 +299,11 @@
                                                 @foreach ($penerima->tims as $tim)
                                                     <tr>
                                                         <td>{{ $tim->nama_tim }}</td>
-                                                        <td class="text-end">{{ number_format($tim->jumlah_kg, 0, ',', '.') }}</td>
-                                                        <td class="text-end">{{ $tim->jumlah_karung ? number_format($tim->jumlah_karung, 0, ',', '.') : '—' }}</td>
+                                                        <td class="text-end">
+                                                            {{ number_format($tim->jumlah_kg, 0, ',', '.') }}</td>
+                                                        <td class="text-end">
+                                                            {{ $tim->jumlah_karung ? number_format($tim->jumlah_karung, 0, ',', '.') : '—' }}
+                                                        </td>
                                                         <td class="text-end">
                                                             @if ($tim->upah_per_kg > 0)
                                                                 Rp {{ number_format($tim->upah_per_kg, 0, ',', '.') }}
@@ -306,10 +320,14 @@
                                                         </td>
                                                         <td class="text-muted small">{{ $tim->keterangan ?? '—' }}</td>
                                                         <td class="text-center">
-                                                            <form action="{{ route('transfer-pakan.tim.destroy', encrypt($tim->id)) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus tim ini?')">
+                                                            <form
+                                                                action="{{ route('transfer-pakan.tim.destroy', encrypt($tim->id)) }}"
+                                                                method="POST"
+                                                                onsubmit="return confirm('Yakin ingin menghapus tim ini?')">
                                                                 @csrf
                                                                 @method('DELETE')
-                                                                <button type="submit" class="btn btn-sm btn-danger">Hapus</button>
+                                                                <button type="submit"
+                                                                    class="btn btn-sm btn-danger">Hapus</button>
                                                             </form>
                                                         </td>
                                                     </tr>
@@ -319,7 +337,8 @@
                                                 <tfoot class="table-light fw-bold">
                                                     <tr>
                                                         <td colspan="4" class="text-end">Total Upah Tim</td>
-                                                        <td class="text-end text-success">Rp {{ number_format($totalUpahPenerima, 0, ',', '.') }}</td>
+                                                        <td class="text-end text-success">Rp
+                                                            {{ number_format($totalUpahPenerima, 0, ',', '.') }}</td>
                                                         <td></td>
                                                         <td></td>
                                                     </tr>
@@ -331,12 +350,16 @@
                             @endif
 
                             {{-- Subtotal Penerima --}}
-                            <div class="d-flex justify-content-between align-items-center px-3 py-2 bg-light border-top small fw-semibold text-muted">
-                                <span>{{ number_format($penerima->total_kg, 0, ',', '.') }} kg · {{ number_format($penerima->total_karung, 0, ',', '.') }} karung</span>
+                            <div
+                                class="d-flex justify-content-between align-items-center px-3 py-2 bg-light border-top small fw-semibold text-muted">
+                                <span>{{ number_format($penerima->total_kg, 0, ',', '.') }} kg ·
+                                    {{ number_format($penerima->total_karung, 0, ',', '.') }} karung</span>
                                 <span>
-                                    OA: <span class="text-primary">Rp {{ number_format($totalOaPenerima, 0, ',', '.') }}</span>
+                                    OA: <span class="text-primary">Rp
+                                        {{ number_format($totalOaPenerima, 0, ',', '.') }}</span>
                                     @if ($totalUpahPenerima > 0)
-                                        · Angkut: <span class="text-success">Rp {{ number_format($totalUpahPenerima, 0, ',', '.') }}</span>
+                                        · Angkut: <span class="text-success">Rp
+                                            {{ number_format($totalUpahPenerima, 0, ',', '.') }}</span>
                                     @endif
                                 </span>
                             </div>
@@ -349,16 +372,20 @@
                 {{-- Total per Kendaraan --}}
                 @if ($kendaraan->penerimas->count() > 0)
                     @php
-                        $oaKendaraan = $kendaraan->penerimas->sum(fn($p) => $p->pakans->sum(fn($pk) => $pk->jumlah_kg * $pk->ongkos_oa));
+                        $oaKendaraan = $kendaraan->penerimas->sum(
+                            fn($p) => $p->pakans->sum(fn($pk) => $pk->jumlah_kg * $pk->ongkos_oa),
+                        );
                         $upahKendaraan = $kendaraan->penerimas->flatMap->tims->sum('total_upah');
                     @endphp
-                    <div class="mt-3 p-2 bg-light rounded border d-flex justify-content-between align-items-center small fw-semibold">
+                    <div
+                        class="mt-3 p-2 bg-light rounded border d-flex justify-content-between align-items-center small fw-semibold">
                         <span class="text-muted">Total Kendaraan {{ $ki + 1 }}</span>
                         <span>
                             <span class="text-dark">{{ number_format($kendaraan->total_kg, 0, ',', '.') }} kg</span>
                             · OA: <span class="text-primary">Rp {{ number_format($oaKendaraan, 0, ',', '.') }}</span>
                             @if ($upahKendaraan > 0)
-                                · Angkut: <span class="text-success">Rp {{ number_format($upahKendaraan, 0, ',', '.') }}</span>
+                                · Angkut: <span class="text-success">Rp
+                                    {{ number_format($upahKendaraan, 0, ',', '.') }}</span>
                             @endif
                         </span>
                     </div>
@@ -369,7 +396,7 @@
 
     {{-- Modal Tiba --}}
     <div class="modal fade" id="modalTiba" tabindex="-1">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-2xl">
             <div class="modal-content">
                 <div class="modal-header py-2">
                     <h6 class="modal-title">Tandai Tiba — <span id="tibaNama"></span></h6>
@@ -380,7 +407,8 @@
                     <input type="hidden" name="status" value="tiba">
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label class="form-label form-label-sm">Tanggal Tiba <span class="text-danger">*</span></label>
+                            <label class="form-label form-label-sm">Tanggal Tiba <span
+                                    class="text-danger">*</span></label>
                             <input type="date" name="tiba_at" class="form-control form-control-sm"
                                 value="{{ now()->format('Y-m-d') }}" required>
                         </div>
@@ -407,7 +435,7 @@
 
     {{-- Modal Selesai --}}
     <div class="modal fade" id="modalSelesai" tabindex="-1">
-        <div class="modal-dialog modal-sm">
+        <div class="modal-dialog modal-2xl">
             <div class="modal-content">
                 <div class="modal-header py-2">
                     <h6 class="modal-title">Tandai Selesai — <span id="selesaiNama"></span></h6>

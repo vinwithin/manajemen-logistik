@@ -82,8 +82,7 @@
                         $totalUpahPenerima = $penerima->tims->sum('total_upah');
                     @endphp
                     <div class="card mb-3 {{ $loop->last ? 'mb-0' : '' }}">
-                        <div
-                            class="card-header py-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div class="card-header py-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
                             <div class="d-flex align-items-center gap-2 flex-wrap">
                                 <span class="fw-bold">
                                     <i class="fa fa-user text-primary"></i> {{ $penerima->nama_penerima }}
@@ -284,10 +283,14 @@
                                                         </td>
                                                         <td class="text-muted small">{{ $tim->keterangan ?? '—' }}</td>
                                                         <td class="text-center">
-                                                            <form action="{{ route('gudang.lansir.tim.destroy', encrypt($tim->id)) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus tim ini?')">
+                                                            <form
+                                                                action="{{ route('gudang.lansir.tim.destroy', encrypt($tim->id)) }}"
+                                                                method="POST"
+                                                                onsubmit="return confirm('Yakin ingin menghapus tim ini?')">
                                                                 @csrf
                                                                 @method('DELETE')
-                                                                <button type="submit" class="btn btn-sm btn-danger">Hapus</button>
+                                                                <button type="submit"
+                                                                    class="btn btn-sm btn-danger">Hapus</button>
                                                             </form>
                                                         </td>
                                                     </tr>
@@ -328,7 +331,7 @@
 
                     {{-- Modal Tiba --}}
                     <div class="modal fade" id="modalTiba{{ $penerima->id }}" tabindex="-1">
-                        <div class="modal-dialog">
+                        <div class="modal-dialog modal-2xl">
                             <div class="modal-content">
                                 <form action="{{ route('gudang.lansir.penerima.update-status', encrypt($penerima->id)) }}"
                                     method="POST" enctype="multipart/form-data">
@@ -394,7 +397,7 @@
         <div class="alert alert-warning">Belum ada kendaraan dalam lansir ini.</div>
     @endforelse
 
-    @if ($header->kendaraans->count() > 0)
+    {{-- @if ($header->kendaraans->count() > 0)
         @php
             $grandOA = $header->kendaraans->flatMap->penerimas->sum('total_oa');
             $grandUpah = $header->kendaraans->flatMap->penerimas->flatMap->tims->sum('total_upah');
@@ -433,7 +436,7 @@
                 @endif
             </div>
         </div>
-    @endif
+    @endif --}}
 
     {{-- Footer Info --}}
     <div class="card">

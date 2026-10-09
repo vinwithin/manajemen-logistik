@@ -101,11 +101,6 @@ class EstimasiRekapLansirController extends Controller
             ->addColumn('action', function (PoPenerima $penerima) {
                 $actions = [];
 
-                if (auth()->user()?->can('lansir.create')) {
-                    $url = route('po-penerima.lansir-page', $penerima->id);
-                    $actions[] = "<a href=\"{$url}\" class=\"btn btn-sm btn-outline-primary\">Lansir</a>";
-                }
-
                 if (auth()->user()?->can('po.view') && $penerima->kendaraan?->po) {
                     $url = route('purchase-order.show', encrypt($penerima->kendaraan->po->id));
                     $actions[] = "<a href=\"{$url}\" class=\"btn btn-sm btn-outline-secondary\">Detail</a>";

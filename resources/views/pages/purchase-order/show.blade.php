@@ -101,24 +101,6 @@
                     <span class="badge bg-primary">{{ number_format($kendaraan->total_kg, 0, ',', '.') }} kg</span>
                     <span class="badge bg-{{ $kBadge['color'] }}">{{ $kBadge['label'] }}</span>
 
-                    {{-- GPS Assignment Status --}}
-                    @if ($kendaraan->activeGps)
-                        <span class="badge bg-success" title="GPS Device Assigned">
-                            <i class="fa fa-satellite-dish"></i> {{ $kendaraan->activeGps->device_name ?? 'GPS Active' }}
-                        </span>
-                        <button type="button" class="btn btn-xs btn-outline-danger btn-unassign-gps"
-                            data-kendaraan-id="{{ $kendaraan->id }}" data-nopol="{{ $kendaraan->no_polisi }}"
-                            title="Lepas GPS">
-                            Un Assign GPS
-                        </button>
-                    @else
-                        <button type="button" class="btn btn-xs btn-outline-warning btn-auto-assign-gps"
-                            data-kendaraan-id="{{ $kendaraan->id }}" data-nopol="{{ $kendaraan->no_polisi }}"
-                            title="Auto Assign GPS berdasarkan Nopol">
-                            <i class="fa fa-satellite-dish"></i> Auto Assign GPS
-                        </button>
-                    @endif
-
                     <button type="button" class="btn btn-xs btn-outline-info btn-lihat-gps"
                         data-kendaraan-id="{{ $kendaraan->id }}" data-nopol="{{ $kendaraan->no_polisi }}"
                         title="Lihat Lokasi GPS">
@@ -455,7 +437,7 @@
 
     {{-- Modal: Tiba (upload bukti + validator) --}}
     <div class="modal fade" id="modalSelesai" tabindex="-1">
-        <div class="modal-dialog modal-sm">
+        <div class="modal-dialog modal-2xl">
             <div class="modal-content">
                 <div class="modal-header py-2">
                     <h6 class="modal-title">Tandai Tiba — <span id="selesaiNama"></span></h6>
@@ -730,7 +712,7 @@
 
     {{-- Modal Edit Tanggal Tiba --}}
     <div class="modal fade" id="modalEditTanggalTiba" tabindex="-1">
-        <div class="modal-dialog modal-sm">
+        <div class="modal-dialog modal-2xl">
             <div class="modal-content">
                 <div class="modal-header py-2">
                     <h6 class="modal-title"><i class="fa fa-calendar text-primary"></i> Edit Tanggal Tiba — <span

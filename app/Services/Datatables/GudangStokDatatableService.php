@@ -27,7 +27,7 @@ class GudangStokDatatableService
             ->addColumn('stok_karung_fmt', fn($q) => number_format($q->stok_karung, 0, ',', '.') . ' karung')
             ->addColumn('action', function ($q) {
                 $mutasiUrl = route('gudang.mutasi.index', ['tujuan_id' => $q->tujuan_id]);
-                return "<a href=\"{$mutasiUrl}\" class=\"btn btn-xs btn-outline-info py-0 px-1 small\">
+                return "<a href=\"{$mutasiUrl}\" class=\"btn btn-xs btn-outline-info\">
                     <i class=\"fa fa-history\"></i> Lihat Mutasi
                 </a>";
             })

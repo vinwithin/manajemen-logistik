@@ -43,7 +43,7 @@ class GudangStokController extends Controller
             return DataTables::of($query)
                 ->addColumn('total_kg_fmt', fn ($q) => number_format($q->total_kg ?? 0, 0, ',', '.').' kg')
                 ->addColumn('total_karung_fmt', fn ($q) => number_format($q->total_karung ?? 0, 0, ',', '.').' karung')
-                ->addColumn('action', fn ($q) => '<a href="'.route('gudang.stok.show', $q->id).'" class="btn btn-xs btn-outline-primary py-0 px-1 small"><i class="fa fa-archive"></i> Lihat Stok</a>')
+                ->addColumn('action', fn ($q) => '<a href="'.route('gudang.stok.show', $q->id).'" class="btn btn-xs btn-outline-primary"><i class="fa fa-archive"></i> Lihat Stok</a>')
                 ->addIndexColumn()
                 ->rawColumns(['action'])
                 ->make(true);
@@ -71,7 +71,7 @@ class GudangStokController extends Controller
                         'kode_pakan_id' => $q->kode_pakan_id,
                     ]);
 
-                    return '<a href="'.$url.'" class="btn btn-xs btn-outline-info py-0 px-2 small">
+                    return '<a href="'.$url.'" class="btn btn-xs btn-outline-info">
                                 <i class="fa fa-history"></i> Mutasi
                             </a>';
                 })
