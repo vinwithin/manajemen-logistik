@@ -4,35 +4,26 @@
     <div class="row">
         <div class="col-12">
             <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <div>
                         <h5 class="mb-0">Estimasi Lansir & Bongkar</h5>
                         <small class="text-muted">Penerima berdasarkan estimasi tiba dan status proses lansir.</small>
                     </div>
+                    <div class="d-flex gap-2 flex-wrap align-items-center">
+                        <input type="date" id="filterFrom" class="form-control form-control-sm" style="width:140px"
+                            value="{{ $filters['from'] ?? '' }}" title="Dari Tanggal PO">
+                        <input type="date" id="filterTo" class="form-control form-control-sm" style="width:140px"
+                            value="{{ $filters['to'] ?? '' }}" title="Sampai Tanggal PO">
+                        <button type="button" id="resetFilter" class="btn btn-sm btn-secondary" title="Reset Filter">
+                            <i class="fa fa-refresh"></i> Reset
+                        </button>
+                        <button type="button" class="btn btn-sm btn-success btn-export"
+                            data-url="{{ route('estimasi-rekap-lansir.export') }}">
+                            <i class="fa fa-file-excel-o"></i> Export Excel
+                        </button>
+                    </div>
                 </div>
                 <div class="card-body">
-                    <div class="row g-2 align-items-end mb-3">
-                        <div class="col-12 col-md-3">
-                            <label for="filterFrom" class="form-label">Dari Tanggal PO</label>
-                            <input type="date" id="filterFrom" class="form-control" value="{{ $filters['from'] }}">
-                        </div>
-                        <div class="col-12 col-md-3">
-                            <label for="filterTo" class="form-label">Sampai Tanggal PO</label>
-                            <input type="date" id="filterTo" class="form-control" value="{{ $filters['to'] }}">
-                        </div>
-                        <div class="col-12 col-md-auto">
-                            <button type="button" id="resetFilter" class="btn btn-sm btn-secondary">
-                                Reset
-                            </button>
-                        </div>
-                        <div class="col-12 col-md-auto ms-md-auto">
-                            <button type="button" class="btn btn-sm btn-success btn-export"
-                                data-url="{{ route('estimasi-rekap-lansir.export') }}">
-                                <i class="fa fa-file-excel"></i> Export Excel
-                            </button>
-                        </div>
-                    </div>
-
                     <div class="table-responsive">
                         <table class="table table-striped table-bordered" id="table">
                             <thead>

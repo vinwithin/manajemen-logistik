@@ -4,38 +4,30 @@
     <div class="row">
         <div class="col-12">
             <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="fa fa-list text-primary"></i> Rekap Lansir</h5>
-                    <small class="text-muted">Hanya PO yang sudah dikunci</small>
-                </div>
-                <div class="card-body">
-                    <div class="row g-2 align-items-end mb-3">
-                        <div class="col-12 col-md-3">
-                            <label for="filterFrom" class="form-label">Dari Tanggal</label>
-                            <input type="date" id="filterFrom" class="form-control">
-                        </div>
-                        <div class="col-12 col-md-3">
-                            <label for="filterTo" class="form-label">Sampai Tanggal</label>
-                            <input type="date" id="filterTo" class="form-control">
-                        </div>
-                        <div class="col-12 col-md-auto">
-                            <button type="button" id="resetFilter" class="btn btn-sm btn-secondary">
-                                Reset
-                            </button>
-                        </div>
+                <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div>
+                        <h5 class="mb-0"><i class="fa fa-list text-primary"></i> Rekap Lansir</h5>
+                        <small class="text-muted">Hanya PO yang sudah dikunci</small>
+                    </div>
+                    <div class="d-flex gap-2 flex-wrap align-items-center">
+                        <input type="date" id="filterFrom" class="form-control form-control-sm" style="width:140px" title="Dari Tanggal">
+                        <input type="date" id="filterTo" class="form-control form-control-sm" style="width:140px" title="Sampai Tanggal">
+                        <button type="button" id="resetFilter" class="btn btn-sm btn-secondary" title="Reset Filter">
+                            <i class="fa fa-refresh"></i> Reset
+                        </button>
                         @can('report.payment.export')
-                            <div class="col-12 col-md-auto ms-md-auto">
-                                <button type="button" class="btn btn-sm btn-success btn-export"
-                                    data-url="{{ route('rekap-lansir.export-period-excel') }}">
-                                    <i class="fa fa-file-excel-o"></i> Export Excel
-                                </button>
-                                <button type="button" class="btn btn-sm btn-danger btn-export"
-                                    data-url="{{ route('rekap-lansir.export-period-pdf') }}">
-                                    <i class="fa fa-file-pdf-o"></i> Export PDF
-                                </button>
-                            </div>
+                            <button type="button" class="btn btn-sm btn-success btn-export"
+                                data-url="{{ route('rekap-lansir.export-period-excel') }}">
+                                <i class="fa fa-file-excel-o"></i> Export Excel
+                            </button>
+                            <button type="button" class="btn btn-sm btn-danger btn-export"
+                                data-url="{{ route('rekap-lansir.export-period-pdf') }}">
+                                <i class="fa fa-file-pdf-o"></i> Export PDF
+                            </button>
                         @endcan
                     </div>
+                </div>
+                <div class="card-body">
                     <div class="table-responsive">
 
                         <table class="table table-striped table-bordered" id="table">

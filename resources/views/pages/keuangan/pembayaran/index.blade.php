@@ -1,27 +1,27 @@
 @extends('layout.app')
 @section('content')
     {{-- Summary cards --}}
-    <div class="row g-3 mb-3">
-        <div class="col-6 col-md-2">
-            <div class="card text-center py-3">
+    <div class="row row-cols-2 row-cols-md-5 g-3 mb-3">
+        <div class="col">
+            <div class="card text-center py-3 h-100">
                 <div class="fw-bold fs-5 text-primary">Rp {{ number_format($summary['total_tagihan'], 0, ',', '.') }}</div>
                 <div class="text-muted small">Total Tagihan</div>
             </div>
         </div>
-        <div class="col-6 col-md-2">
-            <div class="card text-center py-3">
+        <div class="col">
+            <div class="card text-center py-3 h-100">
                 <div class="fw-bold fs-5 text-success">Rp {{ number_format($summary['total_bayar'], 0, ',', '.') }}</div>
                 <div class="text-muted small">Total Dibayar</div>
             </div>
         </div>
-        <div class="col-6 col-md-2">
-            <div class="card text-center py-3">
+        <div class="col">
+            <div class="card text-center py-3 h-100">
                 <div class="fw-bold fs-5 text-danger">Rp {{ number_format($summary['total_sisa'], 0, ',', '.') }}</div>
                 <div class="text-muted small">Sisa Tagihan</div>
             </div>
         </div>
-        <div class="col-6 col-md-2">
-            <div class="card text-center py-3">
+        <div class="col">
+            <div class="card text-center py-3 h-100">
                 <div class="fw-bold fs-5">
                     <span class="text-secondary">{{ $summary['count_pending'] }}</span> /
                     <span class="text-warning">{{ $summary['count_partial'] }}</span> /
@@ -30,43 +30,45 @@
                 <div class="text-muted small">Pending / Sebagian / Lunas</div>
             </div>
         </div>
-        <div class="col-6 col-md-2">
-            <div class="card text-center py-3">
+        <div class="col">
+            <div class="card text-center py-3 h-100">
                 <div class="fw-bold fs-5 text-warning">Rp {{ number_format($summary['total_dp'], 0, ',', '.') }}</div>
                 <div class="text-muted small">Total DP Supplier</div>
             </div>
         </div>
-       
     </div>
 
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
             <h5 class="mb-0">Pembayaran Supplier</h5>
-            <div class="d-flex gap-2 flex-wrap">
-                <a href="{{ route('keuangan.pembayaran.export-pdf-confirm') }}" class="btn btn-sm btn-danger">
-                    <i class="fa fa-print"></i> Cetak PDF / Excel
-                </a>
-                <select id="filterTipe" class="form-select form-select-sm" style="width:150px">
+            <div class="d-flex gap-2 flex-wrap align-items-center">
+                <select id="filterTipe" class="form-select form-select-sm" style="width:145px">
                     <option value="">Semua Tipe</option>
                     <option value="oa">Pembayaran OA</option>
                     <option value="dp_supplier">DP Supplier</option>
                 </select>
-                <select id="filterSupplier" class="form-select form-select-sm" style="width:180px">
+                <select id="filterSupplier" class="form-select form-select-sm" style="width:170px">
                     <option value="">Semua Supplier</option>
                     @foreach ($suppliers as $s)
                         <option value="{{ $s->id }}">{{ $s->nama }}</option>
                     @endforeach
                 </select>
-                <select id="filterStatus" class="form-select form-select-sm" style="width:150px">
+                <select id="filterStatus" class="form-select form-select-sm" style="width:140px">
                     <option value="">Semua Status</option>
                     <option value="pending">Belum Bayar</option>
                     <option value="partial">Bayar Sebagian</option>
                     <option value="lunas">Lunas</option>
                 </select>
                 <input type="date" id="filterFrom" class="form-control form-control-sm" style="width:140px"
-                    placeholder="Dari">
+                    title="Dari Tanggal">
                 <input type="date" id="filterTo" class="form-control form-control-sm" style="width:140px"
-                    placeholder="Sampai">
+                    title="Sampai Tanggal">
+                <button type="button" id="resetFilter" class="btn btn-sm btn-secondary" title="Reset Filter">
+                    <i class="fa fa-refresh"></i> Reset
+                </button>
+                <a href="{{ route('keuangan.pembayaran.export-pdf-confirm') }}" class="btn btn-sm btn-danger">
+                    <i class="fa fa-print"></i> Cetak PDF / Excel
+                </a>
             </div>
         </div>
         <div class="card-body p-2">
@@ -228,6 +230,11 @@
             });
 
             $('#filterTipe, #filterSupplier, #filterStatus, #filterFrom, #filterTo').on('change', function() {
+                dt.ajax.reload();
+            });
+
+            $('#resetFilter').on('click', function() {
+                $('#filterTipe, #filterSupplier, #filterStatus, #filterFrom, #filterTo').val('');
                 dt.ajax.reload();
             });
         });
