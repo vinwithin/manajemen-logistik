@@ -59,7 +59,6 @@
                                     <th>Penerima</th>
                                     <th>Total (kg)</th>
                                     <th>Total (karung)</th>
-                                    <th>Pakan</th>
                                     <th>Status</th>
                                     <th>Aksi</th>
                                 </tr>
