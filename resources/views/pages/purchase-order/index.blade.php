@@ -89,7 +89,7 @@
                     {
                         data: 'jumlah_mobil',
                         name: 'jumlah_mobil',
-                        searchable: false
+                        searchable: true
                     },
                     {
                         data: 'status_badge',

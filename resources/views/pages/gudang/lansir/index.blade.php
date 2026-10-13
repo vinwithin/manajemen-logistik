@@ -116,7 +116,7 @@
                         data: 'jumlah_kendaraan',
                         name: 'jumlah_kendaraan',
                         orderable: false,
-                        searchable: false
+                        searchable: true
                     },
                     {
                         data: 'jumlah_penerima',

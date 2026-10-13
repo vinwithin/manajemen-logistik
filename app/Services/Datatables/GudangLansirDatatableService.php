@@ -30,7 +30,16 @@ class GudangLansirDatatableService
             ->addColumn('no_lansir', fn($q) => $q->no_lansir)
             ->addColumn('tanggal', fn($q) => $q->tanggal_lansir?->format('d/m/Y') ?? '-')
             ->addColumn('nama_gudang', fn($q) => $q->gudang?->nama ?? '-')
-            ->addColumn('jumlah_kendaraan', fn($q) => $q->jumlah_kendaraan . ' mobil')
+            ->addColumn('jumlah_kendaraan', function ($q) {
+                $nopols = $q->kendaraans->pluck('no_polisi')->map(fn($n) => trim($n))->filter()->unique();
+
+                return $nopols->isNotEmpty() ? $nopols->implode(', ') : '-';
+            })
+            ->filterColumn('jumlah_kendaraan', function ($query, $keyword) {
+                $query->whereHas('kendaraans', function ($q) use ($keyword) {
+                    $q->where('no_polisi', 'like', "%{$keyword}%");
+                });
+            })
             ->addColumn('jumlah_penerima', fn($q) => $q->jumlah_penerima . ' penerima')
             ->addColumn('total_kg_fmt', fn($q) => number_format($q->total_kg, 0, ',', '.') . ' kg')
             ->addColumn('total_karung_fmt', fn($q) => number_format($q->total_karung, 0, ',', '.') . ' karung')
