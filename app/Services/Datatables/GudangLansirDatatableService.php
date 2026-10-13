@@ -47,16 +47,6 @@ class GudangLansirDatatableService
             ->addColumn('jumlah_penerima', fn($q) => $q->jumlah_penerima . ' penerima')
             ->addColumn('total_kg_fmt', fn($q) => number_format($q->total_kg, 0, ',', '.') . ' kg')
             ->addColumn('total_karung_fmt', fn($q) => number_format($q->total_karung, 0, ',', '.') . ' karung')
-            ->addColumn('pakan_list', function ($q) {
-                $pakans = $q->kendaraans
-                    ->flatMap->penerimas
-                    ->flatMap->pakans
-                    ->pluck('kodePakan.kode')
-                    ->unique()
-                    ->filter();
-
-                return $pakans->count() > 0 ? $pakans->implode(', ') : '-';
-            })
             ->addColumn('status_pengiriman', function ($q) {
                 $allPenerimas = $q->kendaraans->flatMap->penerimas;
                 $total = $allPenerimas->count();

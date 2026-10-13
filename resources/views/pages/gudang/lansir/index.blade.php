@@ -134,12 +134,7 @@
                         name: 'total_karung',
                         searchable: false
                     },
-                    {
-                        data: 'pakan_list',
-                        name: 'pakan_list',
-                        orderable: false,
-                        searchable: false
-                    },
+
                     {
                         data: 'status_pengiriman',
                         name: 'status_pengiriman',
