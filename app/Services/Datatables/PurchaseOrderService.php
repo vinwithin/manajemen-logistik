@@ -13,7 +13,11 @@ class PurchaseOrderService
             ->addColumn('jumlah_mobil', function ($q) {
                 $nopols = $q->kendaraans->pluck('no_polisi')->map(fn($n) => trim($n))->filter()->unique();
 
-                return $nopols->isNotEmpty() ? $nopols->implode(', ') : '-';
+                if ($nopols->isEmpty()) {
+                    return '-';
+                }
+
+                return '<small class="text-muted">' . e($nopols->implode(', ')) . '</small>';
             })
             ->filterColumn('jumlah_mobil', function ($query, $keyword) {
                 $query->whereHas('kendaraans', function ($q) use ($keyword) {
@@ -30,7 +34,7 @@ class PurchaseOrderService
                 return view('pages.purchase-order._action', compact('q'));
             })
             ->addIndexColumn()
-            ->rawColumns(['status_badge', 'action'])
+            ->rawColumns(['status_badge', 'action', 'jumlah_mobil'])
             ->make(true);
     }
 }

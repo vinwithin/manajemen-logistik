@@ -33,7 +33,11 @@ class GudangLansirDatatableService
             ->addColumn('jumlah_kendaraan', function ($q) {
                 $nopols = $q->kendaraans->pluck('no_polisi')->map(fn($n) => trim($n))->filter()->unique();
 
-                return $nopols->isNotEmpty() ? $nopols->implode(', ') : '-';
+                if ($nopols->isEmpty()) {
+                    return '-';
+                }
+
+                return '<small class="text-muted">' . e($nopols->implode(', ')) . '</small>';
             })
             ->filterColumn('jumlah_kendaraan', function ($query, $keyword) {
                 $query->whereHas('kendaraans', function ($q) use ($keyword) {
@@ -82,7 +86,7 @@ class GudangLansirDatatableService
                 </div>";
             })
             ->addIndexColumn()
-            ->rawColumns(['action', 'status_pengiriman'])
+            ->rawColumns(['action', 'status_pengiriman', 'jumlah_kendaraan'])
             ->make(true);
     }
 }
