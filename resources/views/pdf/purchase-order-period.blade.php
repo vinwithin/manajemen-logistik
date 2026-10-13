@@ -197,13 +197,14 @@
                             @foreach ($kodePakanList as $i => $kp)
                                 @php
                                     $pakan = $penerima->pakans->firstWhere('kode_pakan_id', $kp->id);
+                                    $kgRound = $pakan ? round((float) $pakan->jumlah_kg) : 0;
                                     if ($pakan) {
-                                        $subtotalsKg[$i] += $pakan->jumlah_kg;
-                                        $totalKgPenerima += $pakan->jumlah_kg;
-                                        $totalOngkosPenerima += $pakan->jumlah_kg * $pakan->ongkos_oa;
+                                        $subtotalsKg[$i] += $kgRound;
+                                        $totalKgPenerima += $kgRound;
+                                        $totalOngkosPenerima += $kgRound * (float) ($pakan->ongkos_oa ?? 0);
                                     }
                                 @endphp
-                                <td>{{ $pakan ? number_format($pakan->jumlah_kg, 0, ',', '.') : '' }}</td>
+                                <td>{{ $pakan ? number_format($kgRound, 0, ',', '.') : '' }}</td>
                             @endforeach
                             <td><strong>{{ number_format($totalKgPenerima, 0, ',', '.') }}</strong></td>
                             <td><strong>{{ number_format($totalOngkosPenerima, 0, ',', '.') }}</strong></td>

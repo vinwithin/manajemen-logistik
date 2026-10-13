@@ -485,23 +485,25 @@ class RekapLansirController extends Controller
             ];
 
             foreach ($lansir->mobils as $mobil) {
+                $beratMobil = round((float) ($mobil->berat ?? 0));
                 $mobilRows->push($base + [
                     'pelaksana' => $mobil->no_polisi ?? '-',
-                    'berat' => (float) ($mobil->berat ?? 0),
+                    'berat' => $beratMobil,
                     'karung' => (int) ($mobil->jumlah_karung ?? 0),
                     'tarif' => (float) ($mobil->ongkos ?? 0),
-                    'total' => (float) ($mobil->berat ?? 0) * (float) ($mobil->ongkos ?? 0),
+                    'total' => $beratMobil * (float) ($mobil->ongkos ?? 0),
                     'status_bayar' => $statusMobil,
                 ]);
             }
 
             foreach ($lansir->tims as $tim) {
+                $beratTim = round((float) ($tim->berat ?? 0));
                 $timRows->push($base + [
                     'pelaksana' => $tim->nama_tim ?? '-',
-                    'berat' => (float) ($tim->berat ?? 0),
+                    'berat' => $beratTim,
                     'karung' => (int) ($tim->jumlah_karung ?? 0),
                     'tarif' => (float) ($tim->upah ?? 0),
-                    'total' => (float) ($tim->berat ?? 0) * (float) ($tim->upah ?? 0),
+                    'total' => $beratTim * (float) ($tim->upah ?? 0),
                     'status_bayar' => $statusTim,
                 ]);
             }

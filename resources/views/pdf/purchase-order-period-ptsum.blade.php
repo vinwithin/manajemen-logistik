@@ -469,9 +469,9 @@
                     @foreach ($kendaraan->penerimas as $penerima)
                         @foreach ($penerima->pakans as $pakan)
                             @php
-                                $totalKgPakan = (float) $pakan->jumlah_kg;
+                                $totalKgPakan = round((float) $pakan->jumlah_kg);
                                 $totalKarungPakan = (int) ($pakan->jumlah_karung ?? 0);
-                                $totalHargaPakan = (float) $pakan->jumlah_kg * (float) ($pakan->harga_pt_sum ?? 0);
+                                $totalHargaPakan = $totalKgPakan * (float) ($pakan->harga_pt_sum ?? 0);
                                 $hargaPtSum = $pakan->harga_pt_sum ?? 0;
                                 $kodePakanStr = $pakan->kodePakan?->kode ?? '—';
                                 $rowClass = $rowIdx % 2 === 0 ? 'row-even' : 'row-odd';

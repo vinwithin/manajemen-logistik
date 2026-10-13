@@ -265,12 +265,14 @@
                     @endphp
                     @foreach ($kendaraan->penerimas as $penerima)
                         @php
-                            $totalKgPenerima = (float) $penerima->pakans->sum('jumlah_kg');
+                            $totalKgPenerima = (float) $penerima->pakans->sum(
+                                fn($p) => round((float) $p->jumlah_kg)
+                            );
                             $totalKarungPenerima = (int) $penerima->pakans->sum(
                                 fn($p) => (int) ($p->jumlah_karung ?? 0),
                             );
                             $totalOngkosPenerima = (float) $penerima->pakans->sum(
-                                fn($p) => (float) $p->jumlah_kg * (float) ($p->ongkos_oa ?? 0),
+                                fn($p) => round((float) $p->jumlah_kg) * (float) ($p->ongkos_oa ?? 0),
                             );
                             $ongkosPerKg = $totalKgPenerima > 0 ? $totalOngkosPenerima / $totalKgPenerima : 0;
                             $kodePakanStr = $penerima->pakans

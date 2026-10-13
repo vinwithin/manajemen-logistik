@@ -80,7 +80,7 @@ class PurchaseOrderSupplierPeriodExport implements FromArray, WithEvents, WithTi
                 $totalOngkosKendaraan = 0;
                 foreach ($kendaraan->penerimas as $penerima) {
                     $totalOngkosKendaraan += (float) $penerima->pakans->sum(
-                        fn($pakan) => (float) $pakan->jumlah_kg * (float) ($pakan->ongkos_oa ?? 0)
+                        fn($pakan) => round((float) $pakan->jumlah_kg) * (float) ($pakan->ongkos_oa ?? 0)
                     );
                 }
 
@@ -91,12 +91,12 @@ class PurchaseOrderSupplierPeriodExport implements FromArray, WithEvents, WithTi
 
                 $isFirstPenerima = true;
                 foreach ($kendaraan->penerimas as $penerima) {
-                    $totalKgPenerima = (float) $penerima->pakans->sum('jumlah_kg');
+                    $totalKgPenerima = (float) $penerima->pakans->sum(fn($pakan) => round((float) $pakan->jumlah_kg));
                     $totalKarungPenerima = (int) $penerima->pakans->sum(
                         fn($pakan) => (int) ($pakan->jumlah_karung ?? 0)
                     );
                     $totalOngkosPenerima = (float) $penerima->pakans->sum(
-                        fn($pakan) => (float) $pakan->jumlah_kg * (float) ($pakan->ongkos_oa ?? 0)
+                        fn($pakan) => round((float) $pakan->jumlah_kg) * (float) ($pakan->ongkos_oa ?? 0)
                     );
                     $ongkosPerKg = $totalKgPenerima > 0 ? $totalOngkosPenerima / $totalKgPenerima : 0;
                     $kodePakanStr = $penerima->pakans

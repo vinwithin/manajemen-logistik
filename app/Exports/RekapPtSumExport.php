@@ -34,8 +34,8 @@ class RekapPtSumExport implements FromArray, ShouldAutoSize, WithEvents, WithTit
         $totalPtSum = 0;
 
         foreach ($this->kendaraans as $kendaraan) {
-            $kg = $kendaraan->total_kg;
-            $ptSum = $kendaraan->total_pt_sum;
+            $kg = round((float) $kendaraan->total_kg);
+            $ptSum = (float) $kendaraan->total_pt_sum;
             $totalKg += $kg;
             $totalPtSum += $ptSum;
 

@@ -165,8 +165,9 @@ class PurchaseOrderPeriodExport implements FromArray, WithEvents, WithTitle
                         foreach ($this->kodePakanList as $kp) {
                             $pakan = $penerima->pakans->firstWhere('kode_pakan_id', $kp->id);
                             if ($pakan && $pakan->jumlah_kg) {
-                                $row[] = $pakan->jumlah_kg;
-                                $totalOngkos += (float) $pakan->jumlah_kg * (float) ($pakan->ongkos_oa ?? 0);
+                                $kgRound = round((float) $pakan->jumlah_kg);
+                                $row[] = $kgRound;
+                                $totalOngkos += $kgRound * (float) ($pakan->ongkos_oa ?? 0);
                             } else {
                                 $row[] = '';
                             }

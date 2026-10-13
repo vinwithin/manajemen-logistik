@@ -51,7 +51,7 @@ class PurchaseOrderPtSumRekapSheet implements FromArray, ShouldAutoSize, WithEve
             foreach ($po->kendaraans->sortBy('no_polisi') as $kendaraan) {
                 foreach ($kendaraan->penerimas as $penerima) {
                     foreach ($penerima->pakans as $pakan) {
-                        $totalKg = (float) $pakan->jumlah_kg;
+                        $totalKg = round((float) $pakan->jumlah_kg);
                         $totalKarung = (int) ($pakan->jumlah_karung ?? 0);
                         $hargaPtSum = (float) ($pakan->harga_pt_sum ?? 0);
                         $totalHarga = $totalKg * $hargaPtSum;

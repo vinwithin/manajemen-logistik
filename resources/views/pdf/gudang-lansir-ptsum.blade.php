@@ -450,12 +450,14 @@
                     @endphp
                     @foreach ($kendaraan->penerimas as $penerima)
                         @php
-                            $totalKgPenerima = (float) $penerima->pakans->sum('jumlah_kg');
+                            $totalKgPenerima = (float) $penerima->pakans->sum(
+                                fn($p) => round((float) $p->jumlah_kg)
+                            );
                             $totalKarungPenerima = (int) $penerima->pakans->sum(
                                 fn($p) => (int) ($p->jumlah_karung ?? 0),
                             );
                             $totalHargaPenerima = (float) $penerima->pakans->sum(
-                                fn($p) => (float) $p->jumlah_kg * (float) ($p->harga_pt_sum ?? 0),
+                                fn($p) => round((float) $p->jumlah_kg) * (float) ($p->harga_pt_sum ?? 0),
                             );
                             $hargaPtSum = $totalKgPenerima > 0 ? $totalHargaPenerima / $totalKgPenerima : 0;
                             $kodePakanStr = $penerima->pakans
